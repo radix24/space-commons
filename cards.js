@@ -1002,7 +1002,7 @@ function renderToc() {
   const ok = solved(); grid.append(el('div', 'cc-progress', `읽은 개념 ${ALL.filter(c => sn.has(c.id)).length}/${ALL.length} · 맞힌 확인 문제 ${ALL.filter(c => ok.has(c.id)).length}/${Object.keys(QUIZ).length}`));
   for (const ch of CHAPTERS) { grid.append(el('h3', 'cc-ch', `${ch.title} <span>${ch.ids.filter(id => sn.has(id)).length}/${ch.ids.length} 읽음 · ${ch.ids.filter(id => ok.has(id)).length} 맞힘</span>`), el('div', 'cc-intro', ch.intro || '')); const row = el('div', 'cc-row');
     for (const id of ch.ids) { const c = BYID[id], b = el('button', 'cc-card' + (sn.has(id) ? ' seen' : ''));
-      b.append(el('span', 'cc-num', NUM[id]), el('span', 'cc-level ' + c.level, c.level), el('b', '', c.title), el('span', 'cc-tag', c.tag), el('span', 'cc-mini', `<span class="tex">${c.eq}</span>`));
+      b.append(el('span', 'cc-num', NUM[id]), el('b', '', c.title), el('span', 'cc-tag', c.tag), el('span', 'cc-level ' + c.level, c.level));
       if (PRE[id]?.length) b.append(el('span', 'cc-pre', '먼저: ' + PRE[id].map(q => NUM[q]).join(', ') + (ok.has(id) ? ' · 문제 맞힘 ✓' : '')));
       else if (ok.has(id)) b.append(el('span', 'cc-pre', '문제 맞힘 ✓'));
       b.onclick = () => openCard(c); row.append(b); }
