@@ -51,6 +51,12 @@
 | `o` | 고를 천체 이름 (검색창에 쓰는 이름, 애드온 천체 포함) |
 | `say` | 화면 아래에 띄울 설명 |
 | `wait` | 다음 단계까지 기다릴 초 (1~600, 기본 6) |
+| `pan` | 시선을 이 초에 걸쳐 천천히 옮김 (`az`, `alt`, `fov`와 함께). 없으면 바로 바뀜 |
+| `speed` | 시간 흐름 배율. 1은 실제 속도, 3600은 1초에 1시간, 0은 멈춤, 음수는 거꾸로 |
+| `show` | 표시 켜고 끄기: `lines`, `labels`, `mw`, `ground`, `atmosphere`, `grid`, `dso`, `satellites`, `orbits` (예: `{"lines": true, "mw": false}`) |
+| `at` | 자막 위치: `bottom`(기본) 또는 `top` |
+
+수업용 예제: [`examples/lesson-eclipse.json`](../examples/lesson-eclipse.json) (개기일식), [`examples/lesson-retrograde.json`](../examples/lesson-retrograde.json) (화성의 역행), [`examples/lesson-diurnal.json`](../examples/lesson-diurnal.json) (별의 일주 운동)
 
 ## 라이선스
 

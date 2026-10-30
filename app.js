@@ -3372,18 +3372,31 @@ function loadAddon(j) {
   if (j.script && j.script.length) runScript(j.script);
 }
 let scriptRun = 0;
+const SCRIPT_TOGGLES = { lines: 't-lines', labels: 't-labels', mw: 't-mw', ground: 't-ground', atmosphere: 't-refr', grid: 't-grid', dso: 't-dso', satellites: 't-sats', orbits: 't-orbits' };
+function caption(text, pos) { // presentation subtitle: large, readable from the back of a classroom
+  let el = $('sc-caption'); if (!el) { el = document.createElement('div'); el.id = 'sc-caption'; document.body.append(el); }
+  el.textContent = text || ''; el.hidden = !text; el.dataset.pos = pos || 'bottom';
+}
 async function runScript(steps) {
   const id = ++scriptRun, cap = $('status');
-  for (const [i, s] of steps.entries()) { if (id !== scriptRun) return;
-    const q = new URLSearchParams(); for (const k of ['t', 'lat', 'lon', 'az', 'alt', 'fov', 'o']) if (s[k] != null) q.set(k, s[k]);
+  for (const [i, s] of steps.entries()) { if (id !== scriptRun) break;
+    const q = new URLSearchParams(); for (const k of ['t', 'lat', 'lon', 'o']) if (s[k] != null) q.set(k, s[k]);
+    const pan = +s.pan || 0, to = { az: s.az, alt: s.alt, fov: s.fov };
+    if (!pan) for (const k of ['az', 'alt', 'fov']) if (s[k] != null) q.set(k, s[k]);
     if ([...q.keys()].length) { q.set('m', 'g'); location.hash = q.toString(); readHash(); updateSkyMatrix(); }
-    if (s.o) { const mk = searchIndex.get(String(s.o).toLowerCase().replace(/\s+/g, '')); if (mk) { const o = mk(); select(o); flyTo(o); } }
-    cap.textContent = `[${i + 1}/${steps.length}] ${String(s.say || '')}  (Esc: 멈춤)`;
+    for (const [k, v] of Object.entries(s.show || {})) { const el = $(SCRIPT_TOGGLES[k]); if (el && el.checked !== !!v) { el.checked = !!v; el.dispatchEvent(new Event('change')); } }
+    if (s.speed != null) { state.speed = +s.speed; document.querySelectorAll('[data-speed]').forEach(x => x.classList.toggle('on', +x.dataset.speed === state.speed)); }
+    if (s.o) { const mk = searchIndex.get(String(s.o).toLowerCase().replace(/\s+/g, '')); if (mk) { const o = mk(); select(o); if (!pan) flyTo(o); } }
+    if (pan) { const from = { az: view.az, alt: view.alt, fov: view.fov }, t0 = performance.now(); // a slow camera move instead of a jump
+      const dAz = ((((to.az ?? from.az) - from.az) % 360) + 540) % 360 - 180;
+      await new Promise(res => { const step = () => { if (id !== scriptRun) return res(); const u = Math.min(1, (performance.now() - t0) / (pan * 1000)), e = u * u * (3 - 2 * u);
+        view.az = from.az + dAz * e; view.alt = from.alt + ((to.alt ?? from.alt) - from.alt) * e; view.fov = from.fov * Math.pow((to.fov ?? from.fov) / from.fov, e); if (u < 1) requestAnimationFrame(step); else res(); }; step(); }); }
+    caption(String(s.say || ''), s.at); cap.textContent = `[${i + 1}/${steps.length}] 발표 중 (Esc: 멈춤)`;
     await new Promise(r => setTimeout(r, Math.min(600, Math.max(1, +s.wait || 6)) * 1000));
   }
-  if (id === scriptRun) cap.textContent = '발표가 끝났습니다';
+  caption(''); if (id === scriptRun) cap.textContent = '발표가 끝났습니다';
 }
-addEventListener('keydown', (e) => { if (e.key === 'Escape' && scriptRun) { scriptRun++; $('status').textContent = '발표를 멈췄습니다'; } });
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && scriptRun) { scriptRun++; caption(''); $('status').textContent = '발표를 멈췄습니다'; } });
 $('addon-btn').onclick = () => { const f = document.createElement('input'); f.type = 'file'; f.accept = '.json,application/json';
   f.onchange = async () => { try { loadAddon(JSON.parse(await f.files[0].text())); } catch { $('status').textContent = '애드온 파일을 읽을 수 없습니다 (JSON 형식 확인)'; } }; f.click(); };
 // ---------- offline: store the core pack (libraries, catalogues, textures, small models) in the service-worker cache in one go ----------

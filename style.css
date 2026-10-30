@@ -519,3 +519,6 @@ body.space .menu-pop .ground-only, body:not(.space) .menu-pop .space-only { disp
 .sb-mixbar em { font-size: 11px; color: var(--mute); padding: 0 6px; line-height: 20px; }
 .sb-norm { width: 100%; margin: 8px 0 4px; height: 28px; font-size: 12px; }
 .sb-atmnote { color: var(--mute); line-height: 1.5; }
+
+#sc-caption { position: fixed; left: 50%; bottom: 22%; transform: translateX(-50%); max-width: min(900px, 90vw); padding: 12px 22px; background: rgba(8, 10, 18, .82); border: 1px solid rgba(255, 255, 255, .12); color: #F2F3F8; font-size: clamp(17px, 2.1vw, 24px); line-height: 1.5; text-align: center; z-index: 20; pointer-events: none; }
+#sc-caption[hidden] { display: none; } #sc-caption[data-pos=top] { bottom: auto; top: 90px; }
