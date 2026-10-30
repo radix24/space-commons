@@ -31,6 +31,7 @@
 <div id="labels"></div>
 <div id="sel-ring" hidden></div>
 <div id="eye-ring" hidden><span id="eye-label"></span></div>
+<div id="frame-rect" hidden><span id="frame-label"></span></div>
 
 <div id="topbar">
   <a id="brand" href="./"><img src="assets/sc-mark.svg" alt=""><span>Space <em>Commons</em></span></a>
@@ -85,7 +86,7 @@
     <select id="eyepiece" aria-label="관측 장비 시야">
       <option value="0">장비 시야 없음</option><option value="7">쌍안경 7×50 (7°)</option><option value="2.6">쌍안경 15×70 (2.6°)</option>
       <option value="1.6">80mm 굴절 · 25mm 접안 (1.6°)</option><option value="0.82">200mm 돕소니안 · 25mm (0.82°)</option>
-      <option value="0.33">200mm 돕소니안 · 10mm (0.33°)</option><option value="0.12">200mm · 4mm 고배율 (0.12°)</option>
+      <option value="0.33">200mm 돕소니안 · 10mm (0.33°)</option><option value="0.12">200mm · 4mm 고배율 (0.12°)</option><option value="custom">내 장비 직접 입력…</option>
     </select>
     <select id="bortle" aria-label="광공해" title="보틀 척도: 1 아주 어두운 하늘 ~ 9 도심">
       <option value="1">광공해 1 · 최상의 암흑</option><option value="2">2 · 아주 어두운 산골</option><option value="3">3 · 시골</option>
@@ -94,6 +95,8 @@
     </select>
     <label>위도 <input id="lat" type="number" step="0.01" value="37.57"></label>
     <label>경도 <input id="lon" type="number" step="0.01" value="126.98"></label>
+    <button id="geo-btn" title="이 기기의 위치로 관측지를 정합니다. 위치는 기기 안에서만 씁니다.">내 위치</button>
+    <button id="wx-btn" title="관측지의 오늘 밤 구름·습도·시정 예보 (Open-Meteo)">날씨</button>
   </div>
   <div class="row toggles">
     <label class="ground-only"><input type="checkbox" id="t-ground" checked> 지면</label>
@@ -126,6 +129,7 @@
   <h2 id="info-title"></h2>
   <div id="info-sub"></div>
   <table id="info-table"></table>
+  <div id="info-alt" hidden></div>
   <div id="info-exo" hidden></div>
   <img id="info-img" alt="" hidden>
   <div id="info-wiki" hidden>
@@ -165,6 +169,31 @@
   <h2>천문 달력</h2>
   <div class="small">앞으로 90일 · 누르면 그 순간으로 이동합니다</div>
   <ul id="cal-list"></ul>
+</div>
+
+<div id="wx" class="side" hidden>
+  <button class="x" id="wx-close">×</button>
+  <h2>관측지 날씨</h2>
+  <div id="wx-sub" class="small"></div>
+  <div id="wx-sum" class="wx-sum"></div>
+  <table id="wx-table" class="pltable"></table>
+  <div class="small">예보: Open-Meteo. 관측지의 위도·경도(소수 둘째 자리)만 보냅니다. 시상(대기 흔들림)은 브라우저에서 받을 수 있는 공개 예보가 없어 넣지 않았습니다.</div>
+</div>
+
+<div id="gear" class="side" hidden>
+  <button class="x" id="gear-close">×</button>
+  <h2>내 장비</h2>
+  <div class="small">입력값은 이 브라우저에만 저장됩니다</div>
+  <div class="gear-grid">
+    <label>망원경 구경 (mm) <input id="g-ap" type="number" min="10" value="200"></label>
+    <label>망원경 초점거리 (mm) <input id="g-fl" type="number" min="50" value="1200"></label>
+    <label>접안렌즈 초점거리 (mm) <input id="g-ep" type="number" min="1" value="25"></label>
+    <label>접안렌즈 겉보기 시야 (°) <input id="g-af" type="number" min="20" max="120" value="52"></label>
+    <label>카메라 센서 가로 (mm) <input id="g-sw" type="number" min="1" step="0.1" value="23.5"></label>
+    <label>카메라 센서 세로 (mm) <input id="g-sh" type="number" min="1" step="0.1" value="15.6"></label>
+  </div>
+  <div class="row"><label><input type="checkbox" id="g-eye" checked> 접안렌즈 시야 원</label><label><input type="checkbox" id="g-cam" checked> 사진 구도 사각형</label></div>
+  <table id="gear-out" class="pltable"></table>
 </div>
 
 <div id="flyby" class="side" hidden>

@@ -122,6 +122,14 @@ export function englishBodies(PLANETS) { // planets, moons, probes: English name
 
 // ---------- UI phrases (longest first) ----------
 const PH = [
+  ['내 장비 직접 입력…', 'My own gear…'], ['내 위치', 'My location'], ['날씨', 'Weather'], ['관측지 날씨', 'Weather at the site'], ['내 장비', 'My gear'],
+  ['입력값은 이 브라우저에만 저장됩니다', 'Saved in this browser only'], ['망원경 구경 (mm)', 'Telescope aperture (mm)'], ['망원경 초점거리 (mm)', 'Telescope focal length (mm)'],
+  ['접안렌즈 초점거리 (mm)', 'Eyepiece focal length (mm)'], ['접안렌즈 겉보기 시야 (°)', 'Eyepiece apparent field (°)'], ['카메라 센서 가로 (mm)', 'Sensor width (mm)'], ['카메라 센서 세로 (mm)', 'Sensor height (mm)'],
+  ['접안렌즈 시야 원', 'Eyepiece circle'], ['사진 구도 사각형', 'Camera frame'], ['한계 등급 (어두운 하늘)', 'Limiting magnitude (dark sky)'], ['분해능 (도스 한계)', 'Resolution (Dawes)'],
+  ['최대 유효 배율', 'Highest useful power'], ['사출동공', 'Exit pupil'], ['실제 시야', 'True field'], ['사진 화각', 'Camera field'], ['초점비', 'Focal ratio'], ['배율', 'Magnification'],
+  ['지구 근접 소행성 (2025~2035, 지름 약 100 m 이상)', 'Near-Earth asteroid approaches (2025-2035, about 100 m and larger)'],
+  ['초록 선: 이 천체 · 점선: 달 · 배경: 낮, 박명, 밤 · 주황 선: 지금', 'Green: this object · dashed: Moon · background: day, twilight, night · orange: now'],
+  ['예보 받는 중…', 'Fetching forecast…'], ['위치 확인 중…', 'Finding your location…'], ['저·중·고', 'Low·mid·high'], ['구름', 'Cloud'], ['습도', 'Humidity'], ['시정', 'Visibility'], ['기온', 'Temp'],
   ['땅에서 올려다보고, 우주로 나아가는 모두의 하늘', 'A sky for everyone, from the ground up and out into space'],
   ['검색: M31, NGC 7000, Jupiter, Sirius…', 'Search: M31, NGC 7000, Jupiter, Sirius…'], ['카탈로그 불러오는 중…', 'Loading catalogues…'],
   ['우주를 당신에게 가져오는 중', 'Bringing the universe to you'], ['별 4만 1천 개를 하늘에 거는 중', 'Hanging 41,000 stars in the sky'],

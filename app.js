@@ -5,6 +5,7 @@ import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { buildCraft } from './craft.js';
+import { moonMeeus } from './moon.js';
 import { SHOWERS, TOURS, MOON_STATES, FLYBY_INFO, ECLIPSES } from './content.js';
 import { KR_SATS, ORBITERS, SITES } from './content-missions.js';
 
@@ -21,7 +22,7 @@ const URLS = {
   ngc: CDN + 'mattiaverga/OpenNGC@master/database_files/NGC.csv',
 };
 const $ = (id) => document.getElementById(id);
-export const VERSION = 'Alpha 0.0.2c';
+export const VERSION = 'Alpha 0.0.2d';
 const MOBILE = matchMedia('(max-width: 640px), (pointer: coarse)').matches; // phones get lighter versions of heavy features // bump the letter with every feature batch
 for (const el of document.querySelectorAll('[data-version]')) el.textContent = el.dataset.version.replace('{v}', VERSION);
 
@@ -524,15 +525,9 @@ function helio(name, T, Mdeg) {
 }
 const OBL = 23.43928 * D2R;
 const ecl2eq = (v) => new THREE.Vector3(v.x, v.y * Math.cos(OBL) - v.z * Math.sin(OBL), v.y * Math.sin(OBL) + v.z * Math.cos(OBL));
-function moonGeo(T) {
-  const s = (a, b) => Math.sin((a + b * T) * D2R), c = (a, b) => Math.cos((a + b * T) * D2R);
-  const lam = 218.32 + 481267.881 * T + 6.29 * s(135.0, 477198.87) - 1.27 * s(259.3, -413335.36) + 0.66 * s(235.7, 890534.22)
-    + 0.21 * s(269.9, 954397.74) - 0.19 * s(357.5, 35999.05) - 0.11 * s(186.5, 966404.03);
-  const bet = 5.13 * s(93.3, 483202.02) + 0.28 * s(228.2, 960400.89) - 0.28 * s(318.3, 6003.15) - 0.17 * s(217.6, -407332.21);
-  const par = 0.9508 + 0.0518 * c(135.0, 477198.87) + 0.0095 * c(259.3, -413335.36) + 0.0078 * c(235.7, 890534.22) + 0.0028 * c(269.9, 954397.74);
-  const r = 6378.14 / Math.sin(par * D2R) / 149597870.7;
-  const l = lam * D2R, b = bet * D2R;
-  return new THREE.Vector3(r * Math.cos(b) * Math.cos(l), r * Math.cos(b) * Math.sin(l), r * Math.sin(b));
+function moonGeo(T) { // Meeus ch.47 (moon.js); T is UT centuries, so add delta-T (~69 s)
+  const { lon, lat, km } = moonMeeus(T + 69 / 86400 / 36525), r = km / 149597870.7;
+  return new THREE.Vector3(r * Math.cos(lat) * Math.cos(lon), r * Math.cos(lat) * Math.sin(lon), r * Math.sin(lat));
 }
 
 // procedural textures
@@ -1339,6 +1334,7 @@ function select(o) {
     const a = Math.acos(Math.max(-1, Math.min(1, worldOf(prevSelected).dot(worldOf(o))))) * R2D;
     row(`${prevSelected.planet ? prevSelected.p.ko : prevSelected.messier || prevSelected.name}까지 각거리`, fmtAng(a));
   }
+  altGraph(o, ra, dec);
   if (o.kindName !== 'exo' && o.kindName !== 'sat') exoDetail(null);
   showPhoto(o.kindName === 'dso' ? o : null);
   showWiki(o); writeHash(); syncObsButton();
@@ -1701,12 +1697,15 @@ const PLACES = { seoul: [37.57, 126.98], busan: [35.18, 129.08], jeju: [33.36, 1
 $('place').onchange = (e) => { const v = PLACES[e.target.value]; if (!v) return; [state.lat, state.lon] = v; $('lat').value = v[0]; $('lon').value = v[1]; };
 $('night').onclick = () => { const on = document.body.classList.toggle('red'); $('night').classList.toggle('on', on); $('night').textContent = on ? '야간 시야 끄기' : '야간 시야'; };
 // eyepiece: true field of view of common setups, drawn as a circle; picking one also zooms to fit it
-$('eyepiece').onchange = (e) => { const f = +e.target.value; eyeFov = f || 0; if (f) { view.fov = Math.max(view.fov > f * 1.4 ? f * 1.25 : view.fov, f * 1.1); } };
-let eyeFov = 0;
+$('eyepiece').onchange = (e) => { if (e.target.value === 'custom') { $('wx').hidden = true; $('gear').hidden = false; applyGear(true); return; }
+  camFrame = null; const f = +e.target.value; eyeFov = f || 0; if (f) { view.fov = Math.max(view.fov > f * 1.4 ? f * 1.25 : view.fov, f * 1.1); } };
+let eyeFov = 0, camFrame = null, gearLabel = '', neoData = [], neoNow = null;
 function drawEyepiece() {
+  const fr = $('frame-rect'), px = (deg) => Math.tan(deg / 2 * D2R) / Math.tan(view.fov / 2 * D2R) * innerHeight;
+  if (camFrame && !mode.space) { fr.hidden = false; fr.style.width = px(camFrame.w) + 'px'; fr.style.height = px(camFrame.h) + 'px'; $('frame-label').textContent = camFrame.label; } else fr.hidden = true;
   const el = $('eye-ring'); if (!eyeFov || mode.space) { el.hidden = true; return; }
   const d = Math.tan(eyeFov / 2 * D2R) / Math.tan(view.fov / 2 * D2R) * innerHeight; el.hidden = false; el.style.width = el.style.height = d + 'px';
-  $('eye-label').textContent = `${$('eyepiece').selectedOptions[0].text} · 실시야 ${fmtAng(eyeFov)}`;
+  $('eye-label').textContent = gearLabel && $('eyepiece').value === 'custom' ? gearLabel : `${$('eyepiece').selectedOptions[0].text} · 실시야 ${fmtAng(eyeFov)}`;
 }
 $('shot').onclick = () => {
   const a = document.createElement('a'); a.download = `space-commons-${toLocalInput(state.time).replace(/[:T]/g, '-')}.png`;
@@ -1878,6 +1877,10 @@ function buildCalendar() {
       if (s1 !== null && s2 !== null && s2 < s1 && s2 <= sv && s2 < lim) { const ka = a === 'Moon' ? '달' : PLANETS.find(p => p.name === a).ko, kb = PLANETS.find(p => p.name === b).ko;
         ev.push({ t: t2, title: EN ? `${ka === "달" ? "Moon" : ka} and ${kb}: ${s2.toFixed(1)}° apart` : `${ka}과 ${kb} 근접 ${s2.toFixed(1)}°`, key: b, kind: '근접' }); }
       s1 = s2; s2 = sv; t2 = t; } }
+  // lunar occultations seen from the observing site (topocentric Moon, Meeus ch.47)
+  for (const o of occultations(start, end)) ev.push(o);
+  // near-Earth asteroid approaches (CNEOS, baked into data/neo.json)
+  for (const n of neoData) if (n.t >= start && n.t <= end) ev.push({ t: n.t, title: `소행성 ${n.name} 지구 근접 ${Math.round(n.dist_km).toLocaleString()} km`, neo: n, kind: '소행성' });
   // meteor shower peaks and eclipses
   for (const sh of showers) for (const y of [d0.getFullYear(), d0.getFullYear() + 1]) { const [m, dd] = sh.peak.split('-'); const t = new Date(y, +m - 1, +dd, 22).getTime();
     if (t >= start && t <= end) ev.push({ t, title: `${sh.ko} 극대 (시간당 최대 약 ${sh.zhr}개)`, key: sh.ko, kind: '유성우' }); }
@@ -1895,6 +1898,7 @@ function renderCalendar() {
       b.textContent = e.title; k.textContent = e.kind + (e.ecl ? '' : ' · ' + new Date(e.t).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit', hour12: false }));
       b.onclick = () => {
         if (e.ecl) return goEclipse(e.ecl);
+        if (e.neo) return playNeo(e.neo);
         setMode(false); state.time = e.t; state.speed = 0; document.querySelectorAll('[data-speed]').forEach(x => x.classList.toggle('on', x.dataset.speed === '0'));
         $('t-ground').checked = false; updateSkyMatrix(); updatePlanets();
         const mk = searchIndex.get(e.key.toLowerCase().replace(/\s+/g, '')); if (mk) { const o = mk(); select(o); flyTo(o); }
@@ -2112,6 +2116,10 @@ function renderFlybys() {
   for (const [k, info] of Object.entries(FLYBY_INFO)) { if (!flybyData[k]) continue;
     const li = document.createElement('li'), b = document.createElement('button'), sp2 = document.createElement('span');
     b.textContent = info.ko; sp2.textContent = info.text; b.onclick = () => playFlyby(k); li.append(b, sp2); ul.append(li); }
+  if (neoData.length) { const h = document.createElement('li'); h.className = 'day'; h.textContent = '지구 근접 소행성 (2025~2035, 지름 약 100 m 이상)'; ul.append(h);
+    for (const n of [...neoData].sort((a, b) => a.t - b.t)) { const li = document.createElement('li'), b = document.createElement('button'), s2 = document.createElement('span');
+      b.textContent = `${n.name} · ${new Date(n.t).toLocaleDateString(LOCALE)}`; s2.textContent = `최근접 ${Math.round(n.dist_km).toLocaleString()} km (달 거리의 ${(n.dist_km / 384400).toFixed(2)}배) · ${n.v_kms} km/s · 지름 약 ${Math.round(n.diam_m)} m`;
+      b.onclick = () => playNeo(n); li.append(b, s2); ul.append(li); } }
   $('flyby').hidden = false;
 }
 function playFlyby(k) {
@@ -2130,6 +2138,147 @@ function playFlyby(k) {
 }
 $('flyby-btn').onclick = () => $('flyby').hidden ? renderFlybys() : ($('flyby').hidden = true);
 $('flyby-close').onclick = () => $('flyby').hidden = true;
+
+// ---------- 16. near-Earth asteroid approaches (G: S2) ----------
+fetch('data/neo.json').then(r => r.json()).then(d => { neoData = d.map(n => { const [day, hm] = n.cd.split(' '), [y, mo, dd] = day.split('-'); return { ...n, t: Date.parse(`${dd} ${mo} ${y} ${hm} UTC`) }; }); }).catch(() => {});
+const neoGroup = new THREE.Group(); neoGroup.visible = false; planetGroup.add(neoGroup);
+const neoDot = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffb454 })); neoGroup.add(neoDot);
+function neoAt(n, ms) { // geocentric equatorial 10^6 km, linear between 30-minute Horizons samples
+  const k = (jd(ms) - n.jd0) / n.step, N = n.xyz.length / 3; if (k < 0 || k > N - 1) return null;
+  const i = Math.min(N - 2, Math.floor(k)), f = k - i, a = n.xyz;
+  return new THREE.Vector3(a[3 * i] + (a[3 * i + 3] - a[3 * i]) * f, a[3 * i + 1] + (a[3 * i + 4] - a[3 * i + 1]) * f, a[3 * i + 2] + (a[3 * i + 5] - a[3 * i + 2]) * f);
+}
+function playNeo(n) {
+  setMode(true); state.time = n.t - 14 * 3600e3; state.speed = 1800; document.querySelectorAll('[data-speed]').forEach(x => x.classList.remove('on'));
+  computeHelio();
+  for (const c of [...neoGroup.children]) if (c !== neoDot) { neoGroup.remove(c); c.geometry.dispose(); }
+  const pts = []; for (let i = 0; i < n.xyz.length; i += 3) pts.push(new THREE.Vector3(n.xyz[i], n.xyz[i + 1], n.xyz[i + 2]));
+  const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0xffb454, transparent: true, opacity: 0.55 })); line.frustumCulled = false; neoGroup.add(line);
+  const moonPts = []; for (let i = 0; i <= 64; i++) { const t = n.t + (i / 64 - 0.5) * 4 * 86400e3, T = (jd(t) - 2451545.0) / 36525; moonPts.push(ecl2eq(moonGeo(T)).multiplyScalar(MKM_AU)); }
+  const ml = new THREE.Line(new THREE.BufferGeometry().setFromPoints(moonPts), new THREE.LineBasicMaterial({ color: 0x9aa5c0, transparent: true, opacity: 0.35 })); ml.frustumCulled = false; neoGroup.add(ml);
+  neoNow = n; $('t-sats').checked = false; // satellite labels would hide the fly-by
+  const earth = PLANETS.find(p => p.name === 'Earth'), cl = neoAt(n, n.t) || pts[pts.length >> 1];
+  const nrm = pts[0].clone().cross(pts[pts.length - 1]).normalize(); // look down on the fly-by plane, a little tilted
+  sp.flight = null; sp.target = earth; sp.replay = null; sp.dist = Math.max(n.dist_km / 1e6 * 3.2, bodyR(earth) * 10);
+  sp.quat.copy(lookQuat(nrm.clone().negate().addScaledVector(cl.clone().normalize(), 0.35).normalize())); view.fov = 50;
+  $('sp-target').textContent = `근접 소행성: ${n.name}`; $('flyby').hidden = true; $('cal').hidden = true;
+  $('tour-pick').hidden = true; $('tour-body').hidden = false; $('tour-prev').hidden = $('tour-next').hidden = true;
+  $('tour-step').textContent = `${n.name} · 최근접 ${n.cd} UTC · 1800배속`;
+  $('tour-text').textContent = `지구 중심에서 ${Math.round(n.dist_km).toLocaleString()} km (달 거리의 ${(n.dist_km / 384400).toFixed(2)}배)까지 다가옵니다. 상대 속도 ${n.v_kms} km/s, 절대 등급 H ${n.H}, 지름 약 ${Math.round(n.diam_m)} m. 주황 선은 JPL Horizons로 계산한 앞뒤 이틀의 경로, 회색 선은 같은 기간의 달 궤도입니다.`;
+  $('tour').hidden = false;
+}
+function updateNeo() {
+  const E = helioPos.Earth; if (!neoNow || !mode.space || !E) { neoGroup.visible = false; return; }
+  const g = neoAt(neoNow, state.time); neoGroup.visible = true; neoGroup.position.copy(E).sub(sp.pos);
+  if (!g) { neoDot.visible = false; return; }
+  const rel = g.clone().add(neoGroup.position), d = rel.length(); neoDot.visible = true; neoDot.position.copy(g);
+  neoDot.scale.setScalar(Math.max(neoNow.diam_m / 2 / 1e9, d * Math.tan(view.fov * D2R * 0.004)));
+  if (sp.target?.name === 'Earth') $('status').textContent = `${neoNow.name} · 지구 중심에서 ${Math.round(g.length() * 1e6).toLocaleString()} km`;
+}
+
+// ---------- 17. lunar occultations (G13) ----------
+const eq2ecl = (v) => new THREE.Vector3(v.x, v.y * Math.cos(OBL) + v.z * Math.sin(OBL), -v.y * Math.sin(OBL) + v.z * Math.cos(OBL));
+const radec = (ra, dec) => new THREE.Vector3(Math.cos(dec * D2R) * Math.cos(ra * D2R), Math.cos(dec * D2R) * Math.sin(ra * D2R), Math.sin(dec * D2R));
+const OCC_STARS = [['Aldebaran', 68.980, 16.509, '알데바란'], ['Regulus', 152.093, 11.967, '레굴루스'], ['Spica', 201.298, -11.161, '스피카'], ['Antares', 247.352, -26.432, '안타레스'], ['M45', 56.75, 24.12, '플레이아데스성단']]
+  .map(([key, ra, dec, ko]) => ({ key, ko, ecl: eq2ecl(radec(ra, dec)) }));
+function occultations(start, end) {
+  const out = [], tg = [...['Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'].map(n => ({ key: n, ko: PLANETS.find(p => p.name === n).ko, planet: true })), ...OCC_STARS];
+  const dirOf = (g, o) => o.planet ? g[o.key] : o.ecl;
+  const prev = tg.map(() => [1e9, 1e9]);
+  for (let t = start; t <= end; t += 3600e3) { const g = geoAt(t);
+    tg.forEach((o, i) => { const s = sepDeg(g.Moon, dirOf(g, o)), [a, b] = prev[i];
+      if (b < a && b <= s && b < 1.8) { // geocentric closest approach an hour ago: refine topocentrically
+        let best = 1e9, tb = 0, inT = 0, outT = 0;
+        for (let u = t - 4 * 3600e3; u <= t + 2 * 3600e3; u += 60e3) { const h = geoAt(u), mt = h.Moon.clone().sub(observerEcl(u, state.lat, state.lon));
+          const rad = Math.asin(1737.4 / (mt.length() * KM_AU)) * R2D, sv = sepDeg(mt, o.planet ? h[o.key].clone().sub(observerEcl(u, state.lat, state.lon)) : o.ecl) - rad;
+          if (sv < best) { best = sv; tb = u; } if (sv < 0 && !inT) inT = u; if (sv < 0) outT = u; }
+        if (inT) { const sm = sunMoonAt(tb), alt = altOf(sm.Moon, tb), sunAlt = altOf(sm.Sun, tb);
+          if (alt > 0) out.push({ t: inT, title: EN ? `Moon occults ${o.key}` : `달이 ${o.ko}${/[가-힣]$/.test(o.ko) && (o.ko.charCodeAt(o.ko.length - 1) - 0xac00) % 28 ? '을' : '를'} 가림 (엄폐) · ${Math.round((outT - inT) / 60e3)}분${sunAlt > -6 ? ' · 낮이라 관측 어려움' : ''}`, key: o.planet ? o.key : o.key, kind: '엄폐' }); }
+      }
+      prev[i] = [b, s]; }); }
+  return out;
+}
+
+// ---------- 18. altitude tonight (G11) ----------
+function altGraph(o, ra, dec) {
+  const box = $('info-alt'); box.hidden = true; box.innerHTML = '';
+  if (mode.space || o.kindName === 'sat' || o.kindName === 'site' || (o.planet && o.p.probe)) return;
+  const name = o.planet ? o.p.name : null, GEO = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'];
+  let dirAt;
+  if (name && GEO.includes(name)) dirAt = (t) => ecl2eq(geoAt(t)[name]);
+  else if (isFinite(ra) && isFinite(dec)) { const v = radec(ra, dec); dirAt = () => v; } else return;
+  const d0 = new Date(state.time), start = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate(), 12).getTime() - (d0.getHours() < 12 ? 86400e3 : 0);
+  const N = 96, W = 300, H = 128, top = 8, bot = 104, y = (a) => top + (90 - Math.max(-20, Math.min(90, a))) / 110 * (bot - top), x = (i) => i / N * W;
+  const S = [], M = [], A = [];
+  for (let i = 0; i <= N; i++) { const t = start + i * 15 * 60e3, sm = sunMoonAt(t); S.push(altOf(sm.Sun, t)); M.push(altOf(sm.Moon, t)); A.push(altOf(dirAt(t), t)); }
+  let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="오늘 밤 고도 그래프">`;
+  for (let i = 0; i < N; i++) { const s = S[i], c = s > 0 ? '#2b4370' : s > -6 ? '#1f3056' : s > -12 ? '#172443' : s > -18 ? '#111b33' : '#0a1122';
+    svg += `<rect x="${x(i).toFixed(1)}" y="${top}" width="${(W / N + 0.6).toFixed(1)}" height="${bot - top}" fill="${c}"/>`; }
+  svg += `<line x1="0" x2="${W}" y1="${y(0)}" y2="${y(0)}" stroke="#7d8aa8" stroke-width="1"/>`;
+  for (const a of [30, 60]) svg += `<line x1="0" x2="${W}" y1="${y(a)}" y2="${y(a)}" stroke="#7d8aa8" stroke-opacity=".25" stroke-dasharray="2 3"/><text x="3" y="${y(a) - 2}" fill="#7d8aa8" font-size="8">${a}°</text>`;
+  const path = (arr) => arr.map((a, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(a).toFixed(1)}`).join('');
+  if (name !== 'Moon') svg += `<path d="${path(M)}" fill="none" stroke="#c9d1e6" stroke-opacity=".55" stroke-width="1.2" stroke-dasharray="3 3"/>`;
+  svg += `<path d="${path(A)}" fill="none" stroke="#4FE3C1" stroke-width="2"/>`;
+  for (let i = 0; i <= N; i += 12) { const t = start + i * 15 * 60e3; svg += `<text x="${Math.min(W - 12, x(i) + 1)}" y="${H - 12}" fill="#9aa5c0" font-size="8.5">${new Date(t).getHours()}시</text>`; }
+  const k = (state.time - start) / (15 * 60e3); if (k >= 0 && k <= N) svg += `<line x1="${x(k)}" x2="${x(k)}" y1="${top}" y2="${bot}" stroke="#ffb454" stroke-width="1.2"/>`;
+  svg += '</svg>';
+  let im = 0; A.forEach((a, i) => { if (a > A[im]) im = i; });
+  const night = A.map((a, i) => a > 0 && S[i] < -12), nh = night.filter(Boolean).length / 4;
+  const tm = start + im * 15 * 60e3, sep = name === 'Moon' ? null : sepDeg(dirAt(tm), sunMoonAt(tm).Moon);
+  const hm = (t) => new Date(t).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit', hour12: false });
+  box.innerHTML = svg + `<div class="small">가장 높을 때 ${hm(tm)} · 고도 ${A[im].toFixed(0)}° · 어두운 하늘에서 지평선 위 ${nh.toFixed(1)}시간${sep != null ? ` · 그때 달과 ${sep.toFixed(0)}°` : ''}<br>초록 선: 이 천체 · 점선: 달 · 배경: 낮, 박명, 밤 · 주황 선: 지금</div>`;
+  box.hidden = false;
+}
+
+// ---------- 19. my telescope and camera (G12) ----------
+const GEAR_KEY = 'space-commons-gear';
+try { const g = JSON.parse(localStorage.getItem(GEAR_KEY)); if (g) for (const [k, v] of Object.entries(g)) if ($(k)) { if ($(k).type === 'checkbox') $(k).checked = v; else $(k).value = v; } } catch {}
+function applyGear(zoom) {
+  const v = (id) => Math.max(0.1, +$(id).value || 0), D = v('g-ap'), F = v('g-fl'), fe = v('g-ep'), af = v('g-af'), sw = v('g-sw'), sh = v('g-sh');
+  const mag = F / fe, tf = af / mag, exitP = D / mag, lim = 2.7 + 5 * Math.log10(D), dawes = 116 / D;
+  const cw = 2 * Math.atan(sw / 2 / F) * R2D, ch = 2 * Math.atan(sh / 2 / F) * R2D;
+  try { localStorage.setItem(GEAR_KEY, JSON.stringify(Object.fromEntries(['g-ap', 'g-fl', 'g-ep', 'g-af', 'g-sw', 'g-sh', 'g-eye', 'g-cam'].map(k => [k, $(k).type === 'checkbox' ? $(k).checked : $(k).value])))); } catch {}
+  const rows = [['배율', `${mag.toFixed(0)}배${mag > 2 * D ? ' (구경에 비해 너무 높음)' : ''}`], ['실제 시야', fmtAng(tf)], ['사출동공', `${exitP.toFixed(1)} mm${exitP > 7 ? ' (눈동자보다 큼)' : ''}`],
+    ['한계 등급 (어두운 하늘)', lim.toFixed(1)], ['분해능 (도스 한계)', `${dawes.toFixed(2)}″`], ['최대 유효 배율', `${Math.round(2 * D)}배`], ['초점비', `f/${(F / D).toFixed(1)}`], ['사진 화각', `${fmtAng(cw)} × ${fmtAng(ch)}`]];
+  $('gear-out').innerHTML = ''; for (const [a, b] of rows) { const r = $('gear-out').insertRow(); r.insertCell().textContent = a; r.insertCell().textContent = b; }
+  if ($('eyepiece').value !== 'custom') return;
+  eyeFov = $('g-eye').checked ? tf : 0; gearLabel = `${D}mm f/${(F / D).toFixed(1)} · ${fe}mm · ${mag.toFixed(0)}배 · 실시야 ${fmtAng(tf)}`;
+  camFrame = $('g-cam').checked ? { w: cw, h: ch, label: `센서 ${sw}×${sh} mm · ${fmtAng(cw)} × ${fmtAng(ch)}` } : null;
+  if (zoom) view.fov = Math.min(100, Math.max(tf, camFrame ? Math.max(cw, ch) * 1.1 : 0) * 1.6);
+}
+for (const id of ['g-ap', 'g-fl', 'g-ep', 'g-af', 'g-sw', 'g-sh', 'g-eye', 'g-cam']) $(id).oninput = $(id).onchange = () => applyGear(false);
+$('gear-close').onclick = () => $('gear').hidden = true;
+
+// ---------- 20. my location and tonight's weather (G9, G10) ----------
+$('geo-btn').onclick = () => {
+  if (!navigator.geolocation) { $('status').textContent = '이 브라우저는 위치 기능을 지원하지 않습니다'; return; }
+  $('status').textContent = '위치 확인 중…';
+  navigator.geolocation.getCurrentPosition((p) => {
+    state.lat = +p.coords.latitude.toFixed(3); state.lon = +p.coords.longitude.toFixed(3); $('lat').value = state.lat; $('lon').value = state.lon; $('place').value = '';
+    $('status').textContent = `내 위치 ${state.lat}°, ${state.lon}° (이 기기 안에서만 씁니다)`; if (!$('wx').hidden) showWeather();
+  }, (e) => { $('status').textContent = `위치를 받지 못했습니다 (${e.code === 1 ? '권한 거부' : '시간 초과 또는 오류'})`; }, { timeout: 12000, maximumAge: 600e3 });
+};
+async function showWeather() {
+  const tb = $('wx-table'), la = state.lat.toFixed(2), lo = state.lon.toFixed(2); $('wx').hidden = false; tb.innerHTML = ''; $('wx-sum').textContent = '예보 받는 중…';
+  $('wx-sub').textContent = `${la}°, ${lo}° · 지금부터 24시간 · 시각은 이 기기의 시간대`;
+  let h; try {
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${lo}&hourly=cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,relative_humidity_2m,visibility,temperature_2m,wind_speed_10m&forecast_days=3&timezone=GMT&timeformat=unixtime`);
+    h = (await r.json()).hourly; if (!h?.time) throw 0;
+  } catch { $('wx-sum').textContent = '예보를 받지 못했습니다. 잠시 뒤 다시 눌러 주세요.'; return; }
+  const now = Date.now(), i0 = Math.max(0, h.time.findIndex(t => t * 1000 > now - 3600e3)), rows = [];
+  tb.innerHTML = '<tr><th>시각</th><th>구름</th><th>저·중·고</th><th>습도</th><th>시정</th><th>기온</th></tr>';
+  for (let i = i0; i < Math.min(h.time.length, i0 + 24); i++) {
+    const t = h.time[i] * 1000, sun = altOf(sunMoonAt(t).Sun, t), dark = sun < -12, c = h.cloud_cover[i], rh = h.relative_humidity_2m[i], vis = h.visibility[i] / 1000;
+    rows.push({ t, dark, c, rh, vis }); const tr = tb.insertRow(); if (!dark) tr.className = 'day';
+    const bar = `<span class="bar" style="width:${Math.round(c / 100 * 34)}px;opacity:${0.35 + c / 160}"></span>`;
+    tr.innerHTML = `<td>${new Date(t).getHours()}시${dark ? '' : sun > 0 ? ' 낮' : ' 박명'}</td><td>${bar}${c}%</td><td>${h.cloud_cover_low[i]}·${h.cloud_cover_mid[i]}·${h.cloud_cover_high[i]}</td><td>${rh}%</td><td>${vis >= 10 ? Math.round(vis) : vis.toFixed(1)} km</td><td>${Math.round(h.temperature_2m[i])}°</td>`;
+  }
+  const good = rows.filter(r => r.dark && r.c <= 30), hm = (t) => `${new Date(t).getHours()}시`;
+  const transp = (r) => r.rh < 65 && r.vis > 20 ? '좋음' : r.rh < 85 && r.vis > 10 ? '보통' : '나쁨';
+  $('wx-sum').textContent = good.length ? `어두운 시간 중 맑은 때(구름 30% 이하): ${good.length}시간, ${hm(good[0].t)}부터 · 대기 투명도 ${transp(good[0])} (습도·시정으로 추정)` : '오늘 밤 어두운 시간에는 구름이 많을 것으로 예보됩니다';
+}
+$('wx-btn').onclick = () => { $('gear').hidden = true; $('wx').hidden ? showWeather() : ($('wx').hidden = true); };
+$('wx-close').onclick = () => $('wx').hidden = true;
 
 // ---------- 11. observing list (kept in this browser) ----------
 const OBS_KEY = 'space-commons-obslist';
@@ -2264,7 +2413,7 @@ function frame(now) {
   updateSkyMatrix();
   if (mode.space) { computeHelio(); stepSpaceFlight(now); spaceKeys(dt); }
   updatePlanets();   // positions for this frame first...
-  updateAsteroids(); updateLight(); updateStations(); updateSkyPhoto();
+  updateAsteroids(); updateLight(); updateStations(); updateNeo(); updateSkyPhoto();
   updateSats();
   stepFlight(now);   // ...then aim the camera at them (aiming at last frame's position made zoomed views shake)
   updateCamera();

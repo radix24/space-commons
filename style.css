@@ -201,3 +201,18 @@ body { position: fixed; inset: 0; } /* never let focus/scrollIntoView shift the 
 /* Korean traditional constellations */
 .lbl.const.kr { color: #d9a46c; letter-spacing: 0; text-transform: none; font-size: 10.5px; }
 .lbl.const.kr.mansion { color: #f0c38a; font-weight: 700; font-size: 11.5px; }
+
+/* 0.0.2d: altitude graph, weather, gear, photo frame */
+#info-alt { margin-top: 8px; }
+#info-alt svg { width: 100%; height: auto; display: block; border-radius: 8px; }
+#info-alt .small { margin-top: 4px; }
+#frame-rect { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); border: 1.5px dashed var(--orbit); pointer-events: none; z-index: 3; }
+#frame-label { position: absolute; left: 0; top: 100%; transform: translateY(4px); white-space: nowrap; font: 11px var(--mono); color: var(--orbit); }
+.wx-sum { margin: 8px 0; font-size: 13px; }
+#wx-table td, #wx-table th { text-align: right; padding: 2px 4px; font-family: var(--mono); font-size: 11.5px; }
+#wx-table td:first-child, #wx-table th:first-child { text-align: left; }
+#wx-table tr.day td { color: var(--mute); }
+#wx-table .bar { display: inline-block; height: 7px; border-radius: 3px; background: #9aa5c0; vertical-align: middle; margin-right: 4px; }
+.gear-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; margin: 8px 0; }
+.gear-grid label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--mute); }
+.gear-grid input { width: 100%; }
