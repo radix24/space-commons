@@ -181,12 +181,20 @@ function circularAt(r) { const o = dominant(r); if (!o) return [0, 0, 0]; const 
 
 // temperature map: each planet's label shows its estimated surface temperature (Earth-like greenhouse), coloured from icy blue to scorching red
 const tempCol = (C) => C < -50 ? '#8fb8ff' : C < 0 ? '#bfe0ff' : C < 50 ? '#9fe0a0' : C < 150 ? '#ffd27a' : C < 400 ? '#ff9a5a' : '#ff5a4a';
+const haloTex = (() => { const cv = document.createElement('canvas'); cv.width = cv.height = 64; const g = cv.getContext('2d'), r = g.createRadialGradient(32, 32, 14, 32, 32, 32);
+  r.addColorStop(0, 'rgba(255,255,255,0)'); r.addColorStop(0.35, 'rgba(255,255,255,.75)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(cv); })();
 function updateTempMap() {
   const on = root.querySelector('.sb-temp')?.checked;
   for (const [b, lb] of view.labels) { if (b.kind !== 'planet') continue;
-    if (!on) { if (lb.dataset.t) { lb.textContent = b.ko; lb.style.color = ''; delete lb.dataset.t; } continue; }
-    const k = ATM.climate(b, teq(b)); if (!k) continue; const C = Math.round(k.Ts - 273.15); if (lb.dataset.t === String(C)) continue;
-    lb.dataset.t = C; lb.textContent = `${b.ko} ${C}°C`; lb.style.color = tempCol(C); }
+    const k = ATM.climate(b, teq(b)), dot = b.mesh?.children[0];
+    // the atmosphere as a halo: wider with pressure, coloured by the most abundant gas
+    const a = b.atm, P = a?.P || 0; let halo = b.mesh?.userData.halo;
+    if (P > 0.005 && b.mesh) { if (!halo) { halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloTex, sizeAttenuation: false, depthTest: false, transparent: true })); halo.renderOrder = 2; b.mesh.add(halo); b.mesh.userData.halo = halo; }
+      const top = Object.entries(a.mix).sort((x, y) => y[1] - x[1])[0]?.[0]; halo.material.color.set(GAS_COL[top] || '#9aa0ae'); halo.scale.setScalar(0.03 + 0.012 * Math.max(0, Math.log10(P) + 3)); halo.visible = true; }
+    else if (halo) halo.visible = false;
+    if (!on) { if (lb.dataset.t) { lb.textContent = b.ko; lb.style.color = ''; delete lb.dataset.t; if (dot) dot.material.color.set(b.color); } continue; }
+    if (!k) continue; const C = Math.round(k.Ts - 273.15); if (lb.dataset.t === String(C)) continue;
+    lb.dataset.t = C; lb.textContent = `${b.ko} ${C}°C`; lb.style.color = tempCol(C); if (dot) dot.material.color.set(tempCol(C)); } // the planet itself takes its temperature colour
 }
 // habitable zones: Kopparapu-style bounds 0.95 and 1.37 sqrt(L) AU
 const hzGroup = new THREE.Group();

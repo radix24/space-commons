@@ -123,6 +123,7 @@ export function englishBodies(PLANETS) { // planets, moons, probes: English name
 // ---------- UI phrases (longest first) ----------
 const PH = [
   // landscapes, surveys, menus and tooltips added in 0.0.9
+  ['일본 별자리', 'Japanese sky culture'], ['인도 별자리 (나크샤트라)', 'Indian sky culture'], ['하와이 항해 별길', 'Hawaiian starlines sky culture'], ['마오리 별자리', 'Māori sky culture'], ['북유럽 별자리', 'Norse sky culture'], ['몽골 별자리', 'Mongolian sky culture'], ['티베트 별자리', 'Tibetan sky culture'], ['이누이트 별자리', 'Inuit sky culture'], ['나바호 별자리', 'Navajo sky culture'], ['아즈텍 별자리', 'Aztec sky culture'],
   ['처음으로', 'Reset'], ['역재생', 'Reverse'], ['보기', 'View'], ['고르기', 'Choose'], ['에리스', 'Eris'], ['하우메아', 'Haumea'], ['마케마케', 'Makemake'], ['모두', 'All'],
   ['소행성 (질량 없음)', 'Asteroid (massless)'], ['적색왜성 (0.2)', 'Red dwarf (0.2)'], ['태양 같은 별', 'Sun-like star'], ['블랙홀 (10 태양질량)', 'Black hole (10 solar masses)'], ['탐사선', 'Probe'], ['저장', 'Save'],
   ['처음 상태로 되돌리기', 'Back to the starting state'], ['시간을 거꾸로', 'Run time backwards'], ['재생 속도', 'Playback speed'], ['선택 해제', 'Deselect'], ['관련 개념 카드 열기', 'Open the related concept card'],

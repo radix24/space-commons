@@ -328,7 +328,17 @@ async function loadKorean() { // 천상열차분야지도 (Stellarium "korean" s
   return koreanLabels.length;
 }
 // other sky cultures (Stellarium data, separate files with their licences: data/LICENSE-skycultures.txt), loaded on first use
-const CULTURES = { chinese: { color: 0xd4a35a, group: new THREE.Group(), labels: [], state: 0 }, egyptian: { color: 0xc8b27a, group: new THREE.Group(), labels: [], state: 0 } };
+const CULTURES = { chinese: { color: 0xd4a35a, group: new THREE.Group(), labels: [], state: 0 }, egyptian: { color: 0xc8b27a, group: new THREE.Group(), labels: [], state: 0 },
+  japanese: { color: 0xe08a9a, group: new THREE.Group(), labels: [], state: 0 },
+  indian: { color: 0xe0b05a, group: new THREE.Group(), labels: [], state: 0 },
+  hawaiian_starlines: { color: 0x5ac8c0, group: new THREE.Group(), labels: [], state: 0 },
+  maori: { color: 0x7ac87a, group: new THREE.Group(), labels: [], state: 0 },
+  norse: { color: 0x9ab0e0, group: new THREE.Group(), labels: [], state: 0 },
+  mongolian: { color: 0xc8a07a, group: new THREE.Group(), labels: [], state: 0 },
+  tibetan: { color: 0xd07a5a, group: new THREE.Group(), labels: [], state: 0 },
+  inuit: { color: 0xa0d0e8, group: new THREE.Group(), labels: [], state: 0 },
+  navajo: { color: 0xd8a878, group: new THREE.Group(), labels: [], state: 0 },
+  aztec: { color: 0xb8d070, group: new THREE.Group(), labels: [], state: 0 } };
 for (const k in CULTURES) { CULTURES[k].group.visible = false; sky.add(CULTURES[k].group); }
 async function loadCulture(key) {
   const C = CULTURES[key]; if (C.state) return; C.state = 1;
@@ -1433,6 +1443,8 @@ function starObj(i) { return { kindName: 'star', i, v: starData.pos[i], name: st
 function dsoObj(o) { return Object.assign(o, { kindName: 'dso' }); }
 function planetObj(p) { return { kindName: 'planet', planet: true, p, name: p.ko }; }
 function pick(x, y) {
+  if (mode.space && galaxy.pts?.visible) for (const gi of galImgs) { const w = gi.cen.clone().sub(sp.pos).normalize(), s = toScreen(w); if (!s || w.dot(camFwd()) < 0) continue;
+    const rpx = Math.max(16, Math.atan(gi.mesh.scale.x / 2 / (gi.mesh.position.length() || 1)) / (pcam.fov / 2 * D2R) * innerHeight / 2); if (Math.hypot(s[0] - x, s[1] - y) < rpx) return gi.o; }
   const fwd = camFwd(); const cosLim = Math.cos(Math.min(89, view.fov) * D2R);
   let best = null, bd = 18;
   const test = (w, mk, bonus = 0) => { if (w.dot(fwd) < cosLim) return; const s = toScreen(w); if (!s) return;
@@ -2687,7 +2699,7 @@ function updateStars3d() {
   P.needsUpdate = true; Mg.needsUpdate = true; s3dMat.uniforms.pr.value = renderer.getPixelRatio();
 }
 function starLabels() {
-  galaxyLabels(); cometLabels();
+  galaxyLabels(); if (sky.visible) cometLabels();
   if (!s3d.far || !$('t-labels').checked) return;
   const m = s3dPts.geometry.attributes.mag.array, fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(sp.quat), cosLim = Math.cos(Math.min(85, view.fov * 0.75) * D2R), v = new THREE.Vector3();
   const lim = view.fov < 20 ? 3.5 : 1.6; let n = 0;
@@ -2757,6 +2769,23 @@ const KPC = 1000 * PC;
 const GAL2EQ = new THREE.Matrix3().set(-0.0548755604, 0.4941094279, -0.8676661490, -0.8734370902, -0.4448296300, -0.1980763734, -0.4838350155, 0.7469822445, 0.4559837762);
 const galToEq = (x, y, z) => new THREE.Vector3(x, y, z).applyMatrix3(GAL2EQ);
 const galaxy = { pts: null, pos: null, w: null, center: galToEq(8.2 * KPC, 0, -0.02 * KPC), ngp: galToEq(0, 0, 1), labels: [] };
+// galaxies shown as real photos (DSS2 colour cutouts, tools/make_galaxy_cutouts.py) at their true direction and distance; click a name for a description
+// key, Korean name, English name, RA, Dec (deg), distance (kpc), photo field (deg), description (ko), description (en)
+const GALAXY_IMG = [
+  ['m31', '안드로메다은하 (M31)', 'Andromeda Galaxy (M31)', 10.68, 41.27, 765, 3.4, '우리 은하에서 가장 가까운 큰 나선은하입니다. 250만 광년 떨어져 있고 별이 약 1조 개로 우리 은하보다 큽니다. 초속 110 km로 다가오고 있어 약 45억 년 뒤 우리 은하와 합쳐집니다.', 'The nearest large spiral, 2.5 million light-years away, with about a trillion stars. It approaches at 110 km/s and will merge with the Milky Way in about 4.5 billion years.'],
+  ['m33', '삼각형자리은하 (M33)', 'Triangulum Galaxy (M33)', 23.46, 30.66, 840, 1.1, '국부은하군에서 세 번째로 큰 나선은하로 270만 광년 거리입니다. 아주 어두운 하늘에서는 맨눈으로도 보이는 가장 먼 천체 가운데 하나입니다. 거대한 별 탄생 구역 NGC 604가 있습니다.', 'The third-largest member of the Local Group, 2.7 million light-years away and one of the most distant naked-eye objects under very dark skies. It hosts the giant star-forming region NGC 604.'],
+  ['lmc', '대마젤란은하', 'Large Magellanic Cloud', 80.89, -69.76, 50, 11, '우리 은하를 도는 위성 은하로 16만 광년 거리입니다. 1987년 이곳에서 터진 초신성 1987A는 근대 이후 가장 가까운 초신성이었고, 별 탄생 구역 타란툴라 성운이 있습니다.', 'A satellite galaxy of the Milky Way 160,000 light-years away. Supernova 1987A, the nearest seen in modern times, exploded here; it also holds the Tarantula Nebula.'],
+  ['smc', '소마젤란은하', 'Small Magellanic Cloud', 13.19, -72.83, 62, 5, '20만 광년 거리의 작은 위성 은하입니다. 대마젤란은하와 가스 다리(마젤란 다리)로 이어져 있어 두 은하가 서로 끌어당기고 있음을 보여 줍니다.', 'A small satellite galaxy 200,000 light-years away, joined to the Large Cloud by a bridge of gas, a sign the two pull on each other.'],
+  ['m81', '보데 은하 (M81)', "Bode's Galaxy (M81)", 148.89, 69.07, 3600, 0.5, '큰곰자리에 있는 1,200만 광년 거리의 나선은하입니다. 이웃한 시가 은하(M82)와 수억 년 전 가까이 스쳐 지나가며 서로의 모양을 흐트러뜨렸습니다.', 'A grand spiral in Ursa Major, 12 million light-years away. A close pass with the Cigar Galaxy (M82) some hundreds of millions of years ago disturbed both.'],
+  ['m82', '시가 은하 (M82)', 'Cigar Galaxy (M82)', 148.97, 69.68, 3600, 0.25, 'M81과의 만남으로 별이 폭발적으로 태어나는 은하입니다. 우리 은하보다 10배 빠르게 별을 만들고, 그 초신성 바람이 은하 위아래로 붉은 가스를 뿜어냅니다.', 'A starburst triggered by its encounter with M81: it forms stars ten times faster than the Milky Way, and supernova winds blow red gas out above and below its disc.'],
+  ['m51', '소용돌이 은하 (M51)', 'Whirlpool Galaxy (M51)', 202.47, 47.20, 7100, 0.25, '2,300만 광년 거리의 나선은하로, 작은 동반 은하 NGC 5195가 나선팔 끝에 붙어 팔을 또렷하게 끌어당기고 있습니다. 1845년 로스 경이 처음으로 나선 구조를 그린 은하입니다.', 'A spiral 23 million light-years away whose small companion NGC 5195 tugs one arm. In 1845 Lord Rosse first drew spiral structure in a galaxy here.'],
+  ['m101', '바람개비 은하 (M101)', 'Pinwheel Galaxy (M101)', 210.80, 54.35, 6400, 0.5, '2,100만 광년 거리, 지름 17만 광년의 정면 나선은하입니다. 2023년 이곳에서 터진 초신성 SN 2023ixf는 지난 10년 사이 가장 가까운 초신성이었습니다.', 'A face-on spiral 21 million light-years away and 170,000 light-years wide. Supernova SN 2023ixf, the nearest in a decade, exploded here in 2023.'],
+  ['m104', '솜브레로 은하 (M104)', 'Sombrero Galaxy (M104)', 190.00, -11.62, 9550, 0.2, '3,100만 광년 거리의 은하로, 거의 옆에서 보이는 원반의 먼지띠와 크게 부푼 중심부가 챙 넓은 모자를 닮았습니다. 중심에 태양 질량 약 10억 배의 블랙홀이 있습니다.', 'A galaxy 31 million light-years away seen nearly edge-on: a dark dust lane and a huge bulge like a broad-brimmed hat. Its central black hole holds about a billion solar masses.'],
+  ['cena', '센타우루스자리 A (NGC 5128)', 'Centaurus A (NGC 5128)', 201.37, -43.02, 3700, 0.5, '1,200만 광년 거리로, 거대 타원은하가 나선은하를 삼키며 생긴 먼지띠가 가운데를 가로지릅니다. 중심 블랙홀이 수십만 광년 길이의 전파 제트를 뿜는 가장 가까운 활동 은하입니다.', 'Twelve million light-years away: a giant elliptical that swallowed a spiral, leaving a dust lane across its middle. The nearest active galaxy, its black hole drives radio jets hundreds of thousands of light-years long.'],
+  ['m87', '처녀자리 A (M87)', 'Virgo A (M87)', 187.71, 12.39, 16400, 0.15, '처녀자리 은하단 중심의 거대 타원은하로 5,300만 광년 거리입니다. 2019년 사건지평선망원경이 이 은하 중심 블랙홀(태양 질량 65억 배)의 그림자를 처음으로 찍었습니다.', 'A giant elliptical at the heart of the Virgo Cluster, 53 million light-years away. In 2019 the Event Horizon Telescope imaged the shadow of its 6.5-billion-solar-mass black hole, the first ever.'],
+  ['n253', '조각가자리 은하 (NGC 253)', 'Sculptor Galaxy (NGC 253)', 11.89, -25.29, 3500, 0.6, '1,150만 광년 거리의 폭발적 별 탄생 은하입니다. 비스듬히 보이는 밝은 원반이라 남쪽 하늘에서 쌍안경으로도 잘 보입니다.', 'A starburst galaxy 11.5 million light-years away. Its bright, steeply tilted disc is an easy binocular target in southern skies.'],
+];
+const galImgs = [];
 // Local Group members: name, RA, Dec (deg), distance (kpc), radius (kpc), inclination (deg, <0: spheroidal), points, position angle
 const LOCAL_GROUP = [['대마젤란은하 (LMC)', 80.89, -69.76, 50, 4.5, 33, 2500, 170], ['소마젤란은하 (SMC)', 13.19, -72.83, 62, 2.5, -1, 1200, 0],
   ['안드로메다은하 (M31)', 10.68, 41.27, 765, 25, 77, 6000, 38], ['삼각형자리은하 (M33)', 23.46, 30.66, 840, 9, 55, 2500, 23],
@@ -2781,6 +2810,13 @@ function buildGalaxy() {
     vertexShader: `attribute vec3 color; attribute float a; varying vec3 vC; varying float vA; uniform float pr; void main(){ gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); vC = color; vA = a; gl_PointSize = clamp(1.6 + a * 2.5, 1.2, 5.0) * pr; }`,
     fragmentShader: `varying vec3 vC; varying float vA; void main(){ vec2 p = gl_PointCoord * 2.0 - 1.0; float r2 = dot(p, p); if (r2 > 1.0 || vA <= 0.0) discard; gl_FragColor = vec4(vC * exp(-r2 * 3.0) * min(vA, 1.0), 1.0); }`,
     transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending });
+  for (const [key, ko, en, ra, dec, kpc, fov, dko, den] of GALAXY_IMG) {
+    const tex = new THREE.TextureLoader().load(`textures/gal_${key}.jpg`); tex.colorSpace = THREE.SRGBColorSpace;
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: tex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, opacity: 0 }));
+    mesh.renderOrder = -1; mesh.frustumCulled = false; mesh.visible = false; planetScene.add(mesh);
+    const cen = eqVec(ra, dec, kpc * KPC), o = { kindName: 'coord', name: EN ? en : ko, ra, dec, note: EN ? den : dko, v: eqVec(ra, dec), galaxy: true };
+    galImgs.push({ mesh, cen, size: fov * D2R * kpc * KPC, o });
+    if (!LOCAL_GROUP.some(l => Math.abs(l[1] - ra) < 0.5 && Math.abs(l[2] - dec) < 0.5)) galaxy.labels.push({ name: o.name, v: cen }); }
   galaxy.pts = new THREE.Points(g, m); galaxy.pts.frustumCulled = false; galaxy.pts.renderOrder = -2; galaxy.pts.visible = false; planetScene.add(galaxy.pts); galaxy.pos = pos; galaxy.w = w;
   const L = (name, r, th) => galaxy.labels.push({ name, v: galToEq((r * Math.cos(th) + 8.2) * KPC, r * Math.sin(th) * KPC, -0.02 * KPC) }), A = (k, r) => armPhase + k * Math.PI / 2 + pitch * Math.log(r / 4);
   galaxy.labels.push({ name: '태양 (여기)', v: new THREE.Vector3() }, { name: '은하 중심 (궁수자리 A*)', v: galaxy.center.clone() });
@@ -2788,15 +2824,18 @@ function buildGalaxy() {
 }
 function updateGalaxy() {
   const d = mode.space ? sp.pos.length() : 0, f = Math.max(0, Math.min(1, (d - 0.6 * KPC) / (2.4 * KPC)));
-  if (!f) { if (galaxy.pts) { galaxy.pts.visible = false; planetGroup.visible = true; } return; }
+  if (!f) { sky.visible = true; if (galaxy.pts) { galaxy.pts.visible = false; planetGroup.visible = true; for (const gi of galImgs) gi.mesh.visible = false; } return; }
   if (!galaxy.pts) buildGalaxy();
   const P = galaxy.pts.geometry.attributes.position, A = galaxy.pts.geometry.attributes.a, k = 1 / Math.max(1e-12, sp.nearestAll || 1), R = 1e5 / k, s = galaxy.pos;
   const cx = sp.pos.x, cy = sp.pos.y, cz = sp.pos.z, ref = 20 * KPC, boost = Math.max(1, (d / (60 * KPC)) ** 1.2); // whole galaxies stay visible from far out
   for (let i = 0, n = galaxy.w.length; i < n; i++) { const x = s[3 * i] - cx, y = s[3 * i + 1] - cy, z = s[3 * i + 2] - cz, dd = Math.hypot(x, y, z) || 1;
     P.array[3 * i] = x / dd * R; P.array[3 * i + 1] = y / dd * R; P.array[3 * i + 2] = z / dd * R; A.array[i] = f * galaxy.w[i] * Math.min(2.5, (ref / dd) ** 1.2 * boost) * 0.55; }
   P.needsUpdate = true; A.needsUpdate = true; galaxy.pts.material.uniforms.pr.value = renderer.getPixelRatio(); galaxy.pts.visible = true;
+  for (const gi of galImgs) { const rel = gi.cen.clone().sub(sp.pos), dd = rel.length() || 1; gi.mesh.position.copy(rel).multiplyScalar(R / dd); gi.mesh.quaternion.copy(sp.quat);
+    gi.mesh.scale.setScalar(gi.size / dd * R); gi.mesh.material.opacity = f * Math.min(1, 0.35 + d / (400 * KPC)); gi.mesh.visible = true; }
   planetGroup.visible = f < 0.5; // the Sun's glow and the planets shrink to nothing at galactic scale
   if (s3dPts && f > 0.5) s3dPts.visible = false; // the nearby-star catalogue collapses into one bright dot from out here
+  sky.visible = d < 60 * KPC; // beyond the Milky Way our star sphere and constellations mean nothing: only galaxies remain
   sp.nearestAll = Math.min(sp.nearestAll || 1e12, d * 0.01);
 }
 function galaxyLabels() {
@@ -3620,7 +3659,7 @@ function drawLabels() {
   discs = [];
   for (const p of PLANETS) if (p.world && p.mesh.visible && p.rpx > 4 && p.world.dot(camFwd()) > 0) { const s = toScreen(p.world); if (s) discs.push([s[0], s[1], p.rpx, mode.space ? p.camDist : p.dist]); }
   const gOn = groundOn();
-  if ($('t-labels').checked) {
+  if ($('t-labels').checked && sky.visible) { // outside the Milky Way only the galaxy labels are drawn
     const fwd = camFwd(), cosLim = Math.cos(Math.min(85, view.fov * 0.75) * D2R);
     const vis = (w) => w.dot(fwd) > cosLim && !(gOn && w.y < 0) && !(siteUp && w.dot(siteUp) < 0); // also hide what is under a landing site's horizon
     const lim = starMat.uniforms.limit.value; const starLim = Math.min(lim - 1.2, 1.2 + 2.5 * Math.log10(70 / view.fov) + 1.2);
