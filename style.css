@@ -178,3 +178,17 @@ body { position: fixed; inset: 0; } /* never let focus/scrollIntoView shift the 
   #tour { top: auto; bottom: 80px; }
   button { padding: 6px 10px; } /* finger-sized */
 }
+
+/* calendar, flybys */
+#cal-list li, #flyby-list li { display: flex; flex-direction: column; gap: 1px; padding: 5px 0; border-top: 1px solid rgba(38,43,77,.6); }
+#cal-list li.day { border: 0; padding: 10px 0 2px; color: var(--orbit); font: 600 12px var(--sans); }
+#cal-list li button, #flyby-list li button { background: none; border: 0; padding: 0; text-align: left; color: var(--ink); font-weight: 600; }
+#cal-list li button:hover, #flyby-list li button:hover { color: var(--orbit); }
+#cal-list li span, #flyby-list li span { color: var(--mute); font-size: 11px; line-height: 1.5; }
+/* satellites */
+.lbl.sat { color: #9aa3c2; font-size: 10px; }
+.lbl.sat::before { content: ''; position: absolute; left: -8px; top: 50%; width: 4px; height: 4px; margin-top: -2px; border-radius: 50%; background: #6b7394; }
+.lbl.sat.lit { color: #e8ecff; }
+.lbl.sat.lit::before { background: #fff; box-shadow: 0 0 4px #fff; }
+.lbl.sat.iss { color: #4FE3C1; font-weight: 700; font-size: 11px; }
+.lbl.sat.iss::before { width: 6px; height: 6px; margin-top: -3px; background: #4FE3C1; }

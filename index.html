@@ -11,6 +11,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<script src="https://cdn.jsdelivr.net/npm/satellite.js@5.0.0/dist/satellite.min.js"></script>
 <script type="importmap">
 { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
 </script>
@@ -40,6 +43,8 @@
   <div id="tools">
     <button id="tonight-btn" class="ground-only" title="지금 볼 수 있는 천체 (T)">지금 하늘</button>
     <button id="today-btn" class="ground-only" title="일출·일몰, 박명, 달, 관측하기 좋은 시간 (Y)">오늘 천문</button>
+    <button id="cal-btn" title="앞으로 90일의 천문 현상">천문 달력</button>
+    <button id="flyby-btn" class="space-only" title="탐사선이 행성을 지나간 순간을 실제 궤도로 재생">명장면</button>
     <button id="obs-btn" title="관측 목록 (O)">관측 목록</button>
     <button id="gyro" title="휴대폰을 하늘에 비추면 그 방향을 보여 줍니다">하늘 비추기</button>
     <button id="tour-btn" title="주요 천체를 차례로 둘러봅니다">투어</button>
@@ -96,9 +101,11 @@
     </select>
     <label class="ground-only" title="지평선 근처의 굴절과 소광"><input type="checkbox" id="t-refr" checked> 대기 효과</label>
     <label class="ground-only"><input type="checkbox" id="t-showers" checked> 유성우</label>
+    <label class="ground-only"><input type="checkbox" id="t-sats" checked> 인공위성</label>
     <label class="space-only"><input type="checkbox" id="t-orbits" checked> 궤도</label>
     <label><input type="checkbox" id="t-mw" checked> 은하수</label>
     <label><input type="checkbox" id="t-lines" checked> 별자리선</label>
+    <label><input type="checkbox" id="t-bounds"> 별자리 경계</label>
     <label><input type="checkbox" id="t-grid"> 적도 격자</label>
     <label><input type="checkbox" id="t-dso" checked> NGC/IC</label>
     <label><input type="checkbox" id="t-exo" checked> 외계행성</label>
@@ -145,6 +152,20 @@
   <h2>오늘의 천문 정보</h2>
   <div id="today-sub" class="small"></div>
   <ul id="today-list"></ul>
+</div>
+
+<div id="cal" class="side" hidden>
+  <button class="x" id="cal-close">×</button>
+  <h2>천문 달력</h2>
+  <div class="small">앞으로 90일 · 누르면 그 순간으로 이동합니다</div>
+  <ul id="cal-list"></ul>
+</div>
+
+<div id="flyby" class="side" hidden>
+  <button class="x" id="flyby-close">×</button>
+  <h2>탐사선 명장면</h2>
+  <div class="small">JPL 궤도 자료로 최근접 2시간 전부터 120배속으로 재생합니다</div>
+  <ul id="flyby-list"></ul>
 </div>
 
 <div id="obs" class="side" hidden>

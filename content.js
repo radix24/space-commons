@@ -84,3 +84,65 @@ export const TOURS = [
     { space: false, o: 'M16', text: '독수리 성운. 허블 망원경의 "창조의 기둥" 사진으로 유명합니다.' },
   ] },
 ];
+
+// Extra moons: one planet-centred ICRF state (km, km/s) from JPL Horizons at 2026-11-01 (tools/fetch_moons_flybys.py),
+// propagated on the circular orbit it defines. H: absolute magnitude.
+export const MOON_STATES = [
+  { name: 'Phobos', ko: '포보스', parent: 'Mars', R: 11.1, H: 11.8, P: 0.31891, jd: 2461345.5, r: [7829.6, -1214.8, -4784.4], v: [0.67031, 1.95911, 0.63296] },
+  { name: 'Deimos', ko: '데이모스', parent: 'Mars', R: 6.2, H: 12.9, P: 1.26244, jd: 2461345.5, r: [21050.6, 193.0, -10358.1], v: [0.23994, 1.22729, 0.51126] },
+  { name: 'Mimas', ko: '미마스', parent: 'Saturn', R: 198, H: 3.3, P: 0.942422, jd: 2461345.5, r: [175689.0, -47358.9, -7129.8], v: [3.62389, 14.04394, -1.53073] },
+  { name: 'Enceladus', ko: '엔켈라두스', parent: 'Saturn', R: 252, H: 2.2, P: 1.370218, jd: 2461345.5, r: [-174084.5, 163201.5, 2957.2], v: [-8.58765, -9.11401, 1.40863] },
+  { name: 'Tethys', ko: '테티스', parent: 'Saturn', R: 531, H: 0.7, P: 1.887802, jd: 2461345.5, r: [-211813.4, 204856.8, -1962.6], v: [-7.85308, -8.11098, 1.17951] },
+  { name: 'Dione', ko: '디오네', parent: 'Saturn', R: 561, H: 0.8, P: 2.736915, jd: 2461345.5, r: [-92074.6, -365203.0, 34657.4], v: [9.66691, -2.50377, -0.64549] },
+  { name: 'Rhea', ko: '레아', parent: 'Saturn', R: 763, H: 0.1, P: 4.5175, jd: 2461345.5, r: [507453.5, -136777.4, -31477.6], v: [2.15267, 8.17582, -0.81801] },
+  { name: 'Iapetus', ko: '이아페투스', parent: 'Saturn', R: 734, H: 1.5, P: 79.3215, jd: 2461345.5, r: [1960047.5, 2876828.5, 142678.5], v: [-2.64588, 1.83833, 0.86681] },
+  { name: 'Miranda', ko: '미란다', parent: 'Uranus', R: 236, H: 3.6, P: 1.413479, jd: 2461345.5, r: [124426.6, -34954.6, -13290.0], v: [-0.17234, 1.79733, -6.42784] },
+  { name: 'Ariel', ko: '아리엘', parent: 'Uranus', R: 579, H: 1.7, P: 2.520379, jd: 2461345.5, r: [-174792.0, 18499.7, 74773.5], v: [1.88807, -1.77558, 4.85855] },
+  { name: 'Umbriel', ko: '움브리엘', parent: 'Uranus', R: 585, H: 2.6, P: 4.144177, jd: 2461345.5, r: [233156.2, -16416.8, -128466.3], v: [-2.0246, 1.53757, -3.89897] },
+  { name: 'Titania', ko: '티타니아', parent: 'Uranus', R: 789, H: 1.3, P: 8.705872, jd: 2461345.5, r: [425806.5, -84021.8, -42728.0], v: [-0.16199, 1.00687, -3.50018] },
+  { name: 'Oberon', ko: '오베론', parent: 'Uranus', R: 761, H: 1.5, P: 13.463239, jd: 2461345.5, r: [-492363.8, 180875.4, -257667.1], v: [-1.56016, -0.39318, 2.70364] },
+  { name: 'Triton', ko: '트리톤', parent: 'Neptune', R: 1353, H: -1.2, P: 5.876854, jd: 2461345.5, r: [-60856.3, -178766.2, -300370.7], v: [-3.65108, -1.69596, 1.74932] },
+];
+
+// Spacecraft encounters replayed from data/flybys.json (planet-centred JPL tracks).
+export const FLYBY_INFO = {
+  'v1-jupiter': { ko: '보이저 1호 · 목성', text: '1979년 3월 5일. 목성 중심에서 약 35만 km를 지나며 이오의 화산 활동을 처음 발견했습니다.' },
+  'v2-jupiter': { ko: '보이저 2호 · 목성', text: '1979년 7월 9일. 유로파의 얼음 표면과 목성의 고리를 자세히 찍었습니다.' },
+  'v1-saturn': { ko: '보이저 1호 · 토성', text: '1980년 11월 12일. 타이탄을 가까이 관측한 뒤 황도면을 벗어나 성간 공간으로 향했습니다.' },
+  'v2-saturn': { ko: '보이저 2호 · 토성', text: '1981년 8월 26일. 토성의 중력으로 방향을 바꿔 천왕성으로 향했습니다.' },
+  'v2-uranus': { ko: '보이저 2호 · 천왕성', text: '1986년 1월 24일. 지금까지 천왕성을 가까이 방문한 유일한 탐사선입니다.' },
+  'v2-neptune': { ko: '보이저 2호 · 해왕성', text: '1989년 8월 25일. 해왕성 구름 꼭대기에서 약 4,500 km 위를 지나 트리톤으로 향했습니다.' },
+  'nh-jupiter': { ko: '뉴호라이즌스 · 목성', text: '2007년 2월 28일. 목성의 중력으로 속도를 얻어 명왕성까지 가는 시간을 약 3년 줄였습니다.' },
+  'nh-pluto': { ko: '뉴호라이즌스 · 명왕성', text: '2015년 7월 14일. 표면에서 약 12,500 km를 지나며 하트 모양의 평원을 촬영했습니다.' },
+  'juno-joi': { ko: '주노 · 목성 궤도 진입', text: '2016년 7월 5일. 엔진을 35분 동안 분사해 목성 극궤도에 들어갔습니다.' },
+  'psp-perihelion': { ko: '파커 · 태양 최근접', text: '2024년 12월 24일. 태양 표면에서 약 610만 km 거리를 초속 약 190 km로 지나갔습니다.' },
+  'bepi-mercury': { ko: '베피콜롬보 · 수성', text: '2025년 1월 8일. 수성 표면 약 300 km 위를 지나며 북극의 영구 그늘 지역을 찍었습니다.' },
+  'clipper-mars': { ko: '유로파 클리퍼 · 화성', text: '2025년 3월 1일. 화성 표면 약 900 km 위를 지나며 중력으로 궤도를 바꿨습니다.' },
+};
+
+// Eclipses 2026-2035 (dates UT, NASA catalogue). The app finds the moment of greatest eclipse with its own ephemeris.
+// place: a location on or near the path of totality/annularity, used when jumping to a solar eclipse.
+export const ECLIPSES = [
+  { type: 'solar', kind: '개기일식', date: '2026-08-12', place: [42.34, -3.70, '스페인 부르고스'] },
+  { type: 'lunar', kind: '부분월식', date: '2026-08-28' },
+  { type: 'solar', kind: '금환일식', date: '2027-02-06', place: [-33.0, -68.5, '아르헨티나 멘도사 부근'] },
+  { type: 'solar', kind: '개기일식', date: '2027-08-02', place: [25.69, 32.64, '이집트 룩소르'] },
+  { type: 'solar', kind: '금환일식', date: '2028-01-26', place: [-2.2, -79.9, '에콰도르 과야킬 부근'] },
+  { type: 'lunar', kind: '부분월식', date: '2028-01-12' },
+  { type: 'lunar', kind: '부분월식', date: '2028-07-06' },
+  { type: 'solar', kind: '개기일식', date: '2028-07-22', place: [-33.87, 151.21, '호주 시드니'] },
+  { type: 'lunar', kind: '개기월식', date: '2028-12-31' },
+  { type: 'lunar', kind: '개기월식', date: '2029-06-26' },
+  { type: 'lunar', kind: '개기월식', date: '2029-12-20' },
+  { type: 'solar', kind: '금환일식', date: '2030-06-01', place: [43.06, 141.35, '일본 삿포로'] },
+  { type: 'lunar', kind: '부분월식', date: '2030-06-15' },
+  { type: 'solar', kind: '개기일식', date: '2030-11-25', place: [-29.0, 25.0, '남아프리카공화국 중부'] },
+  { type: 'lunar', kind: '개기월식', date: '2032-04-25' },
+  { type: 'lunar', kind: '개기월식', date: '2032-10-18' },
+  { type: 'solar', kind: '개기일식', date: '2033-03-30', place: [71.29, -156.79, '미국 알래스카 우트키아빅'] },
+  { type: 'lunar', kind: '개기월식', date: '2033-04-14' },
+  { type: 'lunar', kind: '개기월식', date: '2033-10-08' },
+  { type: 'solar', kind: '개기일식', date: '2034-03-20', place: [15.0, 18.0, '차드'] },
+  { type: 'lunar', kind: '부분월식', date: '2034-09-28' },
+  { type: 'solar', kind: '개기일식', date: '2035-09-02', place: [39.02, 125.75, '평양'] },
+];
