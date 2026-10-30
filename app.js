@@ -1187,6 +1187,26 @@ const skyDomeMat = new THREE.ShaderMaterial({
   side: THREE.BackSide, depthTest: false, depthWrite: false,
 });
 const skyDome = new THREE.Mesh(new THREE.SphereGeometry(1150, 64, 32), skyDomeMat); skyDome.renderOrder = -1; skyDome.visible = false; scene.add(skyDome);
+// night sky light: airglow brightening toward the horizon (van Rhijn), the warm light-pollution dome, and zodiacal light
+// rising along the ecliptic from the Sun's side after dusk and before dawn
+const nightGlowMat = new THREE.ShaderMaterial({
+  uniforms: { sunDir: { value: new THREE.Vector3(0, -1, 0) }, eclPole: { value: new THREE.Vector3(0, 1, 0) }, lp: { value: 0 }, k: { value: 1 } },
+  vertexShader: `varying vec3 vP; void main(){ vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: `uniform vec3 sunDir, eclPole; uniform float lp, k; varying vec3 vP;
+    void main(){
+      vec3 d = normalize(vP); float h = max(d.y, 0.0);
+      float vr = 1.0 / sqrt(1.0 - 0.96 * (1.0 - h * h));
+      vec3 air = vec3(0.020, 0.028, 0.016) * vr;
+      vec3 dome = vec3(0.16, 0.11, 0.06) * lp * (exp(-h * 9.0) + 0.18 * exp(-h * 2.0));
+      vec3 sp = normalize(sunDir - eclPole * dot(sunDir, eclPole));
+      float el = abs(dot(d, eclPole)), along = dot(d, sp);
+      float zl = exp(-el * el * 30.0) * pow(max(along, 0.0), 3.0) * smoothstep(-0.38, -0.30, sunDir.y) * (1.0 - smoothstep(-0.22, -0.16, sunDir.y));
+      vec3 col = air + dome + vec3(0.07, 0.065, 0.05) * zl * (1.0 - lp);
+      gl_FragColor = vec4(col * k * step(-0.02, d.y), 1.0);
+    }`,
+  side: THREE.BackSide, depthTest: false, depthWrite: false, blending: THREE.AdditiveBlending, transparent: true,
+});
+const nightGlow = new THREE.Mesh(new THREE.SphereGeometry(1140, 64, 32), nightGlowMat); nightGlow.renderOrder = -1; nightGlow.visible = false; scene.add(nightGlow);
 const groundOn = () => !mode.space && $('t-ground').checked;
 const cardinals = [['N', 0], ['NE', 45], ['E', 90], ['SE', 135], ['S', 180], ['SW', 225], ['W', 270], ['NW', 315]]
   .map(([n, az]) => ({ name: n, w: new THREE.Vector3(Math.sin(az * D2R), 0.005, -Math.cos(az * D2R)) }));
@@ -2588,10 +2608,10 @@ function updateHorizon() {
 // ---------- 25. constellation artwork (G7): Johan Meuris' drawings, tinted in Space Commons teal ----------
 const artGroup = new THREE.Group(); artGroup.visible = false; sky.add(artGroup);
 const artMat = (tex) => new THREE.ShaderMaterial({
-  uniforms: { map: { value: tex }, op: { value: 0.35 } },
+  uniforms: { map: { value: tex }, op: { value: 0.55 } },
   vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
   fragmentShader: `uniform sampler2D map; uniform float op; varying vec2 vUv;
-    void main(){ float l = texture2D(map, vUv).r / 0.62; l = 0.25 * l + 0.75 * smoothstep(0.55, 1.0, l); gl_FragColor = vec4(vec3(0.31, 0.89, 0.76) * l * op, 1.0); }`,
+    void main(){ float l = texture2D(map, vUv).r / 0.62; l = 0.22 * l + 0.85 * smoothstep(0.5, 1.0, l); gl_FragColor = vec4(vec3(0.31, 0.89, 0.76) * l * op, 1.0); }`,
   transparent: true, depthTest: false, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
 });
 let artLoaded = false;
@@ -2832,6 +2852,9 @@ function frame(now) {
   // Bortle class sets the naked-eye limiting magnitude and how much Milky Way survives (ground mode only)
   const bortle = gOn ? +$('bortle').value : 1;
   const NELM = [7.6, 7.1, 6.6, 6.2, 5.7, 5.2, 4.7, 4.2, 3.8], MWK = [1, 0.95, 0.8, 0.55, 0.3, 0.12, 0.04, 0, 0];
+  nightGlow.visible = gOn && !!PLANETS[0].world && $('t-refr').checked;
+  if (nightGlow.visible) { const u = nightGlowMat.uniforms; u.sunDir.value.copy(PLANETS[0].world); u.eclPole.value.copy(eqVec(270, 66.56, 1)).transformDirection(sky.matrixWorld);
+    u.lp.value = (bortle - 1) / 8; u.k.value = 1 - skyDayK; }
   const atmo = gOn && $('t-refr').checked; atmoU.refractOn.value = atmo ? 1 : 0; atmoU.extK.value = atmo ? 0.25 : 0;
   if (gOn && bortle > 3) bg.lerp(new THREE.Color(0x2a2620), (bortle - 3) / 6 * 0.35 * (1 - skyDayK)); renderer.setClearColor(bg); // skyglow
   starMat.uniforms.limit.value = Math.min(view.fov > 30 ? 8.5 : MOBILE ? 11 : 12.5, (gOn ? NELM[bortle - 1] : 6.4) + (view.fov > 30 ? 2.2 : 3) * zoom) - day * 5; // deeper when zoomed: Gaia tiles
