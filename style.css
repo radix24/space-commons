@@ -382,3 +382,6 @@ input[type=number], input[type=date], input[type=datetime-local] { font-family: 
 .sz-canvas { display: block; width: 100%; background: #05070d; }
 .sz-info { margin-top: 8px; }
 .sz-tabs button.on { color: #05070d; }
+.lbl.small { color: #d8c79a; font-size: 11px; padding-left: 9px; }
+.lbl.small::before { content: ''; position: absolute; left: 0; top: 50%; width: 4px; height: 4px; margin-top: -2px; background: #d8c79a; }
+.lbl.small.comet { color: #9fd6ff; } .lbl.small.comet::before { background: #9fd6ff; width: 5px; height: 5px; border-radius: 50%; }

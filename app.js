@@ -598,7 +598,7 @@ const PLANETS = [
   { name: 'Europa', img: 'textures/2k_europa.jpg', ko: '유로파', parent: 'Jupiter', R: 1561, pole: [268.06, 64.5], tex: () => rocky('#d9cfbf', ['#a0785a', '#f4efe6'], 43), period: 3.551 },
   { name: 'Ganymede', img: 'textures/2k_ganymede.jpg', ko: '가니메데', parent: 'Jupiter', R: 2634, pole: [268.06, 64.5], tex: () => rocky('#8f8578', ['#5d544a', '#c9c2b5'], 47, 120), period: 7.155 },
   { name: 'Callisto', img: 'textures/2k_callisto.jpg', ko: '칼리스토', parent: 'Jupiter', R: 2410, pole: [268.06, 64.5], tex: () => rocky('#5e554b', ['#3b342d', '#a59c8f'], 53, 400), period: 16.689 },
-  { name: 'Ceres', img: 'textures/2k_ceres.jpg', ko: '세레스', img: 'textures/2k_ceres_fictional.jpg', R: 470, pole: [291.4, 66.8], period: 0.378, small: '왜행성',
+  { name: 'Ceres', img: 'textures/2k_ceres.jpg', ko: '세레스', R: 470, pole: [291.4, 66.8], period: 0.378, small: '왜행성',
     sb: { epoch: 2461200.5, a: 2.765552595034094, e: .07969229514816586, i: 10.58802780183462, om: 80.24862682043221, w: 73.29421453021587, ma: 274.4193463761342, n: .21430445064843 } },
   { name: 'Vesta', img: 'textures/2k_vesta.jpg', ko: '베스타', R: 263, pole: [309, 42], period: 0.223, small: '소행성', tex: () => rocky('#8f8a80', ['#5f5a52', '#b8b2a6'], 61, 200),
     sb: { epoch: 2461200.5, a: 2.361365965127599, e: .09020374382834395, i: 7.143925545058711, om: 103.701293265032, w: 151.4686478221564, ma: 81.19015607686903, n: .2716183613599909 } },
@@ -824,6 +824,39 @@ fetch('data/asteroids.json').then(r => r.json()).then(js => {
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('el1', new THREE.BufferAttribute(e1, 4)); g.setAttribute('el2', new THREE.BufferAttribute(e2, 3));
   asteroidPts = new THREE.Points(g, asteroidMat); asteroidPts.frustumCulled = false; asteroidPts.renderOrder = 2; planetGroup.add(asteroidPts);
 }).catch(() => {});
+// named bright asteroids and active comets (JPL SBDB, data/smallbodies.json): placed in the ground sky from their orbits
+const smallBodies = []; let smallT = NaN;
+fetch('data/smallbodies.json').then(r => r.json()).then(js => {
+  const have = new Set(PLANETS.map(p => p.name));  // Ceres, Vesta, Pluto... also exist as full bodies: keep for search, skip their labels
+  for (const r of js.ast) smallBodies.push({ kindName: 'small', comet: false, name: r[0], H: r[1], G: r[2], el: r.slice(3), dup: have.has(r[0].replace(/^\d+ /, '')) });
+  for (const r of js.com) smallBodies.push({ kindName: 'small', comet: true, name: r[0], M1: r[1], K1: r[2], el: r.slice(3) });
+  smallT = NaN; updateSmallBodies();
+  if (searchIndex.size) for (const o of smallBodies) searchIndex.set(o.name.toLowerCase().replace(/\s+/g, ''), () => o);
+}).catch(() => {});
+function smallHelio(o, jdT) { // heliocentric J2000 ecliptic position in AU from elements (ellipse, or hyperbola/near-parabola for comets)
+  const k = 0.01720209895; let x, y;
+  if (!o.comet) { const [a, e, , , , ma, ep] = o.el, M = (ma * D2R + k / Math.sqrt(a ** 3) * (jdT - ep)) % (2 * Math.PI);
+    let E = M; for (let i = 0; i < 12; i++) E -= (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E)); x = a * (Math.cos(E) - e); y = a * Math.sqrt(1 - e * e) * Math.sin(E); }
+  else { const [q, e, , , , tp] = o.el, dt = jdT - tp;
+    if (e < 0.98) { const a = q / (1 - e), M = k / Math.sqrt(a ** 3) * dt; let E = M; for (let i = 0; i < 30; i++) E -= (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+      x = a * (Math.cos(E) - e); y = a * Math.sqrt(1 - e * e) * Math.sin(E); }
+    else if (e > 1.02) { const a = q / (e - 1), M = k / Math.sqrt(a ** 3) * dt; let F = Math.asinh(M / e); for (let i = 0; i < 40; i++) F -= (e * Math.sinh(F) - F - M) / (e * Math.cosh(F) - 1);
+      x = a * (e - Math.cosh(F)); y = a * Math.sqrt(e * e - 1) * Math.sinh(F); }
+    else { const W = 3 * k / Math.sqrt(2 * q ** 3) * dt, Y = Math.cbrt(W + Math.sqrt(W * W + 1)), s = Y - 1 / Y; x = q * (1 - s * s); y = 2 * q * s; } } // Barker's equation
+  const I = o.el[2], O = o.el[3], w = o.el[4];  // same slots for both kinds
+  const cO = Math.cos(O * D2R), sO = Math.sin(O * D2R), ci = Math.cos(I * D2R), si = Math.sin(I * D2R), cw = Math.cos(w * D2R), sw = Math.sin(w * D2R);
+  return new THREE.Vector3((cw * cO - sw * sO * ci) * x + (-sw * cO - cw * sO * ci) * y, (cw * sO + sw * cO * ci) * x + (-sw * sO + cw * cO * ci) * y, sw * si * x + cw * si * y);
+}
+const smallLim = () => Math.min(starMat.uniforms.limit.value + 1, view.fov > 40 ? 7.5 : view.fov > 10 ? 10 : 12.5);
+function updateSmallBodies() {
+  if (!smallBodies.length || Math.abs(state.time - smallT) < 600e3) return; smallT = state.time;
+  const J = jd(state.time), T = (J - 2451545) / 36525, earth = helio('Earth', T);
+  for (const o of smallBodies) { const h = smallHelio(o, J), g = h.clone().sub(earth), r = h.length(), d = g.length();
+    o.v = ecl2eq(g).normalize(); o.r = r; o.d = d; ({ ra: o.ra, dec: o.dec } = vecToRaDec(o.v));
+    if (o.comet) o.mag = o.M1 + 5 * Math.log10(d) + o.K1 * Math.log10(r);
+    else { const cosA = Math.max(-1, Math.min(1, (r * r + d * d - earth.lengthSq()) / (2 * r * d))), al = Math.acos(cosA), t = Math.tan(al / 2);
+      o.mag = o.H + 5 * Math.log10(r * d) - 2.5 * Math.log10((1 - o.G) * Math.exp(-3.33 * t ** 0.63) + o.G * Math.exp(-1.87 * t ** 1.22)); } }
+}
 function updateAsteroids() {
   if (!asteroidPts) return;
   asteroidPts.visible = mode.space && $('t-asteroids').checked;
@@ -1297,6 +1330,8 @@ function pick(x, y) {
     if (!(EXO_FAMOUS.has(h.name) && view.fov < 40) && view.fov >= 4 && !(h.vmag != null && h.vmag <= 6.5)) continue;
     const w = h.v.clone().applyMatrix4(sky.matrixWorld); if (w.dot(fwd) < cosLim) continue;
     const s = toScreen(w); if (!s) continue; const d = Math.hypot(s[0] - x, s[1] - y) + 4; if (d < bd) { bd = d; best = h; } }
+  if (!mode.space) for (const o of smallBodies) { if (!o.v || o.mag > smallLim()) continue; const w = o.v.clone().applyMatrix4(sky.matrixWorld); if (w.dot(fwd) < cosLim) continue;
+    const s = toScreen(w); if (!s) continue; const d = Math.hypot(s[0] - x, s[1] - y) - 3; if (d < bd) { bd = d; best = o; } }
   if ($('t-dso').checked) {
     const ppd = innerHeight / view.fov;
     for (const o of dsos) { const px = o.maj / 60 * ppd; if (px < 4 && !(o.messier && view.fov < 60)) continue;
@@ -1406,6 +1441,14 @@ function select(o) {
     if (o.vmag != null) row('별의 겉보기 등급', o.vmag.toFixed(2) + (o.vmag > 6.5 ? ' (맨눈으로 안 보임)' : ''));
     if (o.teff) row('별의 표면 온도', `${o.teff.toLocaleString()} K`); const L = lumOf(o); if (L) row('별의 밝기 (태양=1)', L < 0.01 ? L.toExponential(1) : L.toFixed(3));
     exoDetail(o);
+  } else if (o.kindName === 'small') {
+    ra = o.ra; dec = o.dec;
+    $('info-title').textContent = o.name; $('info-sub').textContent = `${o.comet ? '혜성' : '소행성'} · 궤도: JPL SBDB`;
+    row('겉보기 등급 (예상)', `${o.mag.toFixed(1)}${o.mag > 6.5 ? (o.mag > 9.5 ? ' (망원경 필요)' : ' (쌍안경 필요)') : ''}`);
+    row('태양으로부터', `${o.r.toFixed(2)} AU`); row('지구로부터', `${o.d.toFixed(2)} AU`);
+    if (o.comet) { row('근일점 거리', `${o.el[0].toFixed(2)} AU`); row('근일점 통과', new Date((o.el[5] - 2440587.5) * 86400e3).toLocaleDateString(LOCALE)); row('이심률', o.el[1].toFixed(3) + (o.el[1] >= 1 ? ' (다시 돌아오지 않는 궤도)' : ''));
+      row('참고', '혜성 밝기는 예측과 크게 다를 수 있습니다'); }
+    else { row('절대 등급 H', o.H.toFixed(1)); row('궤도 긴반지름', `${o.el[0].toFixed(3)} AU`); row('공전 주기', `${(o.el[0] ** 1.5).toFixed(2)}년`); }
   } else if (o.kindName === 'star') {
     ({ ra, dec } = vecToRaDec(o.v));
     $('info-title').textContent = o.name; $('info-sub').textContent = '항성 · ' + (starData.desig[o.i] || `HIP ${starData.id[o.i]}`);
@@ -1734,6 +1777,7 @@ function buildSearch() {
   for (const st of sites) { add(st.ko, () => st, st.ko); add(st.name, () => st, null); }
   add('ISS', () => sats.find(s => s.iss), 'ISS');
   add('다누리', () => planetObj(PLANETS.find(p => p.name === 'Danuri')), EN ? null : '다누리');
+  for (const o of smallBodies) add(o.name, () => o, o.comet || /^[1-9] |^1[0-9] /.test(o.name) ? o.name : null);
   for (const h of exo.hosts) { add(h.name, () => h, EXO_FAMOUS.has(h.name) ? h.name : null); for (const p of h.planets) add(`${h.name} ${p[0]}`, () => h); }
   for (let i = 0; i < starData.pos.length; i++) { const n = starData.proper[i]; if (n) add(n, () => starObj(i), n); add('HIP' + starData.id[i], () => starObj(i)); }
   dl.innerHTML = opts.map(s => `<option value="${s.replace(/"/g, '&quot;')}">`).join('');
@@ -2807,6 +2851,9 @@ function drawLabels() {
       const w = starData.pos[i].clone().applyMatrix4(sky.matrixWorld); if (!vis(w)) continue;
       const s = toScreen(w); if (s) { label(s[0], s[1], starData.proper[i] || starData.name[i], 'star'); n++; }
     }
+    if (dark && !mode.space && $('t-dso').checked) { const L = smallLim(); let sn = 0;
+      for (const o of smallBodies) { if (!o.v || o.dup || o.mag > L || sn > 40) continue; const w = o.v.clone().applyMatrix4(sky.matrixWorld); if (!vis(w)) continue;
+        const s = toScreen(w); if (s) { label(s[0], s[1], o.comet ? o.name.replace(/^C\/|^P\//, '').replace(/\s*\(.*\)/, (m) => view.fov < 20 ? m : '') : o.name.replace(/^\d+ /, ''), o.comet ? 'small comet' : 'small'); sn++; } } }
     if (dark && $('t-lines').checked && $('skyculture').value === 'korean') { let kn = 0; // Korean names; small asterisms only when zoomed in
       for (const c of koreanLabels) { if (kn > 90 || (c.n < 3 && view.fov > 35 && !c.mansion)) continue; const w = c.v.clone().applyMatrix4(sky.matrixWorld); if (!vis(w)) continue;
         const s = toScreen(w); if (s) { label(s[0], s[1], view.fov < 30 && c.hanja && !EN ? `${c.name} ${c.hanja}` : c.name, c.mansion ? 'const kr mansion' : 'const kr'); kn++; } } }
@@ -2877,7 +2924,7 @@ function frame(now) {
   updateSkyMatrix();
   if (mode.space) { computeHelio(); stepSpaceFlight(now); spaceKeys(dt); }
   updatePlanets();   // positions for this frame first...
-  updateAsteroids(); updateLight(); updateStations(); updateNeo(); updateStars3d(); updateGaia(); updateHorizon(); updateArt(); updateAnalemma(); updateSkyPhoto();
+  updateAsteroids(); updateSmallBodies(); updateLight(); updateStations(); updateNeo(); updateStars3d(); updateGaia(); updateHorizon(); updateArt(); updateAnalemma(); updateSkyPhoto();
   updateSats();
   stepFlight(now);   // ...then aim the camera at them (aiming at last frame's position made zoomed views shake)
   updateCamera();
