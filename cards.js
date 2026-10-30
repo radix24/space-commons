@@ -593,9 +593,9 @@ const EXTRA = [
         const A = +As.value; dot(K.g, P.X(A), P.Y(BA(A)), 5, C.amber); const nm = NAME[A] || Object.entries(NAME).sort((a, b) => Math.abs(a[0] - A) - Math.abs(b[0] - A))[0][1] + ' 근처';
         R([['원소', nm], ['만드는 곳', A <= 7 ? '빅뱅' : A <= 56 ? '별 속 핵융합' : A <= 209 ? '거성의 s 과정, 초신성·중성자별 충돌의 r 과정' : '주로 r 과정 (중성자별 충돌)']]); }; } },
   { id: 'darkmatter', level: '교양', title: '은하 회전 곡선과 암흑 물질', tag: '보이는 것보다 훨씬 무겁다',
-    eq: String.raw`v(r) = \sqrt{\frac{G M(<r)}{r}}`,
+    eq: String.raw`v(r) = \sqrt{\frac{G M(\lt r)}{r}}`,
     body: `별과 가스만 있다면 은하 바깥쪽 별은 태양계 바깥 행성처럼 느리게 돌아야 합니다. 그런데 실제로는 바깥까지 거의 같은 속도로 돕니다(평평한 회전 곡선). 보이지 않는 질량, 암흑 물질이 은하를 감싸고 있다는 가장 직접적인 증거입니다. 1970년대 베라 루빈이 확립했습니다.`,
-    deep: String.raw`평평한 곡선은 <span class="tex">M(<r) \propto r</span>, 즉 밀도 <span class="tex">\rho \propto r^{-2}</span>인 헤일로를 뜻합니다. 은하단의 중력 렌즈, 우주 배경 복사의 요동, 총알 은하단도 같은 결론을 줍니다. 우주 전체 에너지의 약 27%가 암흑 물질, 5%가 보통 물질입니다. 정체는 아직 모릅니다.`,
+    deep: String.raw`평평한 곡선은 <span class="tex">M(\lt r) \propto r</span>, 즉 밀도 <span class="tex">\rho \propto r^{-2}</span>인 헤일로를 뜻합니다. 은하단의 중력 렌즈, 우주 배경 복사의 요동, 총알 은하단도 같은 결론을 줍니다. 우주 전체 에너지의 약 27%가 암흑 물질, 5%가 보통 물질입니다. 정체는 아직 모릅니다.`,
     widget(box) { const K = canvas(box), hs = slider(box, '암흑 물질 헤일로 세기', 0, 2, 0.01, 1), R = readout(box);
       return () => { clear(K); const xs = []; for (let r = 0.2; r <= 30; r += 0.2) xs.push(r);
         const vis = (r) => { const Mb = 1.5e10 * r ** 2 / (r + 0.6) ** 2, Md = 6e10 * (1 - (1 + r / 3) * Math.exp(-r / 3)); return Math.sqrt(4.30e-6 * (Mb + Md) / r); }; // kpc, Msun, km/s
@@ -659,7 +659,7 @@ const QUIZ = {
   remnants: { q: '태양 질량 블랙홀의 사건의 지평선 반지름은 약 몇 km일까요?', a: 3, tol: 0.1, unit: 'km', why: 'r_s = 2GM/c² ≈ 2.95 km.' },
   hubble: { q: 'H₀ = 70 km/s/Mpc일 때 200 Mpc 떨어진 은하의 후퇴 속도는 몇 km/s일까요?', a: 14000, tol: 100, unit: 'km/s', why: 'v = 70 × 200 = 14,000 km/s.' },
   distladder: { q: '안드로메다 은하까지 거리를 재는 데 쓰는 계단은?', opts: ['레이더', '연주 시차', '세페이드 변광성', '허블 법칙'], a: 2, why: '77만 pc는 시차로는 너무 멀고 허블 법칙으로는 너무 가까워, 세페이드를 씁니다(허블, 1924).' },
-  darkmatter: { q: '평평한 회전 곡선은 은하의 질량 분포가 어떻다는 뜻일까요?', opts: ['중심에 몰려 있다', '바깥까지 질량이 계속 늘어난다', '질량이 없다'], a: 1, why: 'v가 일정하면 M(<r) ∝ r로 바깥까지 보이지 않는 질량이 늘어납니다.' },
+  darkmatter: { q: '평평한 회전 곡선은 은하의 질량 분포가 어떻다는 뜻일까요?', opts: ['중심에 몰려 있다', '바깥까지 질량이 계속 늘어난다', '질량이 없다'], a: 1, why: 'v가 일정하면 M(&lt;r) ∝ r로 바깥까지 보이지 않는 질량이 늘어납니다.' },
   cmb: { q: '우주 배경 복사가 나올 때(z ≈ 1,100) 온도는 약 몇 K일까요?', a: 3000, tol: 100, unit: 'K', why: '2.7255 × 1,101 ≈ 3,000 K.' },
   galaxy: { q: '우주의 별 생성이 가장 활발했던 때는 약 몇십억 년 전일까요?', a: 10, tol: 1, unit: '십억 년 전', why: '적색편이 약 2(우주 나이 약 33억 년), 즉 약 100억 년 전입니다.' },
 };
