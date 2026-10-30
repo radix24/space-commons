@@ -2355,19 +2355,26 @@ function altGraph(o, ra, dec) {
 const GEAR_KEY = 'space-commons-gear';
 try { const g = JSON.parse(localStorage.getItem(GEAR_KEY)); if (g) for (const [k, v] of Object.entries(g)) if ($(k)) { if ($(k).type === 'checkbox') $(k).checked = v; else $(k).value = v; } } catch {}
 function applyGear(zoom) {
-  const v = (id) => Math.max(0.1, +$(id).value || 0), D = v('g-ap'), F = v('g-fl'), fe = v('g-ep'), af = v('g-af'), sw = v('g-sw'), sh = v('g-sh');
+  const v = (id) => Math.max(0.1, +$(id).value || 0), D = v('g-ap'), F = v('g-fl') * +$('g-barlow').value, fe = v('g-ep'), af = v('g-af'), sw = v('g-sw'), sh = v('g-sh');
   const mag = F / fe, tf = af / mag, exitP = D / mag, lim = 2.7 + 5 * Math.log10(D), dawes = 116 / D;
   const cw = 2 * Math.atan(sw / 2 / F) * R2D, ch = 2 * Math.atan(sh / 2 / F) * R2D;
-  try { localStorage.setItem(GEAR_KEY, JSON.stringify(Object.fromEntries(['g-ap', 'g-fl', 'g-ep', 'g-af', 'g-sw', 'g-sh', 'g-eye', 'g-cam'].map(k => [k, $(k).type === 'checkbox' ? $(k).checked : $(k).value])))); } catch {}
+  try { localStorage.setItem(GEAR_KEY, JSON.stringify(Object.fromEntries(['g-ap', 'g-fl', 'g-ep', 'g-af', 'g-sw', 'g-sh', 'g-eye', 'g-cam', 'g-barlow'].map(k => [k, $(k).type === 'checkbox' ? $(k).checked : $(k).value])))); } catch {}
   const rows = [['배율', `${mag.toFixed(0)}배${mag > 2 * D ? ' (구경에 비해 너무 높음)' : ''}`], ['실제 시야', fmtAng(tf)], ['사출동공', `${exitP.toFixed(1)} mm${exitP > 7 ? ' (눈동자보다 큼)' : ''}`],
     ['한계 등급 (어두운 하늘)', lim.toFixed(1)], ['분해능 (도스 한계)', `${dawes.toFixed(2)}″`], ['최대 유효 배율', `${Math.round(2 * D)}배`], ['초점비', `f/${(F / D).toFixed(1)}`], ['사진 화각', `${fmtAng(cw)} × ${fmtAng(ch)}`]];
   $('gear-out').innerHTML = ''; for (const [a, b] of rows) { const r = $('gear-out').insertRow(); r.insertCell().textContent = a; r.insertCell().textContent = b; }
+  // the same telescope with common eyepieces: what each one is good for
+  let eh = '<tr><th>접안렌즈</th><th>배율</th><th>실시야</th><th>사출동공</th><th>알맞은 대상</th></tr>';
+  for (const [e, a] of [[40, 44], [32, 52], [25, 52], [15, 60], [10, 60], [6, 66], [4, 66]]) { const m = F / e, t = a / m, x = D / m;
+    const use = m > 2 * D ? '배율 초과: 흐려짐' : x > 7 ? '사출동공이 눈보다 커 빛 손실' : x >= 4 ? '은하수 훑기, 큰 성단, 성운' : x >= 2 ? '은하, 구상성단, 달 전체' : x >= 1 ? '행성, 이중성, 행성상 성운' : '달과 행성의 세부 (대기가 안정할 때)';
+    eh += `<tr><td>${e} mm</td><td>${m.toFixed(0)}배</td><td>${fmtAng(t)}</td><td>${x.toFixed(1)} mm</td><td>${use}</td></tr>`; }
+  $('gear-eps').innerHTML = eh;
   if ($('eyepiece').value !== 'custom') return;
   eyeFov = $('g-eye').checked ? tf : 0; gearLabel = `${D}mm f/${(F / D).toFixed(1)} · ${fe}mm · ${mag.toFixed(0)}배 · 실시야 ${fmtAng(tf)}`;
   camFrame = $('g-cam').checked ? { w: cw, h: ch, label: `센서 ${sw}×${sh} mm · ${fmtAng(cw)} × ${fmtAng(ch)}` } : null;
   if (zoom) view.fov = Math.min(100, Math.max(tf, camFrame ? Math.max(cw, ch) * 1.1 : 0) * 1.6);
 }
-for (const id of ['g-ap', 'g-fl', 'g-ep', 'g-af', 'g-sw', 'g-sh', 'g-eye', 'g-cam']) $(id).oninput = $(id).onchange = () => applyGear(false);
+for (const id of ['g-ap', 'g-fl', 'g-ep', 'g-af', 'g-sw', 'g-sh', 'g-eye', 'g-cam', 'g-barlow']) $(id).oninput = $(id).onchange = () => applyGear(false);
+$('g-preset').onchange = () => { const [a, f] = ($('g-preset').value || ',').split(','); if (a) { $('g-ap').value = a; $('g-fl').value = f; applyGear(false); } };
 $('gear-close').onclick = () => $('gear').hidden = true;
 
 // ---------- 20. my location and tonight's weather (G9, G10) ----------
@@ -2719,7 +2726,7 @@ function tonightPlan() {
   const T = [], SM = []; for (let i = 0; i <= 96; i++) { const t = start + i * 15 * 60e3; T.push(t); SM.push(sunMoonAt(t)); }
   const dark = T.map((t, i) => altOf(SM[i].Sun, t) < -12); if (!dark.some(Boolean)) return { rows: [], note: '오늘은 하늘이 충분히 어두워지지 않습니다 (백야)' };
   const i0 = dark.indexOf(true), i1 = dark.lastIndexOf(true), bortle = +$('bortle').value, lim = [7.6, 7.1, 6.6, 6.2, 5.7, 5.2, 4.7, 4.2, 3.8][bortle - 1];
-  const es = $('eyepiece'), eq = es.options[es.selectedIndex]?.text || '', aid = /200mm/.test(eq) ? 6 : /80mm|mm/.test(eq) ? 4.5 : /쌍안경/.test(eq) ? 2.5 : 0;  // the chosen equipment reaches fainter objects
+  const es = $('eyepiece'), eq = es.options[es.selectedIndex]?.text || '', aid = es.value === 'custom' ? Math.max(0, 5 * Math.log10(Math.max(7, +$('g-ap').value || 7) / 7)) : /200mm/.test(eq) ? 6 : /80mm|mm/.test(eq) ? 4.5 : /쌍안경/.test(eq) ? 2.5 : 0;  // the chosen equipment reaches fainter objects
   const cands = [];
   for (const n of ['Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']) { const p = PLANETS.find(q => q.name === n);
     cands.push({ key: n, label: p.ko, kind: n === 'Moon' ? '위성' : '행성', mag: p.mag, dirAt: (t) => ecl2eq(geoAt(t)[n]) }); }

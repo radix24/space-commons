@@ -194,16 +194,20 @@
   <button class="x" id="gear-close">×</button>
   <h2>내 장비</h2>
   <div class="small">입력값은 이 브라우저에만 저장됩니다</div>
+  <label class="small">자주 쓰는 망원경 <select id="g-preset"><option value="">직접 입력</option><option value="70,700">70mm 굴절 f/10</option><option value="80,480">80mm 굴절 f/6</option><option value="102,1300">102mm 막스토프 f/12.7</option><option value="127,1500">127mm 막스토프 f/11.8</option><option value="150,750">150mm 반사 f/5</option><option value="200,1200">200mm 돕소니안 f/6</option><option value="203,2032">203mm 슈미트-카세그레인 f/10</option><option value="254,1270">254mm 돕소니안 f/5</option><option value="305,1500">305mm 돕소니안 f/4.9</option></select></label>
   <div class="gear-grid">
     <label>망원경 구경 (mm) <input id="g-ap" type="number" min="10" value="200"></label>
     <label>망원경 초점거리 (mm) <input id="g-fl" type="number" min="50" value="1200"></label>
     <label>접안렌즈 초점거리 (mm) <input id="g-ep" type="number" min="1" value="25"></label>
     <label>접안렌즈 겉보기 시야 (°) <input id="g-af" type="number" min="20" max="120" value="52"></label>
+    <label>바로우 렌즈 <select id="g-barlow"><option value="1">없음</option><option value="2">2배</option><option value="2.5">2.5배</option><option value="3">3배</option><option value="0.63">0.63배 리듀서</option></select></label>
     <label>카메라 센서 가로 (mm) <input id="g-sw" type="number" min="1" step="0.1" value="23.5"></label>
     <label>카메라 센서 세로 (mm) <input id="g-sh" type="number" min="1" step="0.1" value="15.6"></label>
   </div>
   <div class="row"><label><input type="checkbox" id="g-eye" checked> 접안렌즈 시야 원</label><label><input type="checkbox" id="g-cam" checked> 사진 구도 사각형</label></div>
   <table id="gear-out" class="pltable"></table>
+  <h3 class="small">접안렌즈별 비교 (같은 망원경)</h3>
+  <table id="gear-eps" class="pltable"></table>
 </div>
 
 <div id="flyby" class="side" hidden>
