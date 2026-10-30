@@ -2334,7 +2334,7 @@ function satState(s, ms, sunEqU) {
 const stations = {}; // NORAD id -> model group
 // Korean satellites: which hand-built model (craft.js) and its real span in metres, from the TLE name
 function krCraft(s) { const n = s.tle || '';
-  return /KOMPSAT-5|ARIRANG-5/.test(n) ? ['KOMPSAT-5', 6] : /GEO-KOMPSAT|COMS/.test(n) ? ['GEO-KOMPSAT', 14] : /KOMPSAT|ARIRANG/.test(n) ? ['KOMPSAT', 6]
+  return /KOMPSAT-5|ARIRANG-5/.test(n) ? ['KOMPSAT-5', 6] : /GEO-KOMPSAT-2B/.test(n) ? ['GEO-KOMPSAT-B', 14] : /GEO-KOMPSAT|COMS/.test(n) ? ['GEO-KOMPSAT', 14] : /KOMPSAT|ARIRANG/.test(n) ? ['KOMPSAT', 6]
     : /KOREASAT|MUGUNG/.test(n) ? ['Koreasat', 28] : /CAS500/.test(n) ? ['CAS500', 6] : /STSAT|NEXTSAT|KITSAT/.test(n) ? ['Microsat', 2] : ['CubeSat', 0.5]; }
 function stationModel(id) {
   if (stations[id]) return stations[id];
