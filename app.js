@@ -2585,7 +2585,7 @@ function updateStars3d() {
   P.needsUpdate = true; Mg.needsUpdate = true; s3dMat.uniforms.pr.value = renderer.getPixelRatio();
 }
 function starLabels() {
-  galaxyLabels();
+  galaxyLabels(); cometLabels();
   if (!s3d.far || !$('t-labels').checked) return;
   const m = s3dPts.geometry.attributes.mag.array, fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(sp.quat), cosLim = Math.cos(Math.min(85, view.fov * 0.75) * D2R), v = new THREE.Vector3();
   const lim = view.fov < 20 ? 3.5 : 1.6; let n = 0;
@@ -3051,6 +3051,31 @@ function updateProperMotion() {
     for (let k = 0; k < A.count; k++) { const s = m.idx[k]; if (s < 0) A.setXYZ(k, m.base[3 * k], m.base[3 * k + 1], m.base[3 * k + 2]); else { const o = starData.pos[s]; A.setXYZ(k, o.x * m.R, o.y * m.R, o.z * m.R); } }
     A.needsUpdate = true; }
 }
+// ---------- active comets in space mode: orbit, nucleus and a tail pointing away from the Sun (longer and brighter near perihelion) ----------
+const cometGroup = new THREE.Group(); cometGroup.visible = false; planetGroup.add(cometGroup); let cometT = NaN;
+function updateComets3d() {
+  const on = mode.space && $('t-asteroids').checked && smallBodies.some(o => o.comet); cometGroup.visible = on; if (!on) return;
+  cometGroup.position.copy(sp.pos).negate();
+  if (Math.abs(state.time - cometT) < 3600e3 * 6 && cometGroup.children.length) return; cometT = state.time;
+  cometGroup.traverse(o => { if (o.geometry) o.geometry.dispose(); }); cometGroup.clear();
+  const J = jd(state.time), toS = (v) => ecl2eq(v).multiplyScalar(MKM_AU);
+  for (const o of smallBodies) { if (!o.comet || !(o.mag < 16)) continue;
+    const [q, e] = o.el, pts = [], lim = e < 1 ? Math.PI : Math.acos(-1 / e) * 0.97, tp = o.el[5];
+    for (let k = -120; k <= 120; k++) { const nu = lim * k / 120, r = q * (1 + e) / (1 + e * Math.cos(nu)); if (r > 12 || r < 0) continue;
+      // position along the orbit from the true anomaly, using the same orientation as smallHelio
+      const x = r * Math.cos(nu), y = r * Math.sin(nu), I = o.el[2] * D2R, O = o.el[3] * D2R, w = o.el[4] * D2R, cO = Math.cos(O), sO = Math.sin(O), ci = Math.cos(I), si = Math.sin(I), cw = Math.cos(w), sw = Math.sin(w);
+      pts.push(toS(new THREE.Vector3((cw * cO - sw * sO * ci) * x + (-sw * cO - cw * sO * ci) * y, (cw * sO + sw * cO * ci) * x + (-sw * sO + cw * cO * ci) * y, sw * si * x + cw * si * y))); }
+    if (pts.length > 1) { const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0x6fa8dc, transparent: true, opacity: 0.35 })); l.frustumCulled = false; cometGroup.add(l); }
+    const h = smallHelio(o, J), r = h.length(), P = toS(h), away = P.clone().normalize(), len = Math.min(0.6, 0.25 / (r * r)) * MKM_AU;
+    const tail = new THREE.Line(new THREE.BufferGeometry().setFromPoints([P, P.clone().addScaledVector(away, len)]), new THREE.LineBasicMaterial({ color: 0xbfe3ff, transparent: true, opacity: Math.min(0.9, 0.9 / r) }));
+    tail.frustumCulled = false; cometGroup.add(tail);
+    const dot = new THREE.Points(new THREE.BufferGeometry().setFromPoints([P]), new THREE.PointsMaterial({ color: 0xdff2ff, size: 4, sizeAttenuation: false })); dot.frustumCulled = false; dot.userData = { comet: o, pos: P }; cometGroup.add(dot); }
+}
+function cometLabels() {
+  if (!cometGroup.visible || !$('t-labels').checked) return; const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(sp.quat), v = new THREE.Vector3();
+  for (const d of cometGroup.children) { if (!d.userData.comet) continue; v.copy(d.userData.pos).sub(sp.pos).normalize(); if (v.dot(fwd) < 0.2) continue;
+    const p = toScreen(v); if (p) label(p[0], p[1], d.userData.comet.name.replace(/\s*\(.*\)/, ''), 'small comet'); }
+}
 // ---------- 22. whole spacecraft journeys (S7) ----------
 function journeyTimeline(p) {
   const box = $('info-exo'), ev = JOURNEYS[p.name], e = probeEph[p.name]; box.innerHTML = ''; box.hidden = false;
@@ -3431,7 +3456,7 @@ function frame(now) {
   updateSkyMatrix();
   if (mode.space) { computeHelio(); stepSpaceFlight(now); spaceKeys(dt); }
   updatePlanets();   // positions for this frame first...
-  updateAsteroids(); updateSmallBodies(); updateAurora(); updateStanding(); updateProperMotion(); updateLight(); updateStations(); updateNeo(); updateStars3d(); updateGalaxy(); updateGaia(); updateHorizon(); updateArt(); updateAnalemma(); updateSkyPhoto();
+  updateAsteroids(); updateSmallBodies(); updateComets3d(); updateAurora(); updateStanding(); updateProperMotion(); updateLight(); updateStations(); updateNeo(); updateStars3d(); updateGalaxy(); updateGaia(); updateHorizon(); updateArt(); updateAnalemma(); updateSkyPhoto();
   updateSats();
   stepFlight(now);   // ...then aim the camera at them (aiming at last frame's position made zoomed views shake)
   updateCamera();
