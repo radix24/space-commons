@@ -351,3 +351,8 @@ input[type=number], input[type=date], input[type=datetime-local] { font-family: 
 .cc-explain > b { display: block; margin-bottom: 6px; font-size: 13px; color: #8fd0e4; }
 .cc-explain .cc-sym { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; font-size: 13px; margin-bottom: 8px; align-items: baseline; }
 .cc-explain p { margin: 4px 0 0; font-size: 13px; line-height: 1.6; }
+#info-about { margin: 8px 0 10px; font-size: 13px; line-height: 1.6; }
+#info-about p { margin: 0 0 6px; }
+#info-about b { display: block; font-size: 12px; color: #8fd0e4; margin-top: 4px; }
+#info-about ul { margin: 2px 0 0; padding-left: 18px; }
+#info-about li { margin: 2px 0; }

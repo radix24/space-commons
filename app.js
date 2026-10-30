@@ -6,6 +6,7 @@ import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { buildCraft } from './craft.js';
 import { moonMeeus } from './moon.js';
+import { BODY_INFO } from './bodyinfo.js';
 import { SHOWERS, TOURS, MOON_STATES, FLYBY_INFO, ECLIPSES, JOURNEYS } from './content.js';
 import { KR_SATS, ORBITERS, SITES } from './content-missions.js';
 
@@ -1396,6 +1397,8 @@ function select(o) {
     row('별자리', o.con); row('등급', isNaN(o.mag) ? '' : o.mag.toFixed(1)); row('크기', `${o.maj.toFixed(1)}′ × ${o.min.toFixed(1)}′`);
     row('위치각', o.pa ? o.pa + '°' : ''); row('허블 분류', o.hubble); row('적색편이 z', o.z);
   }
+  { const key = o.planet && !o.p.probe ? o.p.name : o.kindName === 'star' ? (starData.proper[o.i] || o.name) : null, B = key && BODY_INFO[key], ab = $('info-about');
+    ab.hidden = !B; ab.innerHTML = B ? `<p>${B.d}</p>${B.n?.length ? `<b>주목할 점</b><ul>${B.n.map(x => `<li>${x}</li>`).join('')}</ul>` : ''}` : ''; }
   if (isFinite(ra)) { row('적경 (J2000)', fmtRA(ra)); row('적위 (J2000)', fmtDec(dec)); }
   else if (o.kindName === 'sat') row('지금', '지평선 아래 (아래 표에서 다음 통과 시각을 확인하세요)');
   if (!mode.space && !(o.kindName === 'sat' && !o.world)) { const aa = dirToAzAlt(worldOf(o)); row('방위 / 고도', `${aa.az.toFixed(1)}° / ${aa.alt.toFixed(1)}°`); }
