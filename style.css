@@ -315,3 +315,20 @@ body.sandbox #loader { display: none; }
 .cc-opts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; } .cc-opts input { width: 110px; }
 .cc-fb { margin-top: 8px; font-size: 13px; min-height: 1em; } .cc-fb.ok { color: var(--orbit); } .cc-fb.no { color: #ff7aa2; }
 .cc-show { margin-top: 6px; font-size: 12px; }
+
+/* 0.0.3f: sandbox tabs, learning entry, scenarios, graph */
+.sb-tabs { display: flex; gap: 2px; padding: 3px; border-radius: 9px; background: rgba(255,255,255,.04); border: 1px solid var(--line); }
+.sb-tabs button { flex: 1; border: 0; background: transparent; padding: 5px 4px; border-radius: 6px; font-size: 12px; white-space: nowrap; }
+.sb-tabs button.on { background: var(--orbit); color: var(--night); font-weight: 700; }
+.sb-tab { display: flex; flex-direction: column; gap: 6px; } .sb-tab[hidden] { display: none; }
+.sb-bigcard { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; text-align: left; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--orbit) !important; background: rgba(79,227,193,.08); }
+.sb-bigcard b { font: 800 15px var(--display); color: var(--orbit); } .sb-bigcard b::after { content: '  →'; } .sb-bigcard span { font-size: 12px; color: var(--mute); }
+.sb-sub { margin-top: 2px; }
+.sb-labs { border-top: 0; padding-top: 0; }
+.sb-labrow { display: flex; gap: 4px; } .sb-labrow > button:first-child { flex: 1; text-align: left; }
+.sb-concept { font-size: 11.5px; color: var(--orbit); border-color: rgba(79,227,193,.45) !important; }
+.sb-concept-wide { margin: 6px 0 2px; color: var(--orbit); border-color: rgba(79,227,193,.45) !important; }
+.sb-scens { display: flex; flex-direction: column; gap: 4px; }
+.sb-scenbtn { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 1px; } .sb-scenbtn span { font-size: 11.5px; color: var(--mute); }
+.sb-graph { width: 100%; height: 60px; border-radius: 6px; }
+.sb-center { color: var(--orbit); }

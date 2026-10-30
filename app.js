@@ -2852,6 +2852,7 @@ updateSkyMatrix(); requestAnimationFrame(frame);
   document.body.classList.add('ready');
   buildSearch();
   readHash();
+  if (/[#&]sb=/.test(location.hash)) setSandbox(true).then(() => sandboxMod.sceneFromHash()); // a shared sandbox scene
   loadKorean().then(applySkyCulture).catch(() => {});
 })();
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
