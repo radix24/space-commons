@@ -4,9 +4,24 @@
 import * as THREE from 'three';
 
 const std = (color, metalness = 0.5, roughness = 0.45, extra = {}) => new THREE.MeshStandardMaterial({ color, metalness, roughness, ...extra });
+let crinkle = null;
+function crinkleTex() { // crumpled-foil bump map: many short random creases
+  if (crinkle) return crinkle;
+  const cv = document.createElement('canvas'); cv.width = cv.height = 256; const c = cv.getContext('2d');
+  c.fillStyle = '#808080'; c.fillRect(0, 0, 256, 256);
+  let seed = 7; const r = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 900; i++) {
+    const x = r() * 256, y = r() * 256, a = r() * Math.PI, l = 6 + r() * 26, v = 90 + r() * 90;
+    c.strokeStyle = `rgba(${v},${v},${v},0.55)`; c.lineWidth = 0.6 + r() * 1.6;
+    c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); c.stroke();
+  }
+  crinkle = new THREE.CanvasTexture(cv); crinkle.wrapS = crinkle.wrapT = THREE.RepeatWrapping; crinkle.repeat.set(3, 3);
+  return crinkle;
+}
+const foil = (color, rough) => std(color, 1.0, rough, { bumpMap: crinkleTex(), bumpScale: 0.6, roughnessMap: crinkleTex() });
 const M = {
-  gold: () => std(0xd6a843, 1.0, 0.32),          // multi-layer insulation, gold foil
-  silver: () => std(0xc7cbd3, 0.95, 0.28),       // silver MLI
+  gold: () => foil(0xd6a843, 0.38),               // multi-layer insulation, gold foil (crinkled)
+  silver: () => foil(0xc7cbd3, 0.32),             // silver MLI
   white: () => std(0xeeeeea, 0.05, 0.6),          // radiators / thermal paint
   dark: () => std(0x22252b, 0.3, 0.6),
   frame: () => std(0x9aa0a8, 0.8, 0.4),

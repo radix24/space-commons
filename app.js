@@ -21,7 +21,7 @@ const URLS = {
   ngc: CDN + 'mattiaverga/OpenNGC@master/database_files/NGC.csv',
 };
 const $ = (id) => document.getElementById(id);
-export const VERSION = 'Alpha 0.0.1e'; // bump the letter with every feature batch
+export const VERSION = 'Alpha 0.0.2a'; // bump the letter with every feature batch
 for (const el of document.querySelectorAll('[data-version]')) el.textContent = el.dataset.version.replace('{v}', VERSION);
 
 function eqVec(raDeg, decDeg, r = 1) {
@@ -709,6 +709,13 @@ function swapModel(model, obj) {
   ps.forEach((p, i) => { p.mesh.clear(); p.mesh.add(i ? obj.clone(true) : obj); });
 }
 const gltfLoader = new GLTFLoader(); // NASA's .glb files are Draco-compressed
+const HD_MODELS = { juno: ['models/juno-hd.glb'] };
+const hdState = {}; // model key -> 'loading' | 'done'
+function loadHD(model) { // swap in NASA's detailed version (1.7-9 MB) only when someone flies close
+  if (!HD_MODELS[model] || hdState[model]) return; hdState[model] = 'loading';
+  Promise.all(HD_MODELS[model].map(f => gltfLoader.loadAsync(f))).then(gs => { const g = new THREE.Group(); for (const x of gs) g.add(x.scene); swapModel(model, fitUnit(g)); hdState[model] = 'done'; })
+    .catch(e => { console.warn('hd model', model, e.message); hdState[model] = 'failed'; });
+}
 gltfLoader.setDRACOLoader(new DRACOLoader().setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/gltf/'));
 for (const p of PROBES) if (!p.model) { const c = buildCraft(p.name); if (c) { p.mesh.clear(); p.mesh.add(fitUnit(c)); } }
 for (const m of ['voyager', 'pioneer', 'jwst', 'juno', 'parker', 'lro', 'mro']) gltfLoader.load(`models/${m}.glb`, (g) => swapModel(m, fitUnit(g.scene)), undefined, (e) => console.warn('model', m, e.message));
@@ -780,6 +787,7 @@ function updateTrails(jdNow) {
 }
 function placeProbe(p, rel, earthRel, sunRel, minScale) { // rel: camera->probe in world units
   const d = rel.length();
+  if (p.model && (sp.target === p || sp.flight?.p === p || d < 2e-6)) loadHD(p.model); // within 2 km or on the way there
   p.world = rel.clone().divideScalar(d); p.camDist = d;
   p.mesh.position.copy(rel);
   p.mesh.scale.setScalar(Math.max(p.R / 1e6, minScale)); // true size: invisible until you are close
@@ -1237,8 +1245,10 @@ const bodyR = (p) => p.R / 1e6;
 function updateSpace() {
   computeHelio();
   const earth = helioPos.Earth;
-  for (const t of [sp.target, sp.flight?.p]) if (t?.kindName === 'site' && t.normal) { // planets move ~400 m per frame: place the site with this frame's centre
-    t.helio = helioPos[t.body].clone().addScaledVector(t.normal, bodyR(PLANETS.find(p => p.name === t.body)) * siteRadius(t)); helioPos[t.key] = t.helio; }
+  for (const t of [sp.target, sp.flight?.p]) if (t?.kindName === 'site') { // place the site with this frame's centre AND this frame's rotation
+    const b = PLANETS.find(p => p.name === t.body); orientBody(b);                // (rotation moves the ground ~4 m per frame on Mars; last frame's made it shake)
+    t.normal = siteLocal(t).applyQuaternion(b.mesh.quaternion);
+    t.helio = helioPos[t.body].clone().addScaledVector(t.normal, bodyR(b) * siteRadius(t)); helioPos[t.key] = t.helio; }
   if (sp.target && !sp.flight && helioPos[sp.target.key || sp.target.name]) sp.pos.copy(helioPos[sp.target.key || sp.target.name]).addScaledVector(new THREE.Vector3(0, 0, -1).applyQuaternion(sp.quat), -sp.dist);
   const minAng = view.fov * D2R * 0.0035;
   let nearest = Infinity, nearestAll = Infinity;
