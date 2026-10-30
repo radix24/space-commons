@@ -3362,7 +3362,13 @@ function loadAddon(j) {
     const obj = { kindName: 'coord', name: String(o.name).slice(0, 60), ra: o.ra, dec: o.dec, v: eqVec(o.ra, o.dec), note: o.note ? String(o.note).slice(0, 300) : '' };
     searchIndex.set(obj.name.toLowerCase().replace(/\s+/g, ''), () => obj); $('search-list').append(new Option('', obj.name)); addonPos.push(...obj.v.clone().multiplyScalar(90).toArray()); }
   addonPts.geometry.setAttribute('position', new THREE.Float32BufferAttribute(addonPos, 3)); addonPts.geometry.computeBoundingSphere();
-  $('status').textContent = `애드온 "${j.name || '이름 없음'}": 천체 ${(j.objects || []).length}개${j.script ? `, 발표 ${j.script.length}단계` : ''}`;
+  // bodies on real orbits (asteroid elements a e i node peri M epoch, or comet elements q e i node peri Tp): they move, show in 3D and can be searched like the built-in small bodies
+  let nb = 0; for (const b of j.bodies || []) { const name = String(b.name || '').slice(0, 60); if (!name) continue;
+    const o = b.q != null ? { kindName: 'small', comet: true, name, M1: +b.M1 || 10, K1: +b.K1 || 10, el: [+b.q, +b.e, +b.i, +b.om, +b.w, +b.tp] }
+      : { kindName: 'small', comet: false, name, H: +b.H || 15, G: 0.15, el: [+b.a, +b.e, +b.i, +b.om, +b.w, +b.ma, +b.epoch] };
+    if (o.el.some(x => !Number.isFinite(x))) continue; smallBodies.push(o); searchIndex.set(name.toLowerCase().replace(/\s+/g, ''), () => o); $('search-list').append(new Option('', name)); nb++; }
+  if (nb) { smallT = NaN; updateSmallBodies(); }
+  $('status').textContent = `애드온 "${j.name || '이름 없음'}": 하늘 표시 ${(j.objects || []).length}개${nb ? `, 궤도 천체 ${nb}개` : ''}${j.script ? `, 발표 ${j.script.length}단계` : ''}`;
   if (j.script && j.script.length) runScript(j.script);
 }
 let scriptRun = 0;
