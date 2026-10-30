@@ -3127,7 +3127,8 @@ $('landsel').onchange = () => {
 };
 // ---------- A2. zoomable survey tiles: DSS2 colour HiPS (ESA ESASky mirror of CDS) on HEALPix nested tiles, finer as you zoom ----------
 // Tile orientation was checked against bright stars (Betelgeuse 0.05 deg): image row runs along the HEALPix x axis, column along y.
-const HIPS = 'https://skies.esac.esa.int/DSSColor/', JRLL = [2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4], JPLL = [1, 3, 5, 7, 0, 2, 4, 6, 1, 3, 5, 7];
+const SURVEYS = { DSSColor: 9, '2MASSColor': 9, SDSS9Color: 10, AllWISEColor: 8 }; // HiPS max order of each survey
+let HIPS = 'https://skies.esac.esa.int/DSSColor/'; const JRLL = [2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4], JPLL = [1, 3, 5, 7, 0, 2, 4, 6, 1, 3, 5, 7];
 const hips = { group: new THREE.Group(), tiles: new Map(), tex: new Map(), order: -1 }; sky.add(hips.group);
 const interleave = (ix, iy) => { let r = 0; for (let b = 0; b < 15; b++) r += (((ix >> b) & 1) + 2 * ((iy >> b) & 1)) * 4 ** b; return r; };
 function hpAng2Pix(order, v) { // v: unit vector in the equatorial frame
@@ -3161,10 +3162,12 @@ function hipsTile(order, pix) {
   return m;
 }
 let hipsLast = 0;
+$('survey').onchange = () => { HIPS = `https://skies.esac.esa.int/${$('survey').value}/`; for (const [k, m] of hips.tiles) { hips.group.remove(m); m.geometry.dispose(); m.material.uniforms.map.value?.dispose(); } hips.tiles.clear();
+  $('status').textContent = { DSSColor: '확대 사진: DSS2 컬러 (가시광, 온 하늘)', '2MASSColor': '확대 사진: 2MASS 근적외선 (먼지 너머의 별)', SDSS9Color: '확대 사진: SDSS 9 (더 선명, 북쪽 하늘 일부만)', AllWISEColor: '확대 사진: AllWISE 중적외선 (따뜻한 먼지와 별 탄생 지역)' }[$('survey').value]; };
 function updateHips() {
   const on = $('t-photo').checked && view.fov < 20 && groundOn() !== null && !mode.space; hips.group.visible = on;
   const now = performance.now(); if (!on) return;
-  const order = Math.max(3, Math.min(9, Math.round(Math.log2(innerHeight / view.fov * 58.6 / 512))));
+  const order = Math.max(3, Math.min(SURVEYS[$('survey').value] || 9, Math.round(Math.log2(innerHeight / view.fov * 58.6 / 512))));
   if (now - hipsLast > 250) { hipsLast = now; const inv = new THREE.Matrix4().copy(sky.matrixWorld).invert(), want = new Set();
     for (let sx = -1; sx <= 1.001; sx += 0.25) for (let sy = -1; sy <= 1.001; sy += 0.25) { const d = new THREE.Vector3(sx, sy, 0.5).unproject(camera).normalize().applyMatrix4(inv).normalize(); want.add(hpAng2Pix(order, d)); }
     for (const p of want) hipsTile(order, p).userData.used = now; }
