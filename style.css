@@ -377,3 +377,8 @@ input[type=number], input[type=date], input[type=datetime-local] { font-family: 
 .cc-card .cc-tag { grid-column: 3; grid-row: 1; align-self: end; }
 .cc-card .cc-pre { grid-column: 3; grid-row: 2; align-self: start; font-size: 11px; line-height: 1.3; }
 @media (max-width: 640px) { .cc-card .cc-num, .cc-card > b, .cc-card .cc-level { grid-row: 1; } .cc-card .cc-tag { grid-column: 2; grid-row: 2; } .cc-card .cc-pre { grid-column: 2; grid-row: 3; } }
+.sz-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 10px; }
+
+.sz-canvas { display: block; width: 100%; background: #05070d; }
+.sz-info { margin-top: 8px; }
+.sz-tabs button.on { color: #05070d; }

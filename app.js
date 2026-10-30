@@ -1708,6 +1708,7 @@ async function setSandbox(on) {
   if (on) { sandboxMod ||= await import('./sandbox.js'); sandboxMod.openSandbox({ helio, jdNow: () => jd(state.time) }); }
   else sandboxMod?.closeSandbox();
 }
+document.getElementById('sizes-btn')?.addEventListener('click', async () => { (await import('./sizes.js')).openSizes(); });
 document.getElementById('cards-btn')?.addEventListener('click', async () => {
   const { openCards } = await import('./cards.js');
   openCards({ openLab: async (n) => { await setSandbox(true); sandboxMod.openLab(n); } });
