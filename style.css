@@ -541,3 +541,5 @@ body.space .menu-pop .ground-only, body:not(.space) .menu-pop .space-only { disp
 @media (max-width: 760px) { .sb-dock { bottom: 8px; } .sb-dock button { min-width: 0; padding: 6px 8px; } .sb-dock button span { display: none; } .sb-transport .sb-speedr { width: 90px; } .sb-speedl { min-width: 0; } }
 @media (max-width: 760px) { .sb-sel { bottom: 60px; max-height: calc(40vh - 52px); } .sb-drawer { bottom: 52px; height: calc(46vh - 52px); } }
 .sb-line[hidden] { display: none; }
+
+.lbl.cluster { color: #F3E2A6; font-weight: 700; letter-spacing: .02em; }

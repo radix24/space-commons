@@ -1462,6 +1462,7 @@ function starObj(i) { return { kindName: 'star', i, v: starData.pos[i], name: st
 function dsoObj(o) { return Object.assign(o, { kindName: 'dso' }); }
 function planetObj(p) { return { kindName: 'planet', planet: true, p, name: p.ko }; }
 function pick(x, y) {
+  if (mode.space && cosmo.pts?.visible) for (const l of cosmo.labels) { const w = l.v.clone().sub(sp.pos).normalize(), s = toScreen(w); if (s && w.dot(camFwd()) > 0 && Math.hypot(s[0] - x, s[1] - y) < 40) return l.o; }
   if (mode.space && galaxy.pts?.visible) for (const gi of galImgs) { const w = gi.cen.clone().sub(sp.pos).normalize(), s = toScreen(w); if (!s || w.dot(camFwd()) < 0) continue;
     const rpx = Math.max(16, Math.atan(gi.mesh.scale.x / 2 / (gi.mesh.position.length() || 1)) / (pcam.fov / 2 * D2R) * innerHeight / 2); if (Math.hypot(s[0] - x, s[1] - y) < rpx) return gi.o; }
   const fwd = camFwd(); const cosLim = Math.cos(Math.min(89, view.fov) * D2R);
@@ -1837,7 +1838,9 @@ function spaceDrag(dx, dy) {
   sp.quat.multiply(qy).multiply(qx).normalize();
 }
 function spaceZoom(f) {
-  if (sp.target) sp.dist = Math.max(sp.target.kindName === 'site' ? 8e-9 : sp.target.probe ? bodyR(sp.target) * 1.6 : bodyR(sp.target) * 1.15, Math.min(sp.target.gal ? 3e12 : sp.target.sys ? 4e9 : 2e4, sp.dist * f));
+  // zooming out never stops at the planets: past the solar system it speeds up and keeps going through the galaxy, the Local Group and out to superclusters (~390 Mpc)
+  if (sp.target) { const ff = sp.dist > 1e8 ? Math.pow(f, 2.5) : sp.dist > 5e3 ? Math.pow(f, 1.6) : f;
+    sp.dist = Math.max(sp.target.kindName === 'site' ? 8e-9 : sp.target.probe ? bodyR(sp.target) * 1.6 : bodyR(sp.target) * 1.15, Math.min(1.2e16, sp.dist * ff)); }
   else sp.pos.addScaledVector(camFwd(), (1 - f) * Math.max(0.05, sp.nearest) * 2);
 }
 function spaceKeys(dt) {
@@ -1935,7 +1938,6 @@ document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { $('ton
 $('t-orbits').onchange = (e) => orbits.visible = mode.space && e.target.checked;
 $('light-btn').onclick = startLight;
 $('galaxy-btn').onclick = () => visitGalaxy();
-$('lg-btn').onclick = () => visitLocalGroup();
 $('sp-free').onclick = () => { sp.target = null; sp.flight = null; $('sp-target').textContent = '자유 비행'; };
 
 // ---------- search ----------
@@ -2850,13 +2852,14 @@ function buildGalaxy() {
 }
 function updateGalaxy() {
   const d = mode.space ? sp.pos.length() : 0, f = Math.max(0, Math.min(1, (d - 0.6 * KPC) / (2.4 * KPC)));
-  if (!f) { sky.visible = true; if (galaxy.pts) { galaxy.pts.visible = false; planetGroup.visible = true; for (const gi of galImgs) gi.mesh.visible = false; } return; }
+  if (!f) { sky.visible = true; if (cosmo.pts) cosmo.pts.visible = false; if (galaxy.pts) { galaxy.pts.visible = false; planetGroup.visible = true; for (const gi of galImgs) gi.mesh.visible = false; } return; }
   if (!galaxy.pts) buildGalaxy();
   const P = galaxy.pts.geometry.attributes.position, A = galaxy.pts.geometry.attributes.a, k = 1 / Math.max(1e-12, sp.nearestAll || 1), R = 1e5 / k, s = galaxy.pos;
   const cx = sp.pos.x, cy = sp.pos.y, cz = sp.pos.z, ref = 20 * KPC, boost = Math.max(1, (d / (60 * KPC)) ** 1.2); // whole galaxies stay visible from far out
   for (let i = 0, n = galaxy.w.length; i < n; i++) { const x = s[3 * i] - cx, y = s[3 * i + 1] - cy, z = s[3 * i + 2] - cz, dd = Math.hypot(x, y, z) || 1;
     P.array[3 * i] = x / dd * R; P.array[3 * i + 1] = y / dd * R; P.array[3 * i + 2] = z / dd * R; A.array[i] = f * galaxy.w[i] * Math.min(2.5, (ref / dd) ** 1.2 * boost) * 0.55; }
   P.needsUpdate = true; A.needsUpdate = true; galaxy.pts.material.uniforms.pr.value = renderer.getPixelRatio(); galaxy.pts.visible = true;
+  updateCosmo(d, R);
   for (const gi of galImgs) { const rel = gi.cen.clone().sub(sp.pos), dd = rel.length() || 1; gi.mesh.position.copy(rel).multiplyScalar(R / dd); gi.mesh.quaternion.copy(sp.quat);
     gi.mesh.scale.setScalar(gi.size / dd * R); gi.mesh.material.opacity = f * Math.min(1, 0.35 + d / (400 * KPC)); gi.mesh.visible = true; }
   planetGroup.visible = f < 0.5; // the Sun's glow and the planets shrink to nothing at galactic scale
@@ -2865,15 +2868,52 @@ function updateGalaxy() {
   sp.nearestAll = Math.min(sp.nearestAll || 1e12, d * 0.01);
 }
 function galaxyLabels() {
-  if (!galaxy.pts?.visible || !$('t-labels').checked) return;
+  if (cosmo.pts?.visible && $('t-labels').checked) { const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(sp.quat), v = new THREE.Vector3();
+    for (const l of cosmo.labels) { v.copy(l.v).sub(sp.pos).normalize(); if (v.dot(fwd) < 0.2) continue; const p = toScreen(v); if (p) label(p[0], p[1], l.name, 'cluster'); } }
+  const dc = sp.pos.length(); if (!galaxy.pts?.visible || !$('t-labels').checked || dc > 5 * MPC) return; // farther out only clusters are named: the nearby names would pile up at one point
   const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(sp.quat), v = new THREE.Vector3();
-  for (const l of galaxy.labels) { v.copy(l.v).sub(sp.pos).normalize(); if (v.dot(fwd) < 0.2) continue; const p = toScreen(v); if (p) label(p[0], p[1], l.name, l.name.startsWith('태양') ? 'planet' : 'const'); }
+  for (const l of galaxy.labels) { if (dc > 250 * KPC && l.v.distanceTo(galaxy.center) < 25 * KPC) continue; v.copy(l.v).sub(sp.pos).normalize(); if (v.dot(fwd) < 0.2) continue; const p = toScreen(v); if (p) label(p[0], p[1], l.name, l.name.startsWith('태양') ? 'planet' : 'const'); }
 }
-function visitLocalGroup() {
-  const body = { name: 'galaxy', key: 'galaxy', ko: '국부은하군', R: 1, sys: true, gal: true };
-  helioPos.galaxy = eqVec(10.68, 41.27, 765 * KPC).add(galaxy.center).multiplyScalar(0.5); sp.target = null; // aim between the Milky Way and Andromeda
-  sp.flight = { p: body, from: sp.pos.clone(), q0: sp.quat.clone(), d1: 1000 * KPC, t0: performance.now(), dur: 11000, gal: true }; sp.replay = null;
-  $('status').textContent = '국부은하군 밖으로: 우리 은하, 안드로메다(250만 광년), 삼각형자리은하와 마젤란은하들이 실제 방향과 거리에 있습니다';
+// ---------- the local universe: 43,500 galaxies of the 2MASS Redshift Survey (Huchra et al. 2012) at their true 3D places, plus named clusters ----------
+const MPC = 1000 * KPC;
+const CLUSTERS = [ // name ko, name en, RA, Dec, distance (Mpc), description ko, description en
+  ['처녀자리 은하단', 'Virgo Cluster', 187.7, 12.4, 16.5, '우리에게 가장 가까운 큰 은하단으로 은하 1,300개 이상이 모여 있습니다. 중심의 거대 타원은하 M87에 2019년 처음 그림자를 찍은 블랙홀이 있습니다. 국부은하군은 이 은하단 쪽으로 끌려가고 있습니다.', 'The nearest large cluster, over 1,300 galaxies, with the giant elliptical M87 (home of the first black-hole shadow image) at its heart. The Local Group is being pulled toward it.'],
+  ['화로자리 은하단', 'Fornax Cluster', 54.6, -35.45, 19, '남쪽 하늘의 작고 촘촘한 은하단으로 6,000만 광년 거리입니다. 막대나선은하 NGC 1365가 유명합니다.', 'A compact southern cluster 60 million light-years away, famous for the barred spiral NGC 1365.'],
+  ['센타우루스자리 은하단', 'Centaurus Cluster', 192.2, -41.3, 52, '약 1억 7천만 광년 거리. 뜨거운 X선 가스로 가득한 은하단으로, 거대한 끌개 쪽 흐름의 일부입니다.', 'About 170 million light-years away, full of hot X-ray gas, part of the flow toward the Great Attractor.'],
+  ['바다뱀자리 은하단', 'Hydra Cluster', 159.2, -27.5, 54, '약 1억 7천만 광년 거리의 은하단으로 중심에 두 개의 거대 타원은하가 있습니다.', 'A cluster about 170 million light-years away with two giant ellipticals at its centre.'],
+  ['거대한 끌개 (직각자리 은하단)', 'Great Attractor (Norma Cluster)', 243.6, -60.9, 68, '은하수 원반 뒤에 가려진 거대한 질량 집중입니다. 우리 은하를 포함한 수만 개 은하가 이쪽으로 흘러가며, 라니아케아 초은하단의 중심 부근입니다.', 'A huge concentration of mass hidden behind the Milky Way disc. Tens of thousands of galaxies, ours included, stream toward it; it lies near the heart of the Laniakea Supercluster.'],
+  ['페르세우스자리 은하단', 'Perseus Cluster', 49.95, 41.5, 73, '2억 4천만 광년 거리의 은하단으로, 중심 블랙홀이 가스에 일으킨 음파가 관측되어 "블랙홀의 노래"로 알려졌습니다.', 'A cluster 240 million light-years away where pressure waves from the central black hole were detected in the gas: the "black hole sound".'],
+  ['머리털자리 은하단', 'Coma Cluster', 194.95, 27.98, 100, '3억 2천만 광년 거리의 은하 1,000개 이상 모인 은하단입니다. 1933년 츠비키가 이 은하단을 보고 처음 암흑 물질을 제안했습니다.', 'Over 1,000 galaxies 320 million light-years away. In 1933 Zwicky first proposed dark matter after studying it.'],
+  ['섀플리 초은하단', 'Shapley Supercluster', 201.98, -31.5, 200, '6억 5천만 광년 거리, 가까운 우주에서 가장 무거운 은하단 무리입니다. 거대한 끌개 너머에서 우리를 더 크게 끌어당깁니다.', 'The most massive concentration of galaxies in the nearby universe, 650 million light-years away, pulling on us from beyond the Great Attractor.'],
+  ['페르세우스-물고기자리 초은하단', 'Perseus-Pisces Supercluster', 30, 35, 70, '2억 3천만 광년 거리에 길게 늘어선 은하의 사슬로, 가까운 우주에서 가장 뚜렷한 거대 구조 가운데 하나입니다.', 'A long chain of galaxies about 230 million light-years away, one of the clearest large structures nearby.'],
+  ['라니아케아 초은하단 (우리 초은하단)', 'Laniakea Supercluster (ours)', 225, -55, 60, '우리 은하가 속한 초은하단으로 지름 약 5억 광년, 은하 10만 개 정도가 거대한 끌개를 향해 함께 흘러갑니다. 이름은 하와이 말로 "드넓은 하늘"입니다.', 'Our home supercluster, about 500 million light-years across: some 100,000 galaxies flowing together toward the Great Attractor. The name is Hawaiian for "immense heaven".'],
+];
+const cosmo = { pts: null, pos: null, abs: null, names: null, labels: [] };
+async function buildCosmo() {
+  if (cosmo.pts || cosmo.loading) return; cosmo.loading = true;
+  const [buf, names] = await Promise.all([fetch('data/galaxies.bin').then(r => r.arrayBuffer()), fetch('data/galaxies-names.json').then(r => r.json()).catch(() => [])]);
+  const dv = new DataView(buf), N0 = buf.byteLength / 12, pos = [], abs = [], col = [];
+  const TC = [[1, 0.84, 0.62], [0.68, 0.8, 1], [0.6, 0.78, 1], [0.92, 0.9, 0.95]];
+  for (let i = 0; i < N0; i++) { const o = i * 12, ra = dv.getUint16(o, true) / 65535 * 360, dec = dv.getInt16(o + 2, true) / 32767 * 90, d = dv.getUint16(o + 4, true) / 100;
+    if (d < 3) continue; // the Local Group and its neighbours are drawn from better distances (photos above)
+    const k = dv.getUint8(o + 6) / 30 + 4, v = eqVec(ra, dec, d * MPC); pos.push(v.x, v.y, v.z); abs.push(k - 5 * Math.log10(d * 1e6) + 5); col.push(...TC[dv.getUint8(o + 7)] || TC[3]); }
+  const N = abs.length, g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(N * 3), 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setAttribute('a', new THREE.Float32BufferAttribute(new Float32Array(N), 1));
+  const m = new THREE.ShaderMaterial({ uniforms: { pr: { value: 1 } }, transparent: true, depthTest: false, depthWrite: false, blending: THREE.AdditiveBlending,
+    vertexShader: 'attribute vec3 color; attribute float a; varying vec3 vC; varying float vA; uniform float pr; void main(){ gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); vC = color; vA = a; gl_PointSize = clamp(1.4 + a * 3.0, 1.0, 7.0) * pr; }',
+    fragmentShader: 'varying vec3 vC; varying float vA; void main(){ vec2 p = gl_PointCoord * 2.0 - 1.0; float r2 = dot(p, p); if (r2 > 1.0 || vA <= 0.0) discard; gl_FragColor = vec4(vC * exp(-r2 * 3.0) * min(vA, 1.0), 1.0); }' });
+  cosmo.pts = new THREE.Points(g, m); cosmo.pts.frustumCulled = false; cosmo.pts.renderOrder = -3; cosmo.pts.visible = false; planetScene.add(cosmo.pts);
+  cosmo.pos = new Float64Array(pos); cosmo.abs = new Float32Array(abs);
+  for (const [ko, en, ra, dec, d, dko, den] of CLUSTERS) { const v = eqVec(ra, dec, d * MPC); cosmo.labels.push({ name: EN ? en : ko, v, o: { kindName: 'coord', name: EN ? en : ko, ra, dec, note: (EN ? den : dko) + (EN ? ` Distance about ${Math.round(d * 3.262)} million light-years.` : ` 거리 약 ${Math.round(d * 3.262).toLocaleString()}백만 광년.`), v: eqVec(ra, dec), galaxy: true } }); }
+}
+function updateCosmo(d, R) { // same projection as the galaxy points: pulled onto a sphere of radius R around the camera, brightness from each galaxy's real magnitude at the camera's distance
+  if (!cosmo.pts) { if (d > 300 * KPC) buildCosmo(); return; }
+  const f = Math.max(0, Math.min(1, (d - 300 * KPC) / (1500 * KPC))); cosmo.pts.visible = f > 0; if (!f) return;
+  const P = cosmo.pts.geometry.attributes.position, A = cosmo.pts.geometry.attributes.a, s = cosmo.pos, cx = sp.pos.x, cy = sp.pos.y, cz = sp.pos.z, lim = 9 + Math.min(4, Math.log10(1 + d / MPC) * 3);
+  for (let i = 0, n = cosmo.abs.length; i < n; i++) { const x = s[3 * i] - cx, y = s[3 * i + 1] - cy, z = s[3 * i + 2] - cz, dd = Math.hypot(x, y, z) || 1;
+    P.array[3 * i] = x / dd * R; P.array[3 * i + 1] = y / dd * R; P.array[3 * i + 2] = z / dd * R;
+    const m = cosmo.abs[i] + 5 * Math.log10(dd / PC) - 5; A.array[i] = f * Math.max(0, Math.min(1.6, (lim - m) / 3 + 0.3)); }
+  P.needsUpdate = true; A.needsUpdate = true; cosmo.pts.material.uniforms.pr.value = renderer.getPixelRatio();
 }
 function visitGalaxy() {
   const body = { name: 'galaxy', key: 'galaxy', ko: '우리 은하', R: 1, sys: true, gal: true };
