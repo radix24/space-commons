@@ -886,7 +886,7 @@ function loadHD(model) { // swap in NASA's detailed version (1.7-9 MB) only when
 }
 gltfLoader.setDRACOLoader(new DRACOLoader().setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/gltf/'));
 for (const p of PROBES) if (!p.model) { const c = buildCraft(p.name); if (c) { p.mesh.clear(); p.mesh.add(fitUnit(c)); } }
-for (const m of ['voyager', 'pioneer', 'jwst', 'juno', 'parker', 'lro', 'mro']) gltfLoader.load(`models/${m}.glb`, (g) => swapModel(m, fitUnit(g.scene)), undefined, (e) => console.warn('model', m, e.message));
+for (const m of ['voyager', 'pioneer', 'jwst', 'juno', 'parker', 'lro', 'mro']) gltfLoader.load(`models/${m}.glb`, (g) => swapModel(m, fitUnit(m === 'voyager' ? voyagerBlack(g.scene) : g.scene)), undefined, (e) => console.warn('model', m, e.message));
 (async () => { // New Horizons ships as 3D-printing STL parts; assemble them with flight-like materials
   const stl = new STLLoader(), parts = { antenna: 0xe8e6e0, body: 0xd8b25a, body_l: 0xd8b25a, body_r: 0xd8b25a, rtg: 0x4c4f57 };
   const g = new THREE.Group();
@@ -898,6 +898,11 @@ for (const m of ['voyager', 'pioneer', 'jwst', 'juno', 'parker', 'lro', 'mro']) 
     swapModel('nh', fitUnit(g));
   } catch (e) { /* keep placeholder */ }
 })();
+// Voyager's ten-sided bus wears black thermal blankets; the NASA model paints it beige
+function voyagerBlack(root) {
+  root.traverse(o => { for (const m of [].concat(o.material || [])) if (/^Voyager(Base|Ring|BronzeDetail(-sm)?|DetailGold|MidTriangle)$/.test(m.name)) { m.color.setHex(0x161618); m.roughness = 0.55; m.metalness = 0.05; } });
+  return root;
+}
 // ephemerides
 const probeEph = {};
 fetch('data/probes.json').then(r => r.json()).then(js => {
