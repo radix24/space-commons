@@ -314,14 +314,13 @@ const dsoMat = new THREE.ShaderMaterial({
       int k = int(vKind + 0.5);
       if (k == 0) { // galaxy: exponential disk + bulge
         I = exp(-r*4.0)*0.75 + exp(-r*r*40.0)*0.8; col = vec3(1.0,0.88,0.72);
-      } else if (k == 1) { // open cluster: sprinkled stars
-        vec2 g = floor(p*7.0); vec2 f = fract(p*7.0)-0.5;
-        float s = step(0.72, h(g)) * exp(-dot(f,f)*40.0);
-        I = s*1.2 + 0.05*(1.0-rr); col = vec3(0.75,0.85,1.0); r = rr;
-      } else if (k == 2) { // globular
-        vec2 g = floor(p*18.0); vec2 f = fract(p*18.0)-0.5;
-        float s = step(0.6, h(g)) * exp(-dot(f,f)*30.0) * exp(-rr*2.5);
-        I = exp(-rr*rr*9.0)*0.9 + s*0.8; col = vec3(1.0,0.95,0.8); r = rr;
+      } else if (k == 1) { // open cluster: its real stars are drawn from Hipparcos / Gaia; here only a faint glow and the chart symbol (dotted circle)
+        float a = atan(p.y, p.x), dash = step(0.5, fract(a / 6.2831853 * 28.0));
+        I = 0.06 * exp(-rr*rr*3.0) + 0.22 * dash * exp(-pow((rr - 0.9) * 22.0, 2.0)); col = vec3(0.75,0.85,1.0); r = rr * 0.9;
+      } else if (k == 2) { // globular: King-like profile (bright core, long halo) with fine unresolved grain
+        float rc = 0.12, king = 1.0 / (1.0 + rr*rr/(rc*rc)) - 1.0 / (1.0 + 1.0/(rc*rc));
+        float grain = 0.75 + 0.5 * h(floor(gl_FragCoord.xy));
+        I = max(king, 0.0) * 0.9 * grain; col = vec3(1.0,0.93,0.78); r = rr;
       } else if (k == 3) { // nebula: soft lumpy glow
         float n = h(floor(p*4.0))*0.5 + h(floor(p*9.0))*0.3;
         I = exp(-r*r*2.5) * (0.35 + n*0.5); col = vec3(1.0,0.35,0.45);
@@ -1999,7 +1998,7 @@ async function loadSats() {
   if (!window.satellite) return 0;
   const seen = new Set();
   for (const g of ['data/korea.tle', 'stations', 'visual']) { // Korean list first so their names win
-    let txt = ''; try { txt = await fetch(g.startsWith('data/') ? g : `https://celestrak.org/NORAD/elements/gp.php?GROUP=${g}&FORMAT=tle`).then(r => r.ok ? r.text() : ''); } catch {}
+    let txt = ''; try { txt = await fetch(g.startsWith('data/') ? g : `https://celestrak.org/NORAD/elements/gp.php?GROUP=${g}&FORMAT=tle`, { signal: AbortSignal.timeout(6000) /* a slow CelesTrak must not hold the loading screen */ }).then(r => r.ok ? r.text() : ''); } catch {}
     const L = txt.split(/\r?\n/);
     for (let i = 0; i + 2 < L.length; i += 3) {
       const l1 = L[i + 1], l2 = L[i + 2]; if (!l1?.startsWith('1 ') || !l2?.startsWith('2 ')) continue;
@@ -2591,7 +2590,10 @@ async function loadArt() {
   }
 }
 function updateArt() {
-  const on = $('t-art').checked && !s3d.far; artGroup.visible = on; if (!on) return; if (!artLoaded) loadArt();
+  const korean = $('skyculture').value === 'korean';
+  if ($('t-art').checked && korean && !updateArt.told) { updateArt.told = true; $('status').textContent = '한국 전통 별자리는 공개된 그림 자료가 없어 선과 이름만 표시합니다'; }
+  if (!korean) updateArt.told = false;
+  const on = $('t-art').checked && !s3d.far && !korean; artGroup.visible = on; if (!on) return; if (!artLoaded) loadArt();
   const op = 0.3 * Math.max(0, Math.min(1, (view.fov - 6) / 20));
   for (const m of artGroup.children) m.material.uniforms.op.value = op;
 }
@@ -2717,11 +2719,14 @@ function drawLabels() {
     for (const s of sats) { if (!s.world || s.world.dot(fwd) < cosLim) continue; const p = toScreen(s.world); if (!p) continue;
       const pr = s === selected ? 1e3 : s.star ? 100 : s.korea && MAJOR_SAT.test(s.name) ? 50 : s.korea ? 10 : 0; cand.push({ s, p, pr }); }
     cand.sort((a, b) => b.pr - a.pr);
+    const out = []; // satellites hidden behind a shown name (e.g. the Koreasats sharing 116 E) are counted on that name
     for (const { s, p, pr } of cand) {
-      let name = pr >= 50 || ((s.korea || !mode.space) && close) ? s.name : '';
+      let name = pr >= 50 || ((s.korea || !mode.space) && close) ? s.name : '', host = null;
       if (name) { const w = name.length * 7 + 12, b = [p[0] - 4, p[1] - 9, p[0] + w, p[1] + 9];
-        if (boxes.some(o => b[0] < o[2] && b[2] > o[0] && b[1] < o[3] && b[3] > o[1])) name = ''; else boxes.push(b); }
-      label(p[0], p[1], name, 'sat' + (s.visible ? ' lit' : '') + (s.iss ? ' iss' : '') + (s.korea ? ' kr' : '')); }
+        host = boxes.find(o => b[0] < o[2] && b[2] > o[0] && b[1] < o[3] && b[3] > o[1]); if (host) { name = ''; host.n++; } else { b.n = 0; boxes.push(b); out.push(b.item = { p, s, name, b }); continue; } }
+      else { const near = boxes.find(o => Math.hypot(o[0] + 4 - p[0], o[1] + 9 - p[1]) < 14); if (near) near.n++; }
+      out.push({ p, s, name: '' }); }
+    for (const o of out) label(o.p[0], o.p[1], o.name && o.b.n ? `${o.name} 외 ${o.b.n}기` : o.name, 'sat' + (o.s.visible ? ' lit' : '') + (o.s.iss ? ' iss' : '') + (o.s.korea ? ' kr' : ''));
   }
   if (mode.space) starLabels();
   if (gOn) for (const c of cardinals) { const s = toScreen(c.w); if (s && c.w.dot(camFwd()) > 0) label(s[0], s[1], c.name, 'card'); }
