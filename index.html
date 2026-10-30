@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Web Planetarium</title>
+<title>Space Commons</title>
+<meta name="description" content="Space Commons — 브라우저에서 보는 별·NGC 천체·태양계 플라네타리움">
 <link rel="stylesheet" href="style.css">
 <script type="importmap">
 { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
@@ -15,6 +16,7 @@
 <div id="sel-ring" hidden></div>
 
 <div id="topbar">
+  <div id="brand">✦ Space <b>Commons</b></div>
   <input id="search" list="search-list" placeholder="검색: M31, NGC 7000, Jupiter, Sirius…" autocomplete="off">
   <datalist id="search-list"></datalist>
   <span id="status">카탈로그 불러오는 중…</span>
