@@ -482,6 +482,7 @@ const MORE = [
 ];
 // Textbook order: chapters, and what each card builds on (prerequisites). "Next" links are derived from these.
 const CHAPTERS = [
+  { title: '0. 우주 첫걸음', intro: '수식이 낯설어도 괜찮은 우주 이야기: 크기, 하늘의 색, 오로라, 유성, 외계 문명, 우주의 역사', ids: ['scale', 'calendar', 'bluesky', 'aurora', 'meteor', 'microg', 'eht', 'drake'] },
   { title: '1. 하늘의 좌표와 시간', intro: '하늘을 지도처럼 읽는 법: 좌표, 시간, 계절, 달', ids: ['coords', 'eot', 'seasons', 'precession', 'moonphase'] },
   { title: '2. 지구와 우주 환경', intro: '지구의 자기장과 바다, 그리고 위성들이 사는 지구 둘레의 우주', ids: ['declination', 'paleomag', 'tides', 'spaceweather', 'vanallen', 'decay', 'debris', 'gps'] },
   { title: '3. 중력과 궤도', intro: '뉴턴의 중력에서 탐사선 궤도 설계까지', ids: ['gravity', 'keplerlaws', 'twobody', 'invariants', 'visviva', 'kepler', 'elements', 'rocket', 'hohmann', 'plane', 'oberth', 'soi', 'flyby', 'lambert', 'j2', 'cr3bp', 'cw'] },
@@ -494,7 +495,7 @@ const PRE = { eot: ['coords', 'keplerlaws'], seasons: ['coords'], precession: ['
   soi: ['twobody'], flyby: ['soi', 'hohmann'], lambert: ['kepler', 'hohmann'], j2: ['elements'], cr3bp: ['invariants'], cw: ['twobody', 'kepler'],
   roche: ['gravity', 'tides'], moon: ['roche', 'tides', 'impact'], teq: ['blackbody'], atmos: ['teq', 'visviva'], impact: ['visviva'], hz: ['teq', 'stellar'], transit: ['doppler', 'magnitude'],
   parallax: ['coords'], magnitude: ['blackbody', 'parallax'], doppler: ['blackbody'], sun: ['blackbody', 'gravity'], starbirth: ['gravity', 'blackbody'], stellar: ['sun', 'starbirth', 'magnitude'],
-  nucleo: ['stellar'], remnants: ['nucleo', 'visviva'], distladder: ['parallax', 'magnitude'], hubble: ['distladder', 'doppler'], darkmatter: ['keplerlaws', 'distladder'], cmb: ['blackbody', 'hubble'], galaxy: ['hubble', 'darkmatter', 'stellar'], spaceweather: ['declination', 'sun'], vanallen: ['spaceweather'], decay: ['visviva', 'atmos'], debris: ['decay', 'elements'], gps: ['visviva', 'remnants'], gw: ['remnants', 'keplerlaws'] };
+  nucleo: ['stellar'], remnants: ['nucleo', 'visviva'], distladder: ['parallax', 'magnitude'], hubble: ['distladder', 'doppler'], darkmatter: ['keplerlaws', 'distladder'], cmb: ['blackbody', 'hubble'], galaxy: ['hubble', 'darkmatter', 'stellar'], spaceweather: ['declination', 'sun'], vanallen: ['spaceweather'], decay: ['visviva', 'atmos'], debris: ['decay', 'elements'], gps: ['visviva', 'remnants'], gw: ['remnants', 'keplerlaws'], aurora: ['bluesky'], meteor: ['scale'], eht: ['scale'], drake: ['calendar'] };
 
 // ---- more concepts: foundations, measuring the sky, planets, stars, galaxies ----
 const EXTRA = [
@@ -616,6 +617,14 @@ const EXTRA = [
 
 // ---- one check question per concept: number (with tolerance) or choice ----
 const QUIZ = {
+  scale: { q: '태양빛이 지구까지 오는 데 걸리는 시간은?', opts: ['8초', '약 8분', '약 8시간'], a: 1, why: '1억 5천만 km ÷ 초속 30만 km ≈ 500초 ≈ 8분 20초입니다.' },
+  bluesky: { q: '파장이 절반인 빛은 몇 배 더 잘 흩어질까요?', a: 16, unit: '배', why: '(1/2)⁻⁴ = 16배입니다.' },
+  aurora: { q: '오로라의 초록빛을 내는 원소는?', opts: ['질소', '산소', '수소'], a: 1, why: '높이 100~200 km의 산소 원자가 557.7 nm 초록빛을 냅니다.' },
+  meteor: { q: '유성이 대기에 들어오는 가장 느린 속도는 대략?', opts: ['1 km/s', '11 km/s', '72 km/s'], a: 1, why: '지구 중력에 끌려 적어도 탈출 속도 11.2 km/s가 됩니다.' },
+  drake: { q: '드레이크 방정식에서 관측으로 가장 잘 알려진 항은?', opts: ['f_p (행성 있는 별의 비율)', 'f_i (지적 생명 확률)', 'L (문명 지속 시간)'], a: 0, why: '외계행성 탐사로 대부분의 별에 행성이 있다는 것이 밝혀졌습니다.' },
+  calendar: { q: '우주 달력에서 인류가 등장하는 날은?', opts: ['12월 1일', '12월 25일', '12월 31일'], a: 2, why: '30만 년은 달력에서 약 11분, 12월 31일 밤 늦게입니다.' },
+  microg: { q: '높이 420 km에서 중력은 지상의 몇 %일까요?', a: 88.5, tol: 1.5, unit: '%', why: '(6371/6791)² ≈ 0.885입니다.' },
+  eht: { q: '같은 파장에서 망원경 지름을 10배로 하면 분해능 각도는?', opts: ['10배 커짐', '10분의 1로 작아짐', '그대로'], a: 1, why: 'θ ∝ λ/D이므로 D가 10배면 θ는 1/10, 10배 더 작은 것을 구별합니다.' },
   coords: { q: '위도 37.5°인 서울에서 하늘의 북극(북극성 근처)은 지평선 위 몇 도에 있을까요?', a: 37.5, tol: 1, unit: '°', why: '천구 북극의 고도는 관측지의 위도와 같습니다.' },
   eot: { q: '1년 중 균시차가 가장 큰 때는 약 몇 분일까요?', a: 16, tol: 1.5, unit: '분', why: '11월 초 약 +16.4분, 2월 중순 약 −14.2분입니다.' },
   seasons: { q: '북반구에서 지구가 태양에 가장 가까운 때(근일점)는 언제일까요?', opts: ['1월 초', '4월 초', '7월 초', '10월 초'], a: 0, why: '근일점은 1월 3~4일 무렵입니다. 계절은 거리 때문이 아니라 자전축 기울기 때문입니다.' },
@@ -733,9 +742,85 @@ const SPACEENV = [
         R([['합쳐지기 0.1초 전 주파수', `${fmt(f01, 0)} Hz`], ['예', 'GW150914 처프 질량 약 28 · 중성자별 쌍 약 1.2']]); }; } },
 ];
 
+// ---- general reading: the universe for everyone ----
+const GENERAL = [
+  { id: 'scale', level: '기초', title: '우주의 크기', tag: '빛으로 재는 거리',
+    eq: String.raw`d = c\,t`,
+    body: `우주의 거리는 너무 커서 km로는 감이 오지 않습니다. 그래서 빛이 그만큼 가는 데 걸리는 시간으로 잽니다. 달까지 1.3초, 태양까지 8분 20초, 보이저 1호까지 약 23시간, 가장 가까운 별까지 4.2년, 우리 은하 지름은 10만 년, 안드로메다 은하까지는 250만 년입니다. 밤하늘의 별빛은 모두 과거에서 온 빛입니다.`,
+    deep: String.raw`천문단위(AU, 지구-태양 평균 거리 1억 4,960만 km), 광년(9.46조 km), 파섹(3.26광년)을 상황에 맞게 씁니다. 관측 가능한 우주의 반지름은 약 465억 광년으로, 우주 나이(138억 년)보다 큰데 이는 빛이 오는 동안 공간이 늘어났기 때문입니다.`,
+    widget(box) { const K = canvas(box, 340, 170), s = slider(box, '거리 (로그 눈금)', 0, 20, 0.01, 8, (x) => fmtLy(10 ** x)), R = readout(box);
+      const L = [['달', 384400], ['태양', 1.496e8], ['해왕성', 4.5e9], ['보이저 1호', 2.5e10], ['프록시마', 4.0e13], ['베텔게우스', 5.0e15], ['은하 중심', 2.5e17], ['안드로메다', 2.4e19]];
+      return () => { clear(K); const g = K.g, x0 = 20, x1 = K.w - 20, X = (lg) => x0 + (lg - 5) / 15 * (x1 - x0);
+        g.strokeStyle = C.grid; g.beginPath(); g.moveTo(x0, 100); g.lineTo(x1, 100); g.stroke();
+        L.forEach(([n, d], i) => { const x = X(Math.log10(d)); dot(g, x, 100, 3, C.teal); text(g, n, x, i % 2 ? 122 : 88, C.text, 10, 'center'); });
+        const d = 10 ** (5 + +s.value * 15 / 20); g.strokeStyle = C.amber; g.beginPath(); g.moveTo(X(Math.log10(d)), 40); g.lineTo(X(Math.log10(d)), 150); g.stroke();
+        const t = d / 299792.458; R([['거리', `${fmt(d, 0)} km`], ['빛이 걸리는 시간', fmtTime(t)], ['시속 100 km 자동차로', fmtTime(d / 100 * 3600)]]); }; } },
+  { id: 'bluesky', level: '기초', title: '하늘은 왜 파랗고 노을은 붉을까', tag: '공기가 빛을 흩뜨린다',
+    eq: String.raw`I \propto \frac{1}{\lambda^4}`,
+    body: `햇빛은 여러 색이 섞인 흰빛입니다. 공기 분자는 파장이 짧은 파란빛을 빨간빛보다 5배 넘게 잘 흩뜨려서(레일리 산란), 하늘 어디를 보아도 흩어진 파란빛이 들어옵니다. 해가 낮게 뜨면 빛이 공기를 수십 배 길게 지나오는 동안 파란빛이 다 흩어져 빠지고, 남은 주황·빨간빛이 노을이 됩니다. 공기가 없는 달에서는 낮에도 하늘이 검습니다.`,
+    deep: String.raw`분자처럼 파장보다 훨씬 작은 입자에서는 산란 세기가 <span class="tex">\lambda^{-4}</span>에 비례합니다. 물방울이나 먼지처럼 큰 입자는 색을 가리지 않고 흩뜨려(미 산란) 구름이 흰색으로 보입니다. 화성은 붉은 먼지 때문에 낮 하늘이 분홍빛이고, 노을은 오히려 파랗습니다.`,
+    widget(box) { const K = canvas(box, 340, 170), s = slider(box, '태양 고도 (°)', 0, 90, 1, 45), R = readout(box);
+      return () => { clear(K); const g = K.g, h = Math.max(0.5, +s.value), am = 1 / (Math.sin(h * Math.PI / 180) + 0.15 * (h + 3.885) ** -1.253), cols = [];
+        for (let i = 0; i < 60; i++) { const lam = 400 + i * 5, tr = Math.exp(-0.0088 * (550 / lam) ** 4 * am * 9.6); cols.push([lam, tr]); }
+        const keep = (lo, hi) => cols.filter(([l]) => l >= lo && l < hi).reduce((a, [, t]) => a + t, 0) / cols.filter(([l]) => l >= lo && l < hi).length;
+        const r = keep(600, 700), gg = keep(500, 600), b = keep(400, 500), m = Math.max(r, gg, b);
+        g.fillStyle = `rgb(${255 * r / m | 0},${235 * gg / m | 0},${215 * b / m | 0})`; g.beginPath(); g.arc(K.w / 2, 80, 34, 0, 7); g.fill();
+        text(g, '지면에 닿는 햇빛의 색', K.w / 2, 140, C.mute, 10, 'center');
+        R([['빛이 지나는 공기 두께', `머리 위의 ${fmt(am, 1)}배`], ['남는 파란빛', `${fmt(b * 100, 0)}%`], ['남는 빨간빛', `${fmt(r * 100, 0)}%`]]); }; } },
+  { id: 'aurora', level: '교양', title: '오로라', tag: '대기가 내는 빛',
+    eq: String.raw`E = h\nu = \frac{hc}{\lambda}`,
+    body: `태양풍의 전자가 지구 자기력선을 따라 극지방 대기로 쏟아지면, 산소와 질소 원자를 들뜨게 합니다. 들뜬 원자가 원래대로 돌아오며 정해진 색의 빛을 냅니다. 높이 100~200 km의 산소는 초록(557.7 nm), 200 km보다 높은 곳의 희박한 산소는 빨강(630 nm), 질소는 아래쪽 가장자리에서 보라·분홍빛을 냅니다. 강한 지자기 폭풍 때는 한국에서도 북쪽 하늘에 붉은 오로라가 찍힌 적이 있습니다(2024년 5월).`,
+    deep: String.raw`630 nm 빨간 빛은 들뜬 상태가 약 110초 동안 유지되어야 나오는 금지선이라, 그동안 다른 분자와 부딪히지 않는 희박한 높은 대기에서만 보입니다. 오로라 띠(오로라 타원)는 자기 위도 65~70° 둘레에 생기며, 폭풍이 세질수록 적도 쪽으로 넓어집니다.`,
+    widget(box) { const K = canvas(box, 340, 170), s = slider(box, '빛나는 높이 (km)', 80, 400, 5, 150), R = readout(box);
+      return () => { clear(K); const g = K.g, h = +s.value, lam = h > 220 ? 630 : h > 95 ? 557.7 : 427.8, col = h > 220 ? '#ff5050' : h > 95 ? '#5dff8a' : '#b070ff', who = h > 220 ? '산소 (희박)' : h > 95 ? '산소' : '질소 이온';
+        const grd = g.createLinearGradient(0, 30, 0, 150); grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(1, col); g.fillStyle = grd; g.fillRect(60, 30, K.w - 120, 120);
+        const E = 6.626e-34 * 2.998e8 / (lam * 1e-9) / 1.602e-19; R([['내는 원자', who], ['파장', `${lam} nm`], ['광자 하나의 에너지', `${fmt(E, 2)} eV`]]); }; } },
+  { id: 'meteor', level: '기초', title: '혜성과 유성우', tag: '먼지가 타는 별똥별',
+    eq: String.raw`v_\text{유성} = \sqrt{v_\infty^2 + v_\text{esc}^2}`,
+    body: `혜성은 얼음과 먼지로 된 덩어리로, 태양에 가까워지면 얼음이 녹아 꼬리를 만들고 궤도에 먼지를 흘립니다. 지구가 해마다 같은 날 그 먼지 띠를 지나가면 유성우가 쏟아집니다. 모래알만 한 알갱이가 초속 11~72 km로 대기에 뛰어들어 높이 80~120 km에서 타며 빛줄기를 남깁니다. 지구와 마주 오는 먼지(사자자리 유성우)는 빠르고, 따라오는 먼지는 느립니다.`,
+    deep: String.raw`<span class="tex">v_\infty</span>는 지구 중력에 끌리기 전 상대 속도이고, 지구의 탈출 속도 11.2 km/s만큼 더 빨라집니다. 상대 속도의 최대는 지구 공전 속도 30 km/s와 태양계 탈출 속도 42 km/s를 정면으로 더한 72 km/s입니다. 유성우 이름은 유성이 퍼져 나오는 점(복사점)이 있는 별자리에서 땄습니다.`,
+    widget(box) { const K = canvas(box, 340, 160), s = slider(box, '지구에 대한 접근 속도 v∞ (km/s)', 0, 71, 1, 30), R = readout(box);
+      return () => { clear(K); const g = K.g, vi = +s.value, v = Math.hypot(vi, 11.2), E = 0.5 * 1e-6 * (v * 1e3) ** 2;
+        arrow(g, 40, 30, 40 + v * 3.6, 30 + v * 1.4, C.amber, 3); text(g, '대기 진입', 40, 22, C.mute, 10);
+        R([['대기 진입 속도', `${fmt(v, 1)} km/s`], ['1 mg 알갱이의 운동 에너지', `${fmt(E, 0)} J (총알 하나쯤)`], ['예', vi > 60 ? '사자자리 유성우처럼 마주 오는 먼지' : vi < 25 ? '용자리 유성우처럼 따라오는 먼지' : '페르세우스자리 유성우 정도']]); }; } },
+  { id: 'drake', level: '교양', title: '외계 문명은 몇이나 될까', tag: '드레이크 방정식',
+    eq: String.raw`N = R_\ast\, f_p\, n_e\, f_l\, f_i\, f_c\, L`,
+    body: `1961년 프랭크 드레이크가 "우리 은하에 지금 신호를 보낼 수 있는 문명이 몇이나 될까"를 따져 보려고 쓴 식입니다. 별이 생기는 빠르기에 행성이 있을 확률, 생명이 살 만한 행성 수, 생명이 생길 확률, 지적 생명으로 자랄 확률, 신호를 보낼 기술을 가질 확률, 그 문명이 이어지는 시간을 차례로 곱합니다. 앞의 셋은 관측으로 꽤 알게 되었지만 뒤의 넷은 아직 아무도 모릅니다.`,
+    deep: String.raw`케플러와 TESS 덕분에 <span class="tex">f_p \approx 1</span>(대부분의 별에 행성이 있음), <span class="tex">n_e \sim 0.1\text{–}0.4</span> 정도로 좁혀졌습니다. 우주가 크고 오래됐는데 왜 아무도 보이지 않느냐는 물음을 페르미 역설이라 합니다.`,
+    widget(box) { const sl = [['별 생성률 R* (개/년)', 0, 10, 0.5, 2], ['행성 있는 비율 fp', 0, 1, 0.05, 1], ['생명 가능 행성 수 ne', 0, 1, 0.05, 0.2], ['생명 생길 확률 fl (로그)', -6, 0, 0.5, -1], ['지적 생명 fi (로그)', -6, 0, 0.5, -2], ['통신 기술 fc (로그)', -6, 0, 0.5, -1], ['문명 지속 L (년, 로그)', 1, 9, 0.5, 4]].map(([a, b, c, d, e]) => slider(box, a, b, c, d, e, a.includes('로그') ? (x) => (10 ** x).toExponential(0) : (x) => x)), R = readout(box);
+      return () => { const v = sl.map(i => +i.value), N = v[0] * v[1] * v[2] * 10 ** v[3] * 10 ** v[4] * 10 ** v[5] * 10 ** v[6];
+        R([['지금 우리 은하의 통신 문명 수 N', N < 0.01 ? N.toExponential(1) : fmt(N, 2)], ['뜻', N < 1 ? '우리가 유일할 가능성이 큼' : `가장 가까운 문명까지 대략 ${fmt(50000 / Math.sqrt(N), 0)}광년`]]); }; } },
+  { id: 'calendar', level: '기초', title: '우주 달력', tag: '138억 년을 1년으로',
+    eq: String.raw`t_\text{달력} = \frac{t}{138\text{억 년}} \times 365\text{일}`,
+    body: `칼 세이건이 소개한 방법으로, 빅뱅을 1월 1일 0시, 지금을 12월 31일 자정으로 놓고 우주의 역사를 1년에 담습니다. 우리 은하는 3월쯤, 태양계는 9월 초에 생깁니다. 공룡은 12월 25일에 나타나 30일에 사라지고, 인류는 12월 31일 밤 10시 반쯤 등장합니다. 기록된 역사는 마지막 14초에 모두 들어갑니다.`,
+    deep: String.raw`달력의 1초는 실제로 약 440년, 하루는 약 3,780만 년입니다. 이 비율로 보면 생명이 지구에 나타나는 데는 오래 걸리지 않았지만(9월 말), 복잡한 다세포 생물이 나오기까지는 아주 오래 걸렸습니다(12월 중순).`,
+    widget(box) { const E = [['빅뱅', 0], ['첫 별', 0.2], ['우리 은하', 1.0], ['태양계', 9.2], ['지구의 첫 생명', 10.0], ['산소 대기', 11.4], ['캄브리아 대폭발', 13.26], ['공룡', 13.57], ['공룡 멸종', 13.734], ['현생 인류', 13.7997], ['첨성대', 13.79999864]], s = slider(box, '사건', 0, E.length - 1, 1, 3, (k) => E[k][0]), R = readout(box);
+      return () => { const [n, ga] = E[+s.value], day = ga / 13.8 * 365, d = new Date(2001, 0, 1, 0, 0, 0); d.setTime(d.getTime() + day * 864e5);
+        R([['사건', n], ['실제 시기', agoText(13.8 - ga)], ['우주 달력', d.toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })]]); }; } },
+  { id: 'microg', level: '기초', title: '우주정거장은 왜 무중력일까', tag: '끝없이 떨어지는 중',
+    eq: String.raw`g(h) = g_0 \left(\frac{R_\oplus}{R_\oplus + h}\right)^2`,
+    body: `국제우주정거장(높이 약 420 km)에서도 중력은 지상의 약 89%로 거의 그대로입니다. 그런데 우주인이 떠 있는 것은 정거장과 우주인이 함께 지구를 향해 계속 떨어지고 있기 때문입니다. 옆으로 초속 7.7 km로 날아가니, 떨어지는 만큼 지구 표면이 둥글게 멀어져 땅에 닿지 않습니다. 이것이 궤도이고, 함께 떨어지는 사람에게는 무게가 느껴지지 않습니다(자유 낙하).`,
+    deep: String.raw`엄밀히는 "무중력"이 아니라 "미소 중력"입니다. 정거장의 중심에서 벗어난 곳은 조석 효과와 공기 저항 때문에 아주 작은 가속도(10⁻⁶ g 정도)가 남습니다. 오래 머물면 뼈와 근육이 약해지고 체액이 머리 쪽으로 몰려 얼굴이 붓습니다.`,
+    widget(box) { const K = canvas(box, 340, 170), s = slider(box, '높이 (km)', 0, 36000, 10, 420), R = readout(box);
+      return () => { clear(K); const g = K.g, h = +s.value, gr = (6371 / (6371 + h)) ** 2, v = Math.sqrt(398600 / (6371 + h)), T = 2 * Math.PI * (6371 + h) / v / 60;
+        const cx = K.w / 2, cy = 95, Re = 40, S = Re / 6371; dot(g, cx, cy, Re, '#2a5aa0'); g.strokeStyle = C.teal; g.beginPath(); g.arc(cx, cy, Math.min(80, Re + h * S), 0, 7); g.stroke();
+        R([['그 높이의 중력', `지상의 ${fmt(gr * 100, 1)}%`], ['원 궤도 속도', `${fmt(v, 2)} km/s`], ['한 바퀴', T > 120 ? `${fmt(T / 60, 1)}시간` : `${fmt(T, 0)}분`]]); }; } },
+  { id: 'eht', level: '교양', title: '블랙홀을 찍은 지구 크기 망원경', tag: '사건지평선 망원경',
+    eq: String.raw`\theta \approx 1.22\,\frac{\lambda}{D}`,
+    body: `망원경이 구별할 수 있는 가장 작은 각도는 빛의 파장을 망원경 지름으로 나눈 값에 비례합니다. M87 은하 중심 블랙홀의 그림자는 겨우 40 마이크로초각, 달 위의 도넛 하나 크기입니다. 이를 보려고 전 세계 전파 망원경 8곳을 동시에 관측해 지구 크기(D ≈ 1만 km)의 망원경처럼 쓴 것이 사건지평선 망원경(EHT)이고, 2019년 첫 블랙홀 사진, 2022년 우리 은하 중심 블랙홀 사진을 냈습니다. 한국의 KVN 망원경도 후속 관측에 참여합니다.`,
+    deep: String.raw`각 망원경이 받은 전파를 원자시계 시각과 함께 하드디스크에 기록한 뒤 슈퍼컴퓨터로 맞추는 초장기선 간섭계(VLBI)입니다. 그림자의 지름은 슈바르츠실트 반지름의 약 5.2배로, 크기에서 블랙홀 질량(M87*: 태양의 65억 배)을 잴 수 있습니다.`,
+    widget(box) { const K = canvas(box, 340, 150), s = slider(box, '망원경 지름 D (로그, m)', 0, 7.1, 0.05, 1, (x) => fmtLen(10 ** x)), w = slider(box, '파장 (mm)', 0.5, 10, 0.1, 1.3), R = readout(box);
+      return () => { clear(K); const g = K.g, D = 10 ** +s.value, lam = +w.value * 1e-3, th = 1.22 * lam / D * 206265e6, need = 42;
+        g.fillStyle = C.mute; g.fillRect(20, 60, Math.min(K.w - 40, (K.w - 40) * need / th), 18); g.fillStyle = th <= need ? C.teal : C.pink; text(g, th <= need ? 'M87 블랙홀 그림자를 구별할 수 있음' : '그림자가 한 점으로 뭉개짐', 20, 50, th <= need ? C.teal : C.pink, 11);
+        R([['분해능', th > 1e6 ? `${fmt(th / 1e6, 2)}″` : `${fmt(th, 1)} μas`], ['M87* 그림자 크기', '약 42 μas'], ['참고', '사람 눈 약 60″, 허블 약 0.05″']]); }; } },
+];
+const fmtLy = (x) => { const d = 10 ** (5 + Math.log10(x) * 15 / 20); return d > 9.46e12 ? `${fmt(d / 9.46e12, 1)}광년` : `${fmt(d, 0)} km`; };
+const fmtTime = (t) => t < 60 ? `${fmt(t, 1)}초` : t < 3600 ? `${fmt(t / 60, 1)}분` : t < 86400 ? `${fmt(t / 3600, 1)}시간` : t < 3.156e7 ? `${fmt(t / 86400, 1)}일` : `${fmt(t / 3.156e7, t < 3.156e9 ? 1 : 0)}년`;
+const fmtLen = (x) => x >= 1000 ? `${fmt(x / 1000, 0)} km` : `${fmt(x, 1)} m`;
+const agoText = (gyr) => gyr >= 0.1 ? `${fmt(gyr * 10, 1)}억 년 전` : gyr >= 1e-4 ? `${fmt(gyr * 1e5, 0)}만 년 전` : `${fmt(gyr * 1e9, 0)}년 전`;
 // ---- textbook UI: chapters in order, prerequisite and follow-up links on every card ----
-const ALL = [...CARDS, ...SCIENCE, ...MORE, ...EXTRA, ...SPACEENV], BYID = Object.fromEntries(ALL.map(c => [c.id, c]));
-const NUM = {}; CHAPTERS.forEach((ch, i) => ch.ids.forEach((id, j) => { NUM[id] = `${i + 1}.${j + 1}`; }));
+const ALL = [...CARDS, ...SCIENCE, ...MORE, ...EXTRA, ...SPACEENV, ...GENERAL], BYID = Object.fromEntries(ALL.map(c => [c.id, c]));
+const NUM = {}; CHAPTERS.forEach((ch, i) => ch.ids.forEach((id, j) => { NUM[id] = `${i}.${j + 1}`; }));
 const NEXT = {}; for (const [id, pre] of Object.entries(PRE)) for (const q of pre) (NEXT[q] ||= []).push(id);
 const chip = (id) => { const c = BYID[id]; const b = el('button', 'cc-chip', `${NUM[id] || ''} ${c.title}`); b.onclick = () => openCard(c); return b; };
 const SEEN_KEY = 'space-commons-cards-seen', OK_KEY = 'space-commons-cards-correct';
@@ -754,6 +839,22 @@ const seen = () => { try { return new Set(JSON.parse(localStorage.getItem(SEEN_K
 function markSeen(id) { try { const s2 = seen(); s2.add(id); localStorage.setItem(SEEN_KEY, JSON.stringify([...s2])); } catch {} }
 // ---- reading each formula: what every symbol is, and what the equation says in words ----
 const EXPLAIN = {
+  scale: { s: [['d', '거리'], ['c', '빛의 속도 (초속 약 30만 km)'], ['t', '빛이 그 거리를 가는 데 걸리는 시간']],
+    r: '빛은 1초에 지구를 일곱 바퀴 반 돕니다. 그 빛으로도 몇 년, 몇백만 년이 걸리는 거리가 우주의 거리입니다. 그래서 먼 천체를 볼수록 더 오래된 과거를 보게 됩니다.' },
+  bluesky: { s: [['I', '흩어지는 빛의 세기'], ['\lambda', '빛의 파장 (파랑 약 450 nm, 빨강 약 700 nm)']],
+    r: '파장이 절반이면 흩어지는 세기는 2⁴ = 16배입니다. 파란빛(450 nm)은 빨간빛(700 nm)보다 약 5.9배 잘 흩어집니다. 그래서 하늘 전체가 파란빛으로 차고, 공기를 길게 지나온 노을빛에는 빨간빛만 남습니다.' },
+  aurora: { s: [['E', '광자 하나의 에너지'], ['h', '플랑크 상수'], ['\nu', '빛의 진동수'], ['c', '빛의 속도'], ['\lambda', '빛의 파장']],
+    r: '원자는 정해진 에너지 계단만 오르내릴 수 있어서, 내놓는 빛의 에너지와 색도 원소마다 정해져 있습니다. 에너지가 클수록 파장이 짧은(파란) 빛입니다. 오로라의 색을 보면 어느 높이의 어떤 원자가 빛나는지 알 수 있습니다.' },
+  meteor: { s: [['v_\text{유성}', '대기에 들어오는 속도'], ['v_\infty', '지구 중력에 끌리기 전 지구에 대한 속도'], ['v_\text{esc}', '지구 탈출 속도 11.2 km/s']],
+    r: '지구 중력이 알갱이를 끌어당겨 그만큼 더 빨라집니다. 아무리 느리게 다가와도 최소 11.2 km/s로 떨어지며, 에너지는 속도의 제곱이라 빠른 유성일수록 훨씬 밝게 탑니다.' },
+  drake: { s: [['N', '지금 신호를 보낼 수 있는 우리 은하의 문명 수'], ['R_\ast', '1년에 새로 생기는 별의 수'], ['f_p', '행성을 가진 별의 비율'], ['n_e', '그런 별 하나에 생명이 살 만한 행성 수'], ['f_l', '그 행성에 생명이 생길 확률'], ['f_i', '생명이 지적 생명으로 자랄 확률'], ['f_c', '먼 곳까지 신호를 보내는 기술을 가질 확률'], ['L', '그런 문명이 유지되는 시간 (년)']],
+    r: '앞의 여러 항을 곱한 값은 "1년에 통신 문명이 몇 개 생기는가"이고, 여기에 문명이 이어지는 시간 L을 곱하면 지금 동시에 있는 수가 됩니다. 곱셈이라 한 항만 아주 작아도 N이 크게 줄어듭니다.' },
+  calendar: { s: [['t', '빅뱅 이후 흐른 실제 시간'], ['t_\text{달력}', '1년 달력에서의 날짜']],
+    r: '138억 년을 365일로 줄이는 비례식입니다. 달력의 하루가 약 3,780만 년, 한 시간이 약 160만 년, 1초가 약 440년에 해당합니다.' },
+  microg: { s: [['g(h)', '높이 h에서의 중력 가속도'], ['g_0', '지표면의 중력 가속도 9.8 m/s²'], ['R_\oplus', '지구 반지름 6,371 km'], ['h', '지표면에서의 높이']],
+    r: '중력은 지구 중심에서 거리의 제곱에 반비례합니다. 420 km는 지구 반지름에 비해 작아서 중력이 11%만 줄어듭니다. 떠 있는 이유는 중력이 없어서가 아니라 함께 떨어지기 때문입니다.' },
+  eht: { s: [['\theta', '구별할 수 있는 가장 작은 각도 (분해능)'], ['\lambda', '관측하는 빛의 파장 (EHT는 1.3 mm)'], ['D', '망원경 지름 (간섭계는 가장 먼 두 망원경 사이 거리)']],
+    r: '같은 파장이면 망원경이 클수록, 같은 망원경이면 파장이 짧을수록 더 작은 것을 구별합니다. 전파는 파장이 길어서, 지구만 한 크기가 되어야 블랙홀 그림자를 볼 수 있습니다.' },
   coords: { s: [['h', '고도: 지평선에서 위로 잰 각도'], ['\\varphi', '관측지의 위도'], ['\\delta', '적위: 천구 적도에서 북쪽으로 잰 각도 (지구의 위도에 해당)'], ['H', '시간각: 별이 남중한 뒤 지난 시간을 각도로 (1시간 = 15°)']],
     r: '별이 하늘에서 얼마나 높이 보이는지는 세 가지로 정해집니다. 내가 어디에 있는지(위도), 별이 천구의 어디에 붙어 있는지(적위), 그리고 지금이 그 별이 남쪽 하늘 가장 높은 곳을 지난 지 얼마나 되었는지(시간각)입니다. H = 0일 때 별은 가장 높고(남중), 그때 고도는 90° − |φ − δ|입니다.' },
   eot: { s: [['E', '균시차: 해시계 시각 − 시계 시각 (분)'], ['n', '1월 1일부터 센 날짜 (1~365)'], ['B', '날짜를 1년 한 바퀴의 각도로 바꾼 값']],
@@ -895,7 +996,7 @@ function renderToc() {
   renderTex(grid);
 }
 function build() {
-  root = el('div', 'cc-root'); root.innerHTML = `<div class="cc-win"><div class="cc-head"><b>우주 알아보기</b><span class="small">${ALL.length}개 개념 · 6단원 · 카드마다 직접 조작하는 그림, 먼저 볼 것과 이어서 볼 것 · 기초 · 교양 · 전공</span><button class="cc-x">×</button></div><div class="cc-grid"></div><div class="cc-detail" hidden></div></div>`;
+  root = el('div', 'cc-root'); root.innerHTML = `<div class="cc-win"><div class="cc-head"><b>우주 알아보기</b><span class="small">${ALL.length}개 개념 · 7단원 · 카드마다 직접 조작하는 그림, 먼저 볼 것과 이어서 볼 것 · 기초 · 교양 · 전공</span><button class="cc-x">×</button></div><div class="cc-grid"></div><div class="cc-detail" hidden></div></div>`;
   document.body.append(root); root.querySelector('.cc-x').onclick = close; root.onclick = (e) => { if (e.target === root) close(); };
   renderToc();
 }
