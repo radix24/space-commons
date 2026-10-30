@@ -1,0 +1,22 @@
+{
+ "paranal": {
+  "ko": "칠레 파라날 천문대 (ESO VLT)",
+  "lat": -24.627,
+  "lon": -70.404,
+  "elev": 2635,
+  "credit": "ESO",
+  "licence": "CC BY 4.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Panoramic_view_of_Paranal_(res-mount-sunrise-pan).jpg",
+  "north": 0
+ },
+ "armazones": {
+  "ko": "칠레 세로 아르마소네스 (초대형 망원경 ELT 자리)",
+  "lat": -24.589,
+  "lon": -70.192,
+  "elev": 3046,
+  "credit": "ESO",
+  "licence": "CC BY 4.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Road_to_Cerro_Armazones_(armaz-acc-road-pano2-ext).jpg",
+  "north": 0
+ }
+}

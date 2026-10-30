@@ -92,6 +92,7 @@
 | 오늘의 지구 | NASA GIBS, VIIRS SNPP 보정 반사율 실제 색 (퍼블릭 도메인) |
 | 오로라 예보 | NOAA SWPC OVATION 오로라 예보 (퍼블릭 도메인) |
 | 광공해 판정 | NASA Black Marble (VIIRS 야간 영상, 퍼블릭 도메인), NASA GIBS |
+| 사진 지평선 | ESO 360° 파노라마: 파라날 천문대, 세로 아르마소네스 (CC BY 4.0, Wikimedia Commons). 하늘을 지운 지평선 사진으로 가공 |
 | 실제 관측 자료 실습 | Gaia DR3 (ESA/Gaia/DPAC, CC BY-SA 3.0 IGO), NASA TESS (exo.MAST, 퍼블릭 도메인), SDSS DR17 (CC BY 4.0) |
 | 함께 배포하는 라이브러리·자료 (vendor/, data/celestial/) | three.js (MIT), KaTeX (MIT), satellite.js (MIT), Draco (Apache 2.0), Pretendard (SIL OFL 1.1), d3-celestial (BSD 3-Clause), OpenNGC (CC BY-SA 4.0) |
 | 파장 바꿔 보기 | 전파: Parkes Radio Telescope/100-m Effelsberg/CSIRO/MPIfR · 마이크로파: ESA/NASA/JPL-Caltech/Planck Collaboration · 적외선: 2MASS/J. Carpenter/T. H. Jarrett/R. Hurt · H-알파: WHAM/VTSS/SHASSA/Douglas Finkbeiner · X선: eROSITA/MPE/IKI (모두 CC BY 4.0, Wikimedia Commons AllSky 시리즈) · 감마선: NASA/DOE/Fermi LAT Collaboration (퍼블릭 도메인) |

@@ -1197,9 +1197,9 @@ function updatePlanets() {
 
 // ---------- ground & horizon ----------
 const groundMat = new THREE.ShaderMaterial({
-  uniforms: { light: { value: 0.5 }, horizon: { value: null }, realH: { value: 0 } },
+  uniforms: { light: { value: 0.5 }, horizon: { value: null }, realH: { value: 0 }, photo: { value: null }, usePhoto: { value: 0 }, north: { value: 0 } },
   vertexShader: `varying vec3 vP; void main(){ vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
-  fragmentShader: `uniform float light, realH; uniform sampler2D horizon; varying vec3 vP;
+  fragmentShader: `uniform float light, realH, usePhoto, north; uniform sampler2D horizon, photo; varying vec3 vP;
     float h1(float x){ return fract(sin(x * 127.1) * 43758.5453); }
     float n1(float x){ float i = floor(x), f = fract(x); return mix(h1(i), h1(i + 1.0), f * f * (3.0 - 2.0 * f)); }
     float h2(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -1208,6 +1208,9 @@ const groundMat = new THREE.ShaderMaterial({
     float fbm(vec2 p){ float v = 0.0, a = 0.5; for (int i = 0; i < 5; i++) { v += a * n2(p); p *= 2.03; a *= 0.5; } return v; }
     void main(){
       vec3 d = normalize(vP); float alt = asin(d.y); float az = atan(d.x, -d.z);
+      if (usePhoto > 0.5) { // a real 360-degree photograph of the place, sky cut away (tools/make_landscapes.py)
+        vec4 t = texture2D(photo, vec2(fract(0.5 + (az - north) / 6.2831853), 0.5 + alt / 3.1415927)); if (t.a < 0.5) discard;
+        gl_FragColor = vec4(t.rgb * light * 0.95, 1.0); return; }
       // distant hills + tree line silhouette (radians above the horizon)
       float hills = 0.018 + 0.016 * sin(az * 2.0 + 0.7) + 0.010 * sin(az * 5.0 + 2.1) + 0.005 * sin(az * 13.0 + 0.3) + 0.008 * n1(az * 9.0);
       float grove = smoothstep(0.45, 0.75, n1(az * 6.0 + 3.0));
@@ -3113,6 +3116,15 @@ function showGuide(k = 0) {
 }
 { let seen = false; try { seen = !!localStorage.getItem('space-commons-guided'); } catch {} if (!seen && !location.hash.includes('lesson=')) setTimeout(() => showGuide(0), 2500); }
 $('help')?.addEventListener('dblclick', () => showGuide(0));
+// ---------- photo horizons: real 360-degree panoramas (ESO, CC BY 4.0) with the sky removed; choosing one also moves you there ----------
+let LANDS = {}; fetch('data/landscapes.json').then(r => r.json()).then(j => { LANDS = j; const s = $('landsel'); for (const [k, v] of Object.entries(j)) s.append(new Option(v.ko, k)); }).catch(() => {});
+$('landsel').onchange = () => {
+  const k = $('landsel').value, u = groundMat.uniforms;
+  if (!k) { u.usePhoto.value = 0; $('status').textContent = '지평선: 지형 자료로 그린 능선'; return; }
+  const L = LANDS[k]; new THREE.TextureLoader().load(`textures/land_${k}.webp`, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; u.photo.value = t; u.north.value = (L.north || 0) * D2R; u.usePhoto.value = 1; });
+  setMode(false); state.lat = L.lat; state.lon = L.lon; $('lat').value = L.lat; $('lon').value = L.lon; updateSkyMatrix();
+  $('status').textContent = `${L.ko} · 실제 360° 사진 지평선 (${L.credit}, ${L.licence}) · 사진 속 방위는 대략입니다`;
+};
 // ---------- 22. whole spacecraft journeys (S7) ----------
 function journeyTimeline(p) {
   const box = $('info-exo'), ev = JOURNEYS[p.name], e = probeEph[p.name]; box.innerHTML = ''; box.hidden = false;
