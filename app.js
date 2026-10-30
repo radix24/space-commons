@@ -3009,6 +3009,32 @@ const A11Y_KEY = 'space-commons-a11y';
   for (const [id, k] of [['a-large', 'large'], ['a-cvd', 'cvd'], ['a-calm', 'calm']]) { const el = $(id); if (!el) continue; el.checked = !!st[k]; el.onchange = () => { st[k] = el.checked; apply(); }; }
   apply();
 })();
+// ---------- proper motion: stars drift over centuries (HYG / Hipparcos, data/pm.json); constellation lines follow the stars they join ----------
+const pm = { data: null, base: null, years: 0, lineMaps: new Map() };
+fetch('data/pm.json').then(r => r.json()).then(j => { pm.data = j; }).catch(() => {});
+const MAS = Math.PI / 180 / 3.6e6;
+function lineMapFor(seg) { // which star each vertex of a line set sits on (within 0.2 degree), found once
+  if (pm.lineMaps.has(seg)) return pm.lineMaps.get(seg);
+  const P = seg.geometry.attributes.position, n = P.count, idx = new Int32Array(n).fill(-1), base = Float32Array.from(P.array), v = new THREE.Vector3(), lim = Math.cos(0.2 * D2R);
+  for (let k = 0; k < n; k++) { v.fromBufferAttribute(P, k).normalize(); let best = lim;
+    for (let i = 0; i < pm.base.length; i++) { if (starData.mag[i] > 6.5) continue; const b = pm.base[i], d = b.x * v.x + b.y * v.y + b.z * v.z; if (d > best) { best = d; idx[k] = i; } } }
+  const m = { idx, base, R: Math.hypot(base[0], base[1], base[2]) }; pm.lineMaps.set(seg, m); return m;
+}
+function updateProperMotion() {
+  if (!pm.data || !starPoints) return;
+  const yrs = (jd(state.time) - 2451545) / 365.25; if (Math.abs(yrs - pm.years) < 20) return;
+  if (!pm.base) pm.base = starData.pos.map(v => v.clone());
+  pm.years = yrs; const P = starPoints.geometry.attributes.position, E = new THREE.Vector3(), N = new THREE.Vector3();
+  for (let i = 0; i < pm.base.length; i++) { const v = pm.base[i], m = pm.data[starData.id[i]], out = starData.pos[i];
+    if (!m) { out.copy(v); } else { const q = Math.hypot(v.x, v.y) || 1e-9; E.set(-v.y / q, v.x / q, 0); N.set(-v.z * v.x / q, -v.z * v.y / q, q);
+      out.copy(v).addScaledVector(E, m[0] * MAS * yrs).addScaledVector(N, m[1] * MAS * yrs).normalize(); }
+    P.setXYZ(i, out.x * R_SKY, out.y * R_SKY, out.z * R_SKY); }
+  P.needsUpdate = true;
+  for (const grp of [linesGroup, koreanGroup, ...Object.values(CULTURES).map(c => c.group)]) for (const seg of grp.children) { if (!seg.isLineSegments) continue;
+    const m = lineMapFor(seg), A = seg.geometry.attributes.position;
+    for (let k = 0; k < A.count; k++) { const s = m.idx[k]; if (s < 0) A.setXYZ(k, m.base[3 * k], m.base[3 * k + 1], m.base[3 * k + 2]); else { const o = starData.pos[s]; A.setXYZ(k, o.x * m.R, o.y * m.R, o.z * m.R); } }
+    A.needsUpdate = true; }
+}
 // ---------- 22. whole spacecraft journeys (S7) ----------
 function journeyTimeline(p) {
   const box = $('info-exo'), ev = JOURNEYS[p.name], e = probeEph[p.name]; box.innerHTML = ''; box.hidden = false;
@@ -3389,7 +3415,7 @@ function frame(now) {
   updateSkyMatrix();
   if (mode.space) { computeHelio(); stepSpaceFlight(now); spaceKeys(dt); }
   updatePlanets();   // positions for this frame first...
-  updateAsteroids(); updateSmallBodies(); updateAurora(); updateStanding(); updateLight(); updateStations(); updateNeo(); updateStars3d(); updateGalaxy(); updateGaia(); updateHorizon(); updateArt(); updateAnalemma(); updateSkyPhoto();
+  updateAsteroids(); updateSmallBodies(); updateAurora(); updateStanding(); updateProperMotion(); updateLight(); updateStations(); updateNeo(); updateStars3d(); updateGalaxy(); updateGaia(); updateHorizon(); updateArt(); updateAnalemma(); updateSkyPhoto();
   updateSats();
   stepFlight(now);   // ...then aim the camera at them (aiming at last frame's position made zoomed views shake)
   updateCamera();
