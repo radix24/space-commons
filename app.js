@@ -2971,6 +2971,34 @@ function updateStanding() {
   const k = 1 / Math.max(1e-12, sp.nearestAll || 1); marsSky.scale.setScalar(5 / k); marsSky.position.set(0, 0, 0);
   marsSkyMat.uniforms.up.value.copy(siteUp); marsSkyMat.uniforms.sunDir.value.copy(helioPos.Mars).negate().normalize();
 }
+// ---------- B2. telescope control: LX200 commands over Web Serial (most go-to mounts), or ASCOM Alpaca over the network ----------
+// Coordinates are sent as J2000 with precession to the date applied (mounts work in the equinox of date).
+const scope = { port: null, writer: null, alpaca: '' };
+function precessToDate(ra, dec, ms) { // IAU 1976 precession, rigorous enough for pointing (< 1')
+  const T = (jd(ms) - 2451545) / 36525, z = (2306.2181 * T + 1.09468 * T * T) / 3600 * D2R, ze = (2306.2181 * T + 0.30188 * T * T) / 3600 * D2R, th = (2004.3109 * T - 0.42665 * T * T) / 3600 * D2R;
+  const a = ra * D2R, d = dec * D2R, A = Math.cos(d) * Math.sin(a + ze), B = Math.cos(th) * Math.cos(d) * Math.cos(a + ze) - Math.sin(th) * Math.sin(d), C = Math.sin(th) * Math.cos(d) * Math.cos(a + ze) + Math.cos(th) * Math.sin(d);
+  return { ra: ((Math.atan2(A, B) + z) * R2D + 360) % 360, dec: Math.asin(C) * R2D };
+}
+async function scopeConnectSerial() {
+  if (!navigator.serial) { $('scope-st').textContent = '이 브라우저는 Web Serial을 지원하지 않습니다 (크롬·엣지 데스크톱에서 가능)'; return; }
+  try { scope.port = await navigator.serial.requestPort(); await scope.port.open({ baudRate: +$('scope-baud').value }); scope.writer = scope.port.writable.getWriter(); $('scope-st').textContent = '직렬 포트 연결됨 (LX200 명령)'; }
+  catch (e) { $('scope-st').textContent = '연결하지 못했습니다: ' + (e.message || e); }
+}
+async function scopeGoto(o) {
+  if (!mode.space && PLANETS[0].world && worldOf(o).normalize().dot(PLANETS[0].world.clone().normalize()) > Math.cos(15 * D2R)) { $('scope-st').textContent = '태양에서 15° 안쪽이라 보내지 않습니다: 필터 없이 태양을 향하면 눈과 장비가 상합니다'; return; }
+  const w = worldOf(o).applyMatrix4(new THREE.Matrix4().copy(sky.matrixWorld).invert()), { ra, dec } = vecToRaDec(w), p = precessToDate(ra, dec, state.time);
+  if (scope.writer) { const pad = (n, k) => String(Math.floor(n)).padStart(k, '0'), h = p.ra / 15, dd = Math.abs(p.dec);
+    const cmd = `:Sr${pad(h, 2)}:${pad((h % 1) * 60, 2)}:${pad(((h * 60) % 1) * 60, 2)}#:Sd${p.dec < 0 ? '-' : '+'}${pad(dd, 2)}*${pad((dd % 1) * 60, 2)}:${pad(((dd * 60) % 1) * 60, 2)}#:MS#`;
+    await scope.writer.write(new TextEncoder().encode(cmd)); $('scope-st').textContent = `보냄: ${objLabel(o)} (${cmd})`; return; }
+  if (scope.alpaca) { const base = scope.alpaca.replace(/\/$/, '') + '/api/v1/telescope/0/';
+    try { const body = new URLSearchParams({ RightAscension: (p.ra / 15).toFixed(5), Declination: p.dec.toFixed(5), ClientID: '7', ClientTransactionID: String(Date.now() % 1e6) });
+      const r = await fetch(base + 'slewtocoordinatesasync', { method: 'PUT', body }); const j = await r.json(); $('scope-st').textContent = j.ErrorNumber ? `망원경 오류: ${j.ErrorMessage}` : `${objLabel(o)}(으)로 움직이는 중 (Alpaca)`; }
+    catch (e) { $('scope-st').textContent = 'Alpaca 서버에 닿지 못했습니다 (주소, CORS 허용 여부 확인)'; } return; }
+  $('scope-st').textContent = '먼저 망원경을 연결하세요';
+}
+$('scope-serial').onclick = scopeConnectSerial;
+$('scope-alpaca').onclick = () => { scope.alpaca = $('scope-url').value.trim(); $('scope-st').textContent = scope.alpaca ? `Alpaca 주소 설정: ${scope.alpaca}` : ''; };
+$('scope-goto').onclick = () => { if (selected) scopeGoto(selected); else $('scope-st').textContent = '하늘에서 천체를 먼저 고르세요'; };
 // ---------- 22. whole spacecraft journeys (S7) ----------
 function journeyTimeline(p) {
   const box = $('info-exo'), ev = JOURNEYS[p.name], e = probeEph[p.name]; box.innerHTML = ''; box.hidden = false;

@@ -210,6 +210,12 @@
   </div>
   <div class="row"><label><input type="checkbox" id="g-eye" checked> 접안렌즈 시야 원</label><label><input type="checkbox" id="g-cam" checked> 사진 구도 사각형</label></div>
   <table id="gear-out" class="pltable"></table>
+  <h3 class="small">망원경 연결 (고투 가대)</h3>
+  <div class="small">USB·직렬 케이블: LX200 명령을 쓰는 가대(미드, 셀레스트론 일부, SynScan 등). 네트워크: ASCOM Alpaca 서버 주소. 위험한 동작을 막기 위해 해가 떠 있을 때는 태양 쪽으로 보내지 마세요.</div>
+  <div class="row"><select id="scope-baud"><option>9600</option><option>115200</option></select><button id="scope-serial">직렬 포트 연결</button></div>
+  <div class="row"><input id="scope-url" placeholder="http://192.168.0.10:11111"><button id="scope-alpaca">Alpaca 연결</button></div>
+  <div class="row"><button id="scope-goto">고른 천체로 망원경 보내기</button></div>
+  <div id="scope-st" class="small"></div>
   <h3 class="small">접안렌즈별 비교 (같은 망원경)</h3>
   <table id="gear-eps" class="pltable"></table>
 </div>
