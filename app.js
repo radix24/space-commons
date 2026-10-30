@@ -2707,6 +2707,47 @@ function renderObs() {
 $('obs-btn').onclick = () => $('obs').hidden ? renderObs() : ($('obs').hidden = true);
 $('obs-close').onclick = () => $('obs').hidden = true;
 
+// ---------- 11b. tonight's observing plan (B1): what is worth seeing, in time order, during astronomical darkness ----------
+function azAltAt(v, ms) { const { ra, dec } = vecToRaDec(v); const H = (lstDeg(ms, state.lon) - ra) * D2R, d = dec * D2R, p = state.lat * D2R;
+  const alt = Math.asin(Math.sin(p) * Math.sin(d) + Math.cos(p) * Math.cos(d) * Math.cos(H));
+  const az = Math.atan2(-Math.cos(d) * Math.sin(H), Math.sin(d) * Math.cos(p) - Math.cos(d) * Math.cos(H) * Math.sin(p));
+  return { alt: alt * R2D, az: ((az * R2D) + 360) % 360 }; }
+const DIR8 = ['북', '북동', '동', '남동', '남', '남서', '서', '북서'];
+function tonightPlan() {
+  const d0 = new Date(state.time), start = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate(), 12).getTime() - (d0.getHours() < 12 ? 86400e3 : 0);
+  const T = [], SM = []; for (let i = 0; i <= 96; i++) { const t = start + i * 15 * 60e3; T.push(t); SM.push(sunMoonAt(t)); }
+  const dark = T.map((t, i) => altOf(SM[i].Sun, t) < -12); if (!dark.some(Boolean)) return { rows: [], note: '오늘은 하늘이 충분히 어두워지지 않습니다 (백야)' };
+  const i0 = dark.indexOf(true), i1 = dark.lastIndexOf(true), bortle = +$('bortle').value, lim = [7.6, 7.1, 6.6, 6.2, 5.7, 5.2, 4.7, 4.2, 3.8][bortle - 1];
+  const es = $('eyepiece'), eq = es.options[es.selectedIndex]?.text || '', aid = /200mm/.test(eq) ? 6 : /80mm|mm/.test(eq) ? 4.5 : /쌍안경/.test(eq) ? 2.5 : 0;  // the chosen equipment reaches fainter objects
+  const cands = [];
+  for (const n of ['Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']) { const p = PLANETS.find(q => q.name === n);
+    cands.push({ key: n, label: p.ko, kind: n === 'Moon' ? '위성' : '행성', mag: p.mag, dirAt: (t) => ecl2eq(geoAt(t)[n]) }); }
+  for (const o of dsos) if (o.messier && isFinite(o.mag) && o.mag < lim + aid + 1) { const v = radec(o.ra, o.dec);
+    cands.push({ key: o.messier, label: [o.messier, o.common].filter(Boolean).join(' '), kind: TYPE_RAW_KO[o.type] || o.type, mag: o.mag, dirAt: () => v }); }
+  const mine = new Set(loadObs().map(x => x.key)), rows = [];
+  for (const c of cands) { let best = -1, ba = -90;
+    for (let i = i0; i <= i1; i++) { const a = altOf(c.dirAt(T[i]), T[i]); if (a > ba) { ba = a; best = i; } }
+    if (ba < 25 || (c.kind !== '행성' && c.kind !== '위성' && c.mag > lim + aid)) continue;
+    if (['Uranus', 'Neptune'].includes(c.key) && !aid) continue;
+    const t = T[best], v = c.dirAt(t), aa = azAltAt(v, t), moonSep = c.key === 'Moon' ? null : sepDeg(v, SM[best].Moon), moonUp = altOf(SM[best].Moon, t) > 0;
+    const moonPenalty = c.kind === '행성' || c.kind === '위성' ? 0 : moonUp && moonSep < 40 ? 2 : 0;
+    rows.push({ ...c, t, alt: aa.alt, dir: DIR8[Math.round(aa.az / 45) % 8], moonSep, moonUp, score: ba / 10 - (c.mag || 0) * 0.6 - moonPenalty + (mine.has(c.key) ? 5 : 0), mine: mine.has(c.key) }); }
+  rows.sort((a, b) => b.score - a.score); const pick = rows.slice(0, 14).sort((a, b) => a.t - b.t);
+  return { rows: pick, dusk: T[i0], dawn: T[i1], lim: lim + aid };
+}
+function renderPlan() {
+  const P = tonightPlan(), box = $('plan'), hm = (t) => new Date(t).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit', hour12: false });
+  if (!P.rows.length) { box.innerHTML = `<p class="small">${P.note || '조건에 맞는 천체가 없습니다'}</p>`; box.hidden = false; return; }
+  let h = `<h3>오늘 밤 관측 계획</h3><p class="small">${state.lat.toFixed(2)}°, ${state.lon.toFixed(2)}° · 천문 박명 끝 ${hm(P.dusk)} ~ 시작 ${hm(P.dawn)} · 보이는 한계 약 ${P.lim.toFixed(1)}등급 (광공해 단계와 장비 기준)</p>`;
+  h += '<table class="pltable"><tr><th>시각</th><th>천체</th><th>방향 · 고도</th><th>등급</th><th>참고</th></tr>';
+  for (const r of P.rows) h += `<tr data-k="${r.key}"><td>${hm(r.t)}</td><td><button class="plan-go">${r.label}</button>${r.mine ? ' ★' : ''}<br><span class="small">${r.kind}</span></td><td>${r.dir} ${r.alt.toFixed(0)}°</td><td>${isFinite(r.mag) ? r.mag.toFixed(1) : '-'}</td><td class="small">${r.kind === '행성' || r.kind === '위성' ? '' : r.moonSep != null && r.moonUp && r.moonSep < 40 ? `달과 ${r.moonSep.toFixed(0)}°, 달빛 방해` : r.moonSep != null && r.moonUp ? '달이 떠 있음' : ''}</td></tr>`;
+  h += '</table><p class="small">시각은 가장 높이 뜨는 때입니다. ★ = 내 관측 목록. 날씨는 날씨 창에서 확인하세요.</p>';
+  box.innerHTML = h; box.hidden = false; $('plan-print').hidden = false;
+  box.querySelectorAll('.plan-go').forEach(b => b.onclick = () => { const k = b.closest('tr').dataset.k, mk = searchIndex.get(k.toLowerCase().replace(/\s+/g, '')); if (mk) { const o = mk(); select(o); flyTo(o); } });
+}
+$('plan-btn').onclick = () => { if ($('obs').hidden) renderObs(); renderPlan(); };
+$('plan-print').onclick = () => { document.body.classList.add('print-plan'); window.print(); document.body.classList.remove('print-plan'); };
+
 // ---------- 25. phone: collapsible panel, point-at-the-sky with the gyroscope ----------
 if (matchMedia('(max-width: 640px)').matches) document.body.classList.add('collapsed');
 $('panel-toggle').onclick = () => { const c = document.body.classList.toggle('collapsed'); $('panel-toggle').textContent = c ? '더 보기' : '접기'; };
