@@ -128,7 +128,7 @@ const starMat = new THREE.ShaderMaterial({
       gl_Position = skyClip(position);
       float X = airmass(position);
       float d = limit - (mag + extK * (X - 1.0));
-      vA = clamp(d * 0.6 + 0.25, 0.0, 1.0) * dim;
+      vA = clamp(d * 0.6 + 0.4, 0.0, 1.0) * dim;
       // scintillation: stronger through more air (low altitude); two incommensurate waves per star
       float h = fract(sin(dot(position.xy, vec2(12.9898, 78.233))) * 43758.5453), tw = twinkle * clamp((X - 1.0) / 8.0, 0.1, 0.85);
       vA *= 1.0 + tw * sin(time * 13.0 + h * 60.0) * sin(time * 7.3 + h * 31.0);

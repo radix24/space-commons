@@ -68,6 +68,7 @@
 | 별의 3차원 위치 | HYG 데이터베이스 v4.1 (CC BY-SA 4.0, 별도 데이터 파일과 라이선스 안내) |
 | 달 위치 | Meeus, Astronomical Algorithms 47장 (astronomia 라이브러리에서 이식, MIT) |
 | 날씨 예보 | Open-Meteo (실시간) |
+| 확대 시 어두운 별 | ESA Gaia DR3 (G 8~12등급 약 302만 개, 하늘 1,668개 구역으로 나눠 저장) |
 | 별자리 그림 | Johan Meuris, Stellarium "modern" 별자리 문화 (Free Art License 1.3, 별도 파일과 라이선스 안내) |
 | 지평선 지형 | AWS Terrain Tiles (Mapzen Terrarium, SRTM 등 공개 고도 자료) |
 | 인공위성 | CelesTrak |
