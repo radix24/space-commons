@@ -520,12 +520,34 @@ function draw() {
     if (_v.z > 1 || Math.abs(_v.x) > 1.1 || Math.abs(_v.y) > 1.1) lb.style.display = 'none';
     else { lb.style.display = ''; lb.style.transform = `translate(${(_v.x + 1) / 2 * W + 8}px, ${(1 - _v.y) / 2 * H - 8}px)`; } }
   const lamp = sim.bodies.filter(x => x.kind === 'star' && !x.dead).sort((x, y) => y.m - x.m)[0]; if (lamp) starLight.position.set(...lamp.r); starLight.intensity = lamp ? 2.2 : 0;
-  updateBary(); updateRuler(); drawSwarm(); renderer.render(scene, camera);
+  updateBary(); updateRuler(); updateOverlay(); drawSwarm(); renderer.render(scene, camera);
   // status
   const E = energy(), dE = sim.E0 ? Math.abs((E - sim.E0) / sim.E0) : 0;
   root.querySelector('.sb-date').textContent = `${fmtDate(sim.t)} · ${sim.playing ? (sim.speed < 0 ? '역재생 ' : '') + speedLabel(Math.abs(sim.speed)) : '정지'}${sim.slow ? ' · 근접 통과 계산 중 (느려짐)' : ''}`;
   root.querySelector('.sb-energy').textContent = `에너지 보존 오차 ${dE < 1e-12 ? '0' : dE.toExponential(1)}`;
   updateSelected(); labTick(); updateHZ(); updateTempMap(); updateRoche(); updatePredictions(performance.now()); updateVelocities(); updateWell(); updateGraph();
+}
+// instrument overlay: brackets around the selected body with a leader to a readout tag, a live scale bar, AU marks on the grid rings
+function updateOverlay() {
+  const W = root.clientWidth, H = root.clientHeight, ret = root.querySelector('.sb-reticle'), tag = root.querySelector('.sb-tag'), led = root.querySelector('.sb-leader');
+  const b = selected && !selected.dead ? selected : null; let show = false;
+  if (b) { _v.set(b.r[0], b.r[1], b.r[2]); const dd = camera.position.distanceTo(_v), px = Math.max(10, (b.Rkm / O.AU_KM) / dd / Math.tan(camera.fov * Math.PI / 360) * H / 2 + 8);
+    _v.project(camera); show = _v.z < 1 && Math.abs(_v.x) < 1.2 && Math.abs(_v.y) < 1.2;
+    if (show) { const x = (_v.x + 1) / 2 * W, y = (1 - _v.y) / 2 * H, s = Math.min(px, H * 0.45);
+      ret.style.transform = `translate(${x - s}px, ${y - s}px)`; ret.style.width = ret.style.height = 2 * s + 'px';
+      const tx = Math.min(W - 190, x + s + 40), ty = Math.max(70, y - s - 30); tag.style.transform = `translate(${tx}px, ${ty}px)`;
+      const ln = led.querySelector('line'); ln.setAttribute('x1', x + s * 0.72); ln.setAttribute('y1', y - s * 0.72); ln.setAttribute('x2', tx); ln.setAttribute('y2', ty + 22);
+      const hs = hostStar(b), k = b.kind === 'planet' ? ATM.climate(b, teq(b)) : null, d = hs && hs !== b ? norm(add(b.r, hs.r, -1)) : 0;
+      tag.querySelector('b').textContent = b.ko || '탐사선'; tag.querySelector('span').textContent = [k ? `${Math.round(k.Ts + impactHeat(b) - 273.15)} °C` : b.kind === 'star' ? starStage(b).name : '', d ? `${d.toFixed(d < 0.1 ? 4 : 2)} AU` : '', `${(norm(add(b.v, hs && hs !== b ? hs.v : [0, 0, 0], -1)) * O.KMS).toFixed(1)} km/s`].filter(Boolean).join('  ·  '); } }
+  ret.hidden = tag.hidden = led.hidden = !show;
+  // scale bar: a round number of AU (or km) about 120 px long at the focus distance
+  const dist = camera.position.distanceTo(controls.target), perPx = 2 * dist * Math.tan(camera.fov * Math.PI / 360) / H, want = perPx * 120;
+  const km = want * O.AU_KM, useKm = want < 0.02, val = useKm ? km : want, p10 = Math.pow(10, Math.floor(Math.log10(val))), nice = [1, 2, 5, 10].map(m => m * p10).filter(v => v <= val).pop() || p10;
+  root.querySelector('.sb-scalebar').style.width = (useKm ? nice / O.AU_KM : nice) / perPx + 'px'; root.querySelector('.sb-scale span').textContent = useKm ? `${nice.toLocaleString()} km` : `${nice} AU`;
+  // AU marks where the grid rings cross the +x axis
+  const gl = root.querySelector('.sb-gridlbl'); if (!gl.children.length) for (const r of [1, 2, 5, 10, 20, 30]) gl.append(el('span', '', `${r} AU`));
+  [...gl.children].forEach((e, i) => { const r = [1, 2, 5, 10, 20, 30][i]; _v.set(r, 0, 0).project(camera); const vis = _v.z < 1 && Math.abs(_v.x) < 1 && Math.abs(_v.y) < 1;
+    e.hidden = !vis; if (vis) e.style.transform = `translate(${(_v.x + 1) / 2 * W + 4}px, ${(1 - _v.y) / 2 * H - 14}px)`; });
 }
 const speedLabel = (s) => s >= 1 ? `1초에 ${s}일` : s * 24 >= 1 ? `1초에 ${Math.round(s * 24)}시간` : `1초에 ${Math.round(s * 1440)}분`;
 function loop(now) {
@@ -1287,6 +1309,10 @@ function buildUI() {
     <div class="sb-lab" hidden></div>
     <div class="sb-terra" hidden></div>
     <div class="sb-rulerlb" hidden></div>
+    <div class="sb-reticle" hidden><i></i><i></i><i></i><i></i></div>
+    <div class="sb-tag" hidden><b></b><span></span></div><svg class="sb-leader" hidden><line x1="0" y1="0" x2="0" y2="0"/></svg>
+    <div class="sb-scale"><div class="sb-scalebar"></div><span></span></div>
+    <div class="sb-gridlbl"></div>
     <div class="sb-toast" hidden></div>`;
   document.body.append(root);
   renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); root.prepend(renderer.domElement);
