@@ -18,5 +18,60 @@
   "licence": "CC BY 4.0",
   "source": "https://commons.wikimedia.org/wiki/File:Road_to_Cerro_Armazones_(armaz-acc-road-pano2-ext).jpg",
   "north": 0
+ },
+ "bohyunsan": {
+  "ko": "경북 영천 보현산천문대",
+  "lat": 36.1645,
+  "lon": 128.9763,
+  "elev": 1118,
+  "credit": "Tilezen Terrain Tiles (AWS Open Data: SRTM 등) 지형으로 그림",
+  "licence": "출처 표시",
+  "source": "https://registry.opendata.aws/terrain-tiles/",
+  "north": 0,
+  "dem": true
+ },
+ "sobaeksan": {
+  "ko": "충북 단양 소백산천문대",
+  "lat": 36.9339,
+  "lon": 128.4577,
+  "elev": 1350,
+  "credit": "Tilezen Terrain Tiles (AWS Open Data: SRTM 등) 지형으로 그림",
+  "licence": "출처 표시",
+  "source": "https://registry.opendata.aws/terrain-tiles/",
+  "north": 0,
+  "dem": true
+ },
+ "jeju1100": {
+  "ko": "제주 한라산 1100고지",
+  "lat": 33.3577,
+  "lon": 126.4627,
+  "elev": 1125,
+  "credit": "Tilezen Terrain Tiles (AWS Open Data: SRTM 등) 지형으로 그림",
+  "licence": "출처 표시",
+  "source": "https://registry.opendata.aws/terrain-tiles/",
+  "north": 0,
+  "dem": true
+ },
+ "namsan": {
+  "ko": "서울 남산",
+  "lat": 37.5512,
+  "lon": 126.9882,
+  "elev": 271,
+  "credit": "Tilezen Terrain Tiles (AWS Open Data: SRTM 등) 지형으로 그림",
+  "licence": "출처 표시",
+  "source": "https://registry.opendata.aws/terrain-tiles/",
+  "north": 0,
+  "dem": true
+ },
+ "chiak": {
+  "ko": "강원 원주 치악산 (관측 명소)",
+  "lat": 37.3653,
+  "lon": 128.0507,
+  "elev": 1201,
+  "credit": "Tilezen Terrain Tiles (AWS Open Data: SRTM 등) 지형으로 그림",
+  "licence": "출처 표시",
+  "source": "https://registry.opendata.aws/terrain-tiles/",
+  "north": 0,
+  "dem": true
  }
 }

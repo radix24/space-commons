@@ -80,6 +80,7 @@ function advance(days) {
   let left = Math.abs(days), n = 0; const dir = Math.sign(days); sim.slow = false;
   while (left > 0 && n < 4000) { const dt = Math.min(stepDt(), left); step(dir * dt); left -= dt; n++; }
   if (left > 0) sim.slow = true; // too many steps for one frame (a close pass): the clock falls behind on purpose
+  swarmAdvance(dir * (Math.abs(days) - left));
 }
 function energy() {
   const ms = massive(); let E = 0;
@@ -238,16 +239,32 @@ function flash(r, size, color = 0xffd27a) {
 function updateFlashes(dt) { for (const f of [...flashGroup.children]) { f.userData.t += dt; const k = f.userData.t / 1.6; f.scale.setScalar(f.userData.size * (0.3 + 2.5 * k)); f.material.opacity = Math.max(0, 1 - k); if (k >= 1) { flashGroup.remove(f); f.material.dispose(); } } }
 
 // ---- making things: an asteroid belt, rings ----
+// swarm: massless particles feeling only the massive bodies, leapfrog in typed arrays (tens of thousands at a few ms per frame)
+const swarm = { n: 0, r: null, v: null, pts: null, acc: 0 };
 function makeBelt() {
   const star = sim.bodies.filter(b => b.kind === 'star').sort((a, b) => b.m - a.m)[0]; if (!star) return toast('별이 있어야 소행성대를 만들 수 있습니다');
-  const N = MOBILE_SB ? 250 : 600, mu = O.MU_SUN * star.m;
+  const N = MOBILE_SB ? 8000 : 30000, mu = O.MU_SUN * star.m, r = new Float64Array(N * 3), v = new Float64Array(N * 3);
   for (let i = 0; i < N; i++) { const a = 1.9 + Math.random() * 1.6, e = Math.random() * 0.12, M = Math.random() * 2 * Math.PI, w = Math.random() * 2 * Math.PI, inc = (Math.random() - 0.5) * 0.15;
     const rr = a * (1 - e * e) / (1 + e * Math.cos(M)), th = M + w, vr = Math.sqrt(mu / (a * (1 - e * e))) * e * Math.sin(M), vt = Math.sqrt(mu / (a * (1 - e * e))) * (1 + e * Math.cos(M));
-    const b = makeBody(`ast${Date.now()}-${i}`, add(star.r, [rr * Math.cos(th), rr * Math.sin(th) * Math.cos(inc), rr * Math.sin(th) * Math.sin(inc)]),
-      add(star.v, [vr * Math.cos(th) - vt * Math.sin(th), (vr * Math.sin(th) + vt * Math.cos(th)) * Math.cos(inc), (vr * Math.sin(th) + vt * Math.cos(th)) * Math.sin(inc)]), { m: 0, ko: '', color: 0xb5aa9c });
-    b.frag = true; b.trail = new Float32Array(3); sim.bodies.push(b); buildMesh(b); b.line.visible = false; }
-  toast(`소행성 ${N}개를 2~3.5 AU에 뿌렸습니다. 목성과 공명하는 거리(2.5, 2.82, 2.95, 3.27 AU)에서 수천 년 뒤 틈(커크우드 간극)이 생기는지 보세요`);
+    r.set(add(star.r, [rr * Math.cos(th), rr * Math.sin(th) * Math.cos(inc), rr * Math.sin(th) * Math.sin(inc)]), i * 3);
+    v.set(add(star.v, [vr * Math.cos(th) - vt * Math.sin(th), (vr * Math.sin(th) + vt * Math.cos(th)) * Math.cos(inc), (vr * Math.sin(th) + vt * Math.cos(th)) * Math.sin(inc)]), i * 3); }
+  clearSwarm(); swarm.n = N; swarm.r = r; swarm.v = v; swarm.acc = 0;
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(N * 3), 3));
+  swarm.pts = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xb5aa9c, size: 1.6, sizeAttenuation: false, transparent: true, opacity: 0.8, depthWrite: false })); swarm.pts.frustumCulled = false; scene.add(swarm.pts); drawSwarm();
+  toast(`소행성 ${N.toLocaleString()}개를 2~3.5 AU에 뿌렸습니다. 목성과 공명하는 거리(2.5, 2.82, 2.95, 3.27 AU)에서 수천 년 뒤 틈(커크우드 간극)이 생기는지 보세요`);
 }
+function clearSwarm() { if (swarm.pts) { scene.remove(swarm.pts); swarm.pts.geometry.dispose(); } swarm.n = 0; swarm.pts = null; }
+function swarmAdvance(days) { // leapfrog (half kicks fused) against the massive bodies where they are now; 4-day steps are fine at 2-3.5 AU
+  if (!swarm.n) return; swarm.acc += days; const n = Math.ceil(Math.abs(swarm.acc) / 4); if (!n) return;
+  const dt = swarm.acc / n, ms = massive(), M = ms.length, P = new Float64Array(M * 4), r = swarm.r, v = swarm.v, L = swarm.n * 3; swarm.acc = 0;
+  ms.forEach((o, k) => P.set([o.r[0], o.r[1], o.r[2], O.MU_SUN * o.m], k * 4));
+  const kick = (h) => { for (let i = 0; i < L; i += 3) { const x = r[i], y = r[i + 1], z = r[i + 2]; let ax = 0, ay = 0, az = 0;
+    for (let k = 0; k < M * 4; k += 4) { const dx = P[k] - x, dy = P[k + 1] - y, dz = P[k + 2] - z, d2 = dx * dx + dy * dy + dz * dz + 1e-10, f = P[k + 3] / (d2 * Math.sqrt(d2)); ax += f * dx; ay += f * dy; az += f * dz; }
+    v[i] += ax * h; v[i + 1] += ay * h; v[i + 2] += az * h; } };
+  kick(dt / 2); for (let s = 0; s < n; s++) { for (let i = 0; i < L; i++) r[i] += v[i] * dt; kick(s < n - 1 ? dt : dt / 2); }
+}
+function drawSwarm() { if (!swarm.n) return; const a = swarm.pts.geometry.attributes.position; a.array.set(swarm.r); a.needsUpdate = true; }
+
 function makeRing(p) {
   if (p.test || !p.Rkm || p.kind === 'bh' || p.kind === 'star') return toast('행성을 골라 주세요');
   const N = 240, mu = O.MU_SUN * p.m, R = p.Rkm / O.AU_KM, rIn = 1.3 * R, rOut = Math.max(2.6 * R, rocheKm(p, 900) / O.AU_KM * 1.4);
@@ -261,9 +278,9 @@ const MOBILE_SB = matchMedia('(max-width: 640px)').matches;
 // ---- saving and sharing a scene ----
 const SAVE_KEY = 'space-commons-sandbox-saves';
 const loadSaves = () => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || []; } catch { return []; } };
-const sceneData = () => ({ t: sim.t, bodies: sim.bodies.filter(b => !b.crashed && !b.frag).map(b => ({ name: b.name, ko: b.ko, m: b.m, r: b.r, v: b.v, Rkm: b.Rkm, color: b.color, kind: b.kind })) });
+const sceneData = () => ({ t: sim.t, bodies: sim.bodies.filter(b => !b.crashed && !b.frag).map(b => ({ name: b.name, ko: b.ko, m: b.m, r: b.r, v: b.v, Rkm: b.Rkm, color: b.color, kind: b.kind, atm: b.atm || undefined })) });
 function loadScene(d) {
-  clearScene(); sim.t = d.t; sim.bodies = d.bodies.map(x => makeBody(x.name, x.r, x.v, { ko: x.ko, m: x.m, Rkm: x.Rkm, color: x.color, kind: x.kind }));
+  clearScene(); sim.t = d.t; sim.bodies = d.bodies.map(x => makeBody(x.name, x.r, x.v, { ko: x.ko, m: x.m, Rkm: x.Rkm, color: x.color, kind: x.kind })); d.bodies.forEach((x, i) => { if (x.atm) sim.bodies[i].atm = x.atm; });
   buildMeshes(); sim.E0 = energy(); snapshot(); select(null); focus(sim.bodies.find(b => b.kind === 'star')?.name || sim.bodies[0]?.name, 6); toast('장면을 불러왔습니다');
 }
 function refreshSaves() { const sel = root.querySelector('.sb-loads'); sel.length = 1; loadSaves().forEach((x, i) => sel.append(new Option(`${x.name} (${x.at.slice(0, 16).replace('T', ' ')})`, i))); }
@@ -326,6 +343,7 @@ function scenario(key) {
   focus('Sun', key === 'jupx10' ? 25 : 8); snapshot();
 }
 function clearScene() {
+  clearSwarm();
   for (const b of sim.bodies) { if (b.mesh) scene.remove(b.mesh, b.line); b.line?.geometry.dispose(); }
   root?.querySelectorAll('.sb-label').forEach(e => e.remove()); view.labels.clear();
 }
@@ -349,7 +367,7 @@ function draw() {
     const lb = view.labels.get(b); _v.set(b.r[0], b.r[1], b.r[2]).project(camera);
     if (_v.z > 1 || Math.abs(_v.x) > 1.1 || Math.abs(_v.y) > 1.1) lb.style.display = 'none';
     else { lb.style.display = ''; lb.style.transform = `translate(${(_v.x + 1) / 2 * W + 8}px, ${(1 - _v.y) / 2 * H - 8}px)`; } }
-  renderer.render(scene, camera);
+  drawSwarm(); renderer.render(scene, camera);
   // status
   const E = energy(), dE = sim.E0 ? Math.abs((E - sim.E0) / sim.E0) : 0;
   root.querySelector('.sb-date').textContent = `${fmtDate(sim.t)} · ${sim.playing ? (sim.speed < 0 ? '역재생 ' : '') + speedLabel(Math.abs(sim.speed)) : '정지'}${sim.slow ? ' · 근접 통과 계산 중 (느려짐)' : ''}`;

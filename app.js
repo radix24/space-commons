@@ -69,13 +69,56 @@ let tracking = null; // object to keep centered
 // ---------- time & location ----------
 const state = { time: Date.now(), speed: 1, lat: 37.57, lon: 126.98, lastReal: performance.now() };
 const jd = (ms) => ms / 86400000 + 2440587.5;
+function julianDate(J) { // Julian-calendar Y-M-D for a Julian day number (Meeus ch.7, no Gregorian correction)
+  const Z = Math.floor(J + 0.5), B = Z + 1524, C = Math.floor((B - 122.1) / 365.25), D = Math.floor(365.25 * C), E = Math.floor((B - D) / 30.6001);
+  const m = E < 14 ? E - 1 : E - 13; return { y: m > 2 ? C - 4716 : C - 4715, m, d: B - D - Math.floor(30.6001 * E) };
+}
+function clockText(ms) { // before 15 Oct 1582 dates are shown in the Julian calendar, as history books write them
+  if (ms >= -12219292800000) return new Date(ms).toLocaleString(LOCALE, { hour12: false });
+  const off = -new Date().getTimezoneOffset() * 60000, J = jd(ms + off), j = julianDate(J), f = ((J + 0.5) % 1 + 1) % 1, hh = Math.floor(f * 24), mm = Math.floor(f * 1440) % 60;
+  const y = j.y > 0 ? `${j.y}` : `기원전 ${1 - j.y}`; return `${y}. ${j.m}. ${j.d}. ${hh}시 ${String(mm).padStart(2, '0')}분 (율리우스력) · JD ${jd(ms).toFixed(2)} · ΔT ${Math.round(deltaT(ms)).toLocaleString()}초`;
+}
 function lstDeg(ms, lon) {
   const d = jd(ms) - 2451545.0;
   return (((280.46061837 + 360.98564736629 * d + lon) % 360) + 360) % 360;
 }
+// delta-T = TT - UT in seconds (Espenak & Meeus polynomials, NASA eclipse site); the clock shows UT, the planets move in TT
+function deltaT(ms) {
+  const y = 1970 + ms / 31557600000, u = (y - 1820) / 100, t = (a) => y - a;
+  if (y < -500) return -20 + 32 * u * u;
+  if (y < 500) { const x = y / 100; return 10583.6 - 1014.41 * x + 33.78311 * x ** 2 - 5.952053 * x ** 3 - 0.1798452 * x ** 4 + 0.022174192 * x ** 5 + 0.0090316521 * x ** 6; }
+  if (y < 1600) { const x = (y - 1000) / 100; return 1574.2 - 556.01 * x + 71.23472 * x ** 2 + 0.319781 * x ** 3 - 0.8503463 * x ** 4 - 0.005050998 * x ** 5 + 0.0083572073 * x ** 6; }
+  if (y < 1700) { const x = t(1600); return 120 - 0.9808 * x - 0.01532 * x ** 2 + x ** 3 / 7129; }
+  if (y < 1800) { const x = t(1700); return 8.83 + 0.1603 * x - 0.0059285 * x ** 2 + 0.00013336 * x ** 3 - x ** 4 / 1174000; }
+  if (y < 1860) { const x = t(1800); return 13.72 - 0.332447 * x + 0.0068612 * x ** 2 + 0.0041116 * x ** 3 - 0.00037436 * x ** 4 + 0.0000121272 * x ** 5 - 0.0000001699 * x ** 6 + 0.000000000875 * x ** 7; }
+  if (y < 1900) { const x = t(1860); return 7.62 + 0.5737 * x - 0.251754 * x ** 2 + 0.01680668 * x ** 3 - 0.0004473624 * x ** 4 + x ** 5 / 233174; }
+  if (y < 1920) { const x = t(1900); return -2.79 + 1.494119 * x - 0.0598939 * x ** 2 + 0.0061966 * x ** 3 - 0.000197 * x ** 4; }
+  if (y < 1941) { const x = t(1920); return 21.20 + 0.84493 * x - 0.076100 * x ** 2 + 0.0020936 * x ** 3; }
+  if (y < 1961) { const x = t(1950); return 29.07 + 0.407 * x - x * x / 233 + x ** 3 / 2547; }
+  if (y < 1986) { const x = t(1975); return 45.45 + 1.067 * x - x * x / 260 - x ** 3 / 718; }
+  if (y < 2005) { const x = t(2000); return 63.86 + 0.3345 * x - 0.060374 * x ** 2 + 0.0017275 * x ** 3 + 0.000651814 * x ** 4 + 0.00002373599 * x ** 5; }
+  if (y < 2050) { const x = t(2000); return 62.92 + 0.32217 * x + 0.005589 * x * x; }
+  if (y < 2150) return -20 + 32 * u * u - 0.5628 * (2150 - y);
+  return -20 + 32 * u * u;
+}
+// precession (IAU 1976) and nutation (IAU 1980, the main terms, ~0.5") from J2000 to the true equator and equinox of date
+function nutation(T) {
+  const om = (125.04452 - 1934.136261 * T) * D2R, Ls = (280.4665 + 36000.7698 * T) * D2R, Lm = (218.3165 + 481267.8813 * T) * D2R;
+  const dpsi = (-17.20 * Math.sin(om) - 1.32 * Math.sin(2 * Ls) - 0.23 * Math.sin(2 * Lm) + 0.21 * Math.sin(2 * om)) / 3600 * D2R;
+  const deps = (9.20 * Math.cos(om) + 0.57 * Math.cos(2 * Ls) + 0.10 * Math.cos(2 * Lm) - 0.09 * Math.cos(2 * om)) / 3600 * D2R;
+  const eps = (23.4392911 - 0.0130042 * T) * D2R; return { dpsi, deps, eps };
+}
+const rotM = (axis, a) => new THREE.Matrix4()[axis === 'x' ? 'makeRotationX' : axis === 'y' ? 'makeRotationY' : 'makeRotationZ'](a);
+function precNutMatrix(ms) { // applied to J2000 vectors -> of-date
+  const T = (jd(ms) + deltaT(ms) / 86400 - 2451545) / 36525, as = (x) => x / 3600 * D2R;
+  const z = as(2306.2181 * T + 1.09468 * T * T + 0.018203 * T ** 3), ze = as(2306.2181 * T + 0.30188 * T * T + 0.017998 * T ** 3), th = as(2004.3109 * T - 0.42665 * T * T - 0.041833 * T ** 3);
+  const P = rotM('z', z).multiply(rotM('y', -th)).multiply(rotM('z', ze)), n = nutation(T);
+  const N = rotM('x', n.eps + n.deps).multiply(rotM('z', n.dpsi)).multiply(rotM('x', -n.eps));
+  return { M: N.multiply(P), eqeq: n.dpsi * Math.cos(n.eps) };
+}
 function updateSkyMatrix() {
   if (mode.space) { sky.matrix.identity(); sky.matrixWorldNeedsUpdate = true; sky.updateMatrixWorld(true); return; }
-  const L = lstDeg(state.time, state.lon) * D2R, p = state.lat * D2R;
+  const pn = precNutMatrix(state.time), L = lstDeg(state.time, state.lon) * D2R + pn.eqeq, p = state.lat * D2R; // apparent sidereal time
   const rz = new THREE.Matrix4().set(
     Math.cos(L), Math.sin(L), 0, 0,
     -Math.sin(L), Math.cos(L), 0, 0,
@@ -86,7 +129,7 @@ function updateSkyMatrix() {
     Math.cos(p), 0, Math.sin(p), 0,
     Math.sin(p), 0, -Math.cos(p), 0,
     0, 0, 0, 1);
-  sky.matrix.multiplyMatrices(a, rz);
+  sky.matrix.multiplyMatrices(a, rz).multiply(pn.M);
   sky.matrixWorldNeedsUpdate = true;
   sky.updateMatrixWorld(true);
 }
@@ -565,7 +608,7 @@ function helio(name, T, Mdeg) {
 const OBL = 23.43928 * D2R;
 const ecl2eq = (v) => new THREE.Vector3(v.x, v.y * Math.cos(OBL) - v.z * Math.sin(OBL), v.y * Math.sin(OBL) + v.z * Math.cos(OBL));
 function moonGeo(T) { // Meeus ch.47 (moon.js); T is UT centuries, so add delta-T (~69 s)
-  const { lon, lat, km } = moonMeeus(T + 69 / 86400 / 36525), r = km / 149597870.7;
+  const { lon, lat, km } = moonMeeus(T + deltaT(T * 3155760000000 + 946728000000) / 86400 / 36525), r = km / 149597870.7;
   return new THREE.Vector3(r * Math.cos(lat) * Math.cos(lon), r * Math.cos(lat) * Math.sin(lon), r * Math.sin(lat));
 }
 
@@ -1813,6 +1856,7 @@ document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { $('ton
 $('t-orbits').onchange = (e) => orbits.visible = mode.space && e.target.checked;
 $('light-btn').onclick = startLight;
 $('galaxy-btn').onclick = () => visitGalaxy();
+$('lg-btn').onclick = () => visitLocalGroup();
 $('sp-free').onclick = () => { sp.target = null; sp.flight = null; $('sp-target').textContent = '자유 비행'; };
 
 // ---------- search ----------
@@ -2565,6 +2609,16 @@ fetch('data/stars3d.json').then(r => r.json()).then(js => {
   const col = new Float32Array(N * 3);
   rows.forEach((r, i) => { s3d.pos.set([r[1] * PC, r[2] * PC, r[3] * PC], i * 3); s3d.absmag[i] = r[4]; col.set(ciRGB(r[5]), i * 3);
     if (i) s3dByName.set(r[0], { name: r[0], pos: new THREE.Vector3(r[1] * PC, r[2] * PC, r[3] * PC), M: r[4], ci: r[5], con: r[6], planets: [] }); });
+  // the Local Group: each galaxy a cloud of points at its real direction and distance (disc tilted by its catalogued inclination)
+  let i = N0; for (const [name, ra, dec, kpc, rk, inc, n, pa] of LOCAL_GROUP) {
+    const cen = eqVec(ra, dec, kpc * KPC), up = new THREE.Vector3(0, 0, 1), e1 = new THREE.Vector3().crossVectors(up, cen).normalize(), e2 = new THREE.Vector3().crossVectors(cen.clone().normalize(), e1);
+    const a1 = e1.clone().multiplyScalar(Math.cos(pa * D2R)).addScaledVector(e2, Math.sin(pa * D2R)), a2 = e2.clone().multiplyScalar(Math.cos(pa * D2R)).addScaledVector(e1, -Math.sin(pa * D2R)), nrm = cen.clone().normalize();
+    const b2 = a2.clone().multiplyScalar(Math.cos(inc * D2R)).addScaledVector(nrm, Math.sin(inc * D2R)), sph = inc < 0;
+    for (let k = 0; k < n; k++, i++) { const r = rk * Math.min(3, -Math.log(1 - rnd() * 0.95) * 0.6), th = rnd() * 2 * Math.PI, v = cen.clone();
+      if (sph) v.addScaledVector(e1, gau() * rk * 0.5 * KPC).addScaledVector(e2, gau() * rk * 0.5 * KPC).addScaledVector(nrm, gau() * rk * 0.5 * KPC);
+      else v.addScaledVector(a1, r * Math.cos(th) * KPC).addScaledVector(b2, r * Math.sin(th) * KPC).addScaledVector(nrm, gau() * rk * 0.04 * KPC);
+      pos.set([v.x, v.y, v.z], i * 3); const core = r < rk * 0.3; col.set(core ? [1, 0.88, 0.7] : [0.75, 0.82, 1], i * 3); w[i] = 25 * Math.min(4, kpc / 50) ** 1.2; }
+    galaxy.labels.push({ name, v: cen }); }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(N * 3), 3));
   g.setAttribute('mag', new THREE.Float32BufferAttribute(new Float32Array(N), 1)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
   s3dPts = new THREE.Points(g, s3dMat); s3dPts.frustumCulled = false; s3dPts.renderOrder = -1; s3dPts.visible = false; planetScene.add(s3dPts);
@@ -2656,11 +2710,16 @@ const KPC = 1000 * PC;
 const GAL2EQ = new THREE.Matrix3().set(-0.0548755604, 0.4941094279, -0.8676661490, -0.8734370902, -0.4448296300, -0.1980763734, -0.4838350155, 0.7469822445, 0.4559837762);
 const galToEq = (x, y, z) => new THREE.Vector3(x, y, z).applyMatrix3(GAL2EQ);
 const galaxy = { pts: null, pos: null, w: null, center: galToEq(8.2 * KPC, 0, -0.02 * KPC), ngp: galToEq(0, 0, 1), labels: [] };
+// Local Group members: name, RA, Dec (deg), distance (kpc), radius (kpc), inclination (deg, <0: spheroidal), points, position angle
+const LOCAL_GROUP = [['대마젤란은하 (LMC)', 80.89, -69.76, 50, 4.5, 33, 2500, 170], ['소마젤란은하 (SMC)', 13.19, -72.83, 62, 2.5, -1, 1200, 0],
+  ['안드로메다은하 (M31)', 10.68, 41.27, 765, 25, 77, 6000, 38], ['삼각형자리은하 (M33)', 23.46, 30.66, 840, 9, 55, 2500, 23],
+  ['M32', 10.67, 40.87, 763, 1.2, -1, 300, 0], ['M110', 10.09, 41.69, 820, 2.5, -1, 400, 0], ['궁수자리 왜소은하', 283.76, -30.48, 26, 2.6, -1, 600, 0],
+  ['포낙스 왜소은하', 39.99, -34.45, 147, 1.2, -1, 300, 0], ['NGC 6822 (바너드 은하)', 296.24, -14.80, 500, 1.5, -1, 400, 0], ['IC 1613', 16.20, 2.12, 730, 1.6, -1, 400, 0]];
 function buildGalaxy() {
   let s = 20260830; const rnd = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296), gau = () => Math.sqrt(-2 * Math.log(rnd() + 1e-9)) * Math.cos(2 * Math.PI * rnd());
-  const N = MOBILE ? 14000 : 40000, pos = new Float64Array(N * 3), col = new Float32Array(N * 3), w = new Float32Array(N);
+  const N0 = MOBILE ? 14000 : 40000, LGN = LOCAL_GROUP.reduce((a, g) => a + g[6], 0), N = N0 + LGN, pos = new Float64Array(N * 3), col = new Float32Array(N * 3), w = new Float32Array(N);
   const pitch = 1 / Math.tan(12 * D2R), barA = Math.PI - 27 * D2R, armPhase = Math.PI - pitch * Math.log(6.9 / 4);
-  for (let i = 0; i < N; i++) { const u = rnd(); let X, Y, Z, cr, cg, cb, wt;
+  for (let i = 0; i < N0; i++) { const u = rnd(); let X, Y, Z, cr, cg, cb, wt;
     if (u < 0.1) { X = gau() * 0.7; Y = gau() * 0.7; Z = gau() * 0.45; [cr, cg, cb] = [1, 0.84, 0.6]; wt = 1.6; } // bulge
     else if (u < 0.2) { const t = (rnd() * 2 - 1) * 4.2, q = gau() * 0.45; X = t * Math.cos(barA) - q * Math.sin(barA); Y = t * Math.sin(barA) + q * Math.cos(barA); Z = gau() * 0.25; [cr, cg, cb] = [1, 0.86, 0.64]; wt = 1.2; } // bar
     else { let r = Math.min(16, 1.6 - 3 * Math.log(1 - rnd() * 0.97)), th, arm = rnd() < 0.72;
@@ -2685,9 +2744,9 @@ function updateGalaxy() {
   if (!f) { if (galaxy.pts) { galaxy.pts.visible = false; planetGroup.visible = true; } return; }
   if (!galaxy.pts) buildGalaxy();
   const P = galaxy.pts.geometry.attributes.position, A = galaxy.pts.geometry.attributes.a, k = 1 / Math.max(1e-12, sp.nearestAll || 1), R = 1e5 / k, s = galaxy.pos;
-  const cx = sp.pos.x, cy = sp.pos.y, cz = sp.pos.z, ref = 20 * KPC;
+  const cx = sp.pos.x, cy = sp.pos.y, cz = sp.pos.z, ref = 20 * KPC, boost = Math.max(1, (d / (60 * KPC)) ** 1.2); // whole galaxies stay visible from far out
   for (let i = 0, n = galaxy.w.length; i < n; i++) { const x = s[3 * i] - cx, y = s[3 * i + 1] - cy, z = s[3 * i + 2] - cz, dd = Math.hypot(x, y, z) || 1;
-    P.array[3 * i] = x / dd * R; P.array[3 * i + 1] = y / dd * R; P.array[3 * i + 2] = z / dd * R; A.array[i] = f * galaxy.w[i] * Math.min(2.5, (ref / dd) ** 1.2) * 0.55; }
+    P.array[3 * i] = x / dd * R; P.array[3 * i + 1] = y / dd * R; P.array[3 * i + 2] = z / dd * R; A.array[i] = f * galaxy.w[i] * Math.min(2.5, (ref / dd) ** 1.2 * boost) * 0.55; }
   P.needsUpdate = true; A.needsUpdate = true; galaxy.pts.material.uniforms.pr.value = renderer.getPixelRatio(); galaxy.pts.visible = true;
   planetGroup.visible = f < 0.5; // the Sun's glow and the planets shrink to nothing at galactic scale
   if (s3dPts && f > 0.5) s3dPts.visible = false; // the nearby-star catalogue collapses into one bright dot from out here
@@ -2697,6 +2756,12 @@ function galaxyLabels() {
   if (!galaxy.pts?.visible || !$('t-labels').checked) return;
   const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(sp.quat), v = new THREE.Vector3();
   for (const l of galaxy.labels) { v.copy(l.v).sub(sp.pos).normalize(); if (v.dot(fwd) < 0.2) continue; const p = toScreen(v); if (p) label(p[0], p[1], l.name, l.name.startsWith('태양') ? 'planet' : 'const'); }
+}
+function visitLocalGroup() {
+  const body = { name: 'galaxy', key: 'galaxy', ko: '국부은하군', R: 1, sys: true, gal: true };
+  helioPos.galaxy = eqVec(10.68, 41.27, 765 * KPC).add(galaxy.center).multiplyScalar(0.5); sp.target = null; // aim between the Milky Way and Andromeda
+  sp.flight = { p: body, from: sp.pos.clone(), q0: sp.quat.clone(), d1: 1000 * KPC, t0: performance.now(), dur: 11000, gal: true }; sp.replay = null;
+  $('status').textContent = '국부은하군 밖으로: 우리 은하, 안드로메다(250만 광년), 삼각형자리은하와 마젤란은하들이 실제 방향과 거리에 있습니다';
 }
 function visitGalaxy() {
   const body = { name: 'galaxy', key: 'galaxy', ko: '우리 은하', R: 1, sys: true, gal: true };
@@ -3079,7 +3144,7 @@ function cometLabels() {
 }
 // ---------- top bar: the most used tools stay visible, the rest go into three menus (fixed pop-ups, so the scrolling bar on phones does not clip them) ----------
 (function groupMenus() {
-  const groups = [['관측', ['today-btn', 'obs-btn', 'exp-btn', 'night', 'gyro', 'ar']], ['배우기', ['tour-btn', 'cine-btn', 'sizes-btn', 'hist-btn', 'ls-btn']], ['저장·공유', ['share', 'shot', 'rec-btn', 'offline-btn', 'full']]];
+  const groups = [['관측', ['today-btn', 'obs-btn', 'exp-btn', 'night', 'gyro', 'ar']], ['배우기', ['tour-btn', 'cine-btn', 'sizes-btn', 'hist-btn', 'ls-btn']], ['저장·공유', ['share', 'shot', 'rec-btn', 'offline-btn', 'addon-btn', 'full']]];
   const tools = $('tools'), lang = $('lang'), pops = [];
   for (const [name, ids] of groups) {
     const wrap = document.createElement('div'), btn = document.createElement('button'), pop = document.createElement('div');
@@ -3123,7 +3188,7 @@ $('landsel').onchange = () => {
   if (!k) { u.usePhoto.value = 0; $('status').textContent = '지평선: 지형 자료로 그린 능선'; return; }
   const L = LANDS[k]; new THREE.TextureLoader().load(`textures/land_${k}.webp`, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; u.photo.value = t; u.north.value = (L.north || 0) * D2R; u.usePhoto.value = 1; });
   setMode(false); state.lat = L.lat; state.lon = L.lon; $('lat').value = L.lat; $('lon').value = L.lon; updateSkyMatrix();
-  $('status').textContent = `${L.ko} · 실제 360° 사진 지평선 (${L.credit}, ${L.licence}) · 사진 속 방위는 대략입니다`;
+  $('status').textContent = L.dem ? `${L.ko} (해발 ${L.elev} m) · 실제 지형으로 그린 360° 능선, 방위 정확 (${L.credit})` : `${L.ko} · 실제 360° 사진 지평선 (${L.credit}, ${L.licence}) · 사진 속 방위는 대략입니다`;
 };
 // ---------- A2. zoomable survey tiles: DSS2 colour HiPS (ESA ESASky mirror of CDS) on HEALPix nested tiles, finer as you zoom ----------
 // Tile orientation was checked against bright stars (Betelgeuse 0.05 deg): image row runs along the HEALPix x axis, column along y.
@@ -3176,6 +3241,33 @@ function updateHips() {
     m.material.uniforms.op.value += (target - m.material.uniforms.op.value) * 0.1;
     if (!cur && m.material.uniforms.op.value < 0.01 && now - m.userData.used > 8000) { hips.group.remove(m); m.geometry.dispose(); m.material.uniforms.map.value?.dispose(); hips.tiles.delete(key); } }
 }
+// ---------- add-ons and presentation scripts: a JSON file from the user (see examples/addon-example.json) ----------
+// { "name": "...", "objects": [{ "name", "ra" (deg), "dec" (deg), "note"? }], "script": [{ "t"?: "2027-08-02T08:00", "lat"?, "lon"?, "az"?, "alt"?, "fov"?, "o"?: object, "say": "...", "wait": s }] }
+const addonPts = new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ color: 0x7fb2ff, size: 7, sizeAttenuation: false, depthTest: false }));
+addonPts.renderOrder = 5; sky.add(addonPts); const addonPos = [];
+function loadAddon(j) {
+  for (const o of j.objects || []) { if (!(o.ra >= 0 && o.ra < 360 && Math.abs(o.dec) <= 90)) continue;
+    const obj = { kindName: 'coord', name: String(o.name).slice(0, 60), ra: o.ra, dec: o.dec, v: eqVec(o.ra, o.dec), note: o.note ? String(o.note).slice(0, 300) : '' };
+    searchIndex.set(obj.name.toLowerCase().replace(/\s+/g, ''), () => obj); $('search-list').append(new Option('', obj.name)); addonPos.push(...obj.v.clone().multiplyScalar(90).toArray()); }
+  addonPts.geometry.setAttribute('position', new THREE.Float32BufferAttribute(addonPos, 3)); addonPts.geometry.computeBoundingSphere();
+  $('status').textContent = `애드온 "${j.name || '이름 없음'}": 천체 ${(j.objects || []).length}개${j.script ? `, 발표 ${j.script.length}단계` : ''}`;
+  if (j.script && j.script.length) runScript(j.script);
+}
+let scriptRun = 0;
+async function runScript(steps) {
+  const id = ++scriptRun, cap = $('status');
+  for (const [i, s] of steps.entries()) { if (id !== scriptRun) return;
+    const q = new URLSearchParams(); for (const k of ['t', 'lat', 'lon', 'az', 'alt', 'fov', 'o']) if (s[k] != null) q.set(k, s[k]);
+    if ([...q.keys()].length) { q.set('m', 'g'); location.hash = q.toString(); readHash(); updateSkyMatrix(); }
+    if (s.o) { const mk = searchIndex.get(String(s.o).toLowerCase().replace(/\s+/g, '')); if (mk) { const o = mk(); select(o); flyTo(o); } }
+    cap.textContent = `[${i + 1}/${steps.length}] ${String(s.say || '')}  (Esc: 멈춤)`;
+    await new Promise(r => setTimeout(r, Math.min(600, Math.max(1, +s.wait || 6)) * 1000));
+  }
+  if (id === scriptRun) cap.textContent = '발표가 끝났습니다';
+}
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && scriptRun) { scriptRun++; $('status').textContent = '발표를 멈췄습니다'; } });
+$('addon-btn').onclick = () => { const f = document.createElement('input'); f.type = 'file'; f.accept = '.json,application/json';
+  f.onchange = async () => { try { loadAddon(JSON.parse(await f.files[0].text())); } catch { $('status').textContent = '애드온 파일을 읽을 수 없습니다 (JSON 형식 확인)'; } }; f.click(); };
 // ---------- offline: store the core pack (libraries, catalogues, textures, small models) in the service-worker cache in one go ----------
 async function offlinePack() {
   if (!('caches' in window)) { $('status').textContent = '이 브라우저는 오프라인 저장을 지원하지 않습니다'; return; }
@@ -3629,7 +3721,7 @@ function frame(now) {
   renderer.render(planetScene, pcam);
   for (const [o, p0, s0] of squeezed) { o.position.copy(p0); o.scale.copy(s0); }
   drawLabels(); drawEyepiece();
-  $('clock').textContent = new Date(state.time).toLocaleString(LOCALE, { hour12: false }) + (state.speed !== 1 ? `  (×${state.speed})` : '');
+  $('clock').textContent = clockText(state.time) + (state.speed !== 1 ? `  (×${state.speed})` : '');
   const fw = camFwd(), rd = vecToRaDec(fw.clone().applyMatrix4(new THREE.Matrix4().copy(sky.matrixWorld).invert()));
   if (mode.space) {
     const near = PLANETS.filter(p => p.world).reduce((a, p) => (p.camDist - bodyR(p) < a.camDist - bodyR(a) ? p : a));
