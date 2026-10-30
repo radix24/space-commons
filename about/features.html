@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#070A16">
+<title>Space Commons 기능</title>
+<meta name="description" content="지상 관측, 우주 비행, 중력 샌드박스, 개념 카드와 실습, 실제 데이터, 접근성까지. Space Commons의 기능을 한 페이지에 정리했습니다.">
+<link rel="icon" href="../assets/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../vendor/pretendard/pretendardvariable.min.css">
+<link rel="stylesheet" href="about.css">
+<style>
+/* hero with the Moon */
+.hero { position: relative; min-height: min(78vh, 760px); display: flex; align-items: center; overflow: hidden; padding: 140px 0 80px; }
+.hero .moon { position: absolute; right: -9vw; top: 50%; width: min(62vh, 42vw, 600px); height: min(62vh, 42vw, 600px); max-width: 640px; max-height: 640px; transform: translateY(-50%); border-radius: 50%; background: url(img/moon.webp) 38% 50% / 230% auto; box-shadow: inset -70px -40px 120px rgba(0,0,0,.92), inset 10px 10px 40px rgba(255,255,255,.08); opacity: .8; }
+.hero .txt { position: relative; max-width: 620px; }
+.hero h1 { font-size: clamp(38px, 5.6vw, 72px); line-height: 1.1; }
+.hero h1 span { color: #9FC2FF; }
+.hero .lead { margin-top: 22px; font-size: 18px; color: #D3D8EA; }
+.toc { margin-top: 36px; display: flex; flex-wrap: wrap; gap: 10px 0; }
+.toc a { text-decoration: none; color: var(--soft); font-size: 15px; }
+.toc a + a::before { content: '·'; margin: 0 12px; color: #4A5274; }
+.toc a:hover { color: #fff; }
+
+section.f { padding: 110px 0; }
+section.f + section.f { border-top: 1px solid var(--rule); }
+.cols { margin-top: 56px; display: grid; grid-template-columns: 1fr 1fr; gap: 0 56px; }
+.facts.big div { grid-template-columns: 9em 1fr; }
+.facts dd b { color: var(--text); font-weight: 600; }
+.caption { margin-top: 12px; color: var(--mute); }
+
+/* ground: panorama + all-sky strip */
+.horizon { margin-top: 64px; }
+.horizon .head { display: flex; justify-content: space-between; align-items: end; gap: 24px; flex-wrap: wrap; }
+.horizon h3 { font-size: 22px; }
+.sky6 { margin-top: 72px; }
+.sky6 h3 { font-size: 22px; }
+.sky6 .grid { margin-top: 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.sky6 figure { margin: 0; }
+.sky6 img { width: 100%; aspect-ratio: 2 / 1; object-fit: cover; border-radius: 0; background: #000; }
+.sky6 figcaption { margin-top: 8px; color: var(--mute); }
+.sky6 figcaption b { color: var(--text); font-weight: 600; margin-right: 8px; }
+
+/* space: planet row */
+.planets { margin-top: 64px; display: flex; align-items: flex-end; gap: 3.2%; }
+.planets div { border-radius: 50%; background-size: 220% auto; background-position: 40% 50%; box-shadow: inset -22px -12px 40px rgba(0,0,0,.85), inset 4px 4px 14px rgba(255,255,255,.08); position: relative; }
+.planets div::after { content: attr(data-n); position: absolute; left: 50%; top: 100%; transform: translateX(-50%); margin-top: 10px; font: 500 12px 'IBM Plex Mono', 'Pretendard Variable', Pretendard, sans-serif; color: var(--mute); white-space: nowrap; }
+.planets .ring { position: relative; }
+.planets .ring::before { content: ''; position: absolute; left: -38%; right: -38%; top: 50%; height: 24%; transform: translateY(-50%) rotate(-12deg); border-radius: 50%; border: 6px solid rgba(220,205,170,.45); border-top-color: rgba(220,205,170,.18); pointer-events: none; }
+.planets { padding-bottom: 36px; }
+
+/* sandbox: orbit sketch */
+.orbits { margin-top: 56px; aspect-ratio: 16 / 7; border-radius: 0; background: radial-gradient(circle at 50% 50%, #151A38 0%, var(--paper) 60%); position: relative; overflow: hidden; }
+.orbits svg { width: 100%; height: 100%; display: block; }
+
+/* learn */
+.stages { margin-top: 48px; display: grid; grid-template-columns: repeat(6, 1fr); position: relative; }
+.stages::before { content: ''; position: absolute; left: 0; right: 0; top: 7px; border-top: 1px dashed var(--line2); }
+.stages div { padding-right: 18px; }
+.stages i { display: block; width: 15px; height: 15px; background: var(--night); border: 2px solid var(--accent); }
+.stages div:last-child i { background: var(--accent); }
+.stages .mono { display: block; margin-top: 16px; color: var(--mute); }
+.stages b { display: block; margin-top: 4px; font-weight: 600; font-size: 16px; }
+.nums { margin-top: 64px; display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--rule); }
+.nums > div { padding: 26px 24px 0 0; }
+.nums > div + div { padding-left: 24px; border-left: 1px solid var(--rule); }
+.nums .n { font-family: Manrope, sans-serif; font-weight: 800; font-size: clamp(44px, 6vw, 76px); letter-spacing: -.05em; line-height: 1; color: #fff; }
+.nums p { margin-top: 14px; color: var(--soft); font-size: 15.5px; }
+
+/* data ledger */
+.ledger { margin-top: 48px; width: 100%; border-collapse: collapse; }
+.ledger th { text-align: left; font: 500 13px 'IBM Plex Mono', 'Pretendard Variable', Pretendard, sans-serif; color: var(--mute); padding: 0 16px 12px 0; border-bottom: 1px solid var(--line2); }
+.ledger td { padding: 18px 16px 18px 0; border-bottom: 1px solid var(--rule); vertical-align: top; font-size: 16px; }
+.ledger td:first-child { font-weight: 600; width: 26%; }
+.ledger td.q { font-family: 'IBM Plex Mono', 'Pretendard Variable', Pretendard, sans-serif; font-size: 15px; color: #9FC2FF; width: 22%; white-space: nowrap; }
+.ledger td.s { color: var(--soft); }
+
+@media (max-width: 860px) {
+  .hero { min-height: 0; padding: 120px 0 60px; }
+  .hero .moon { width: 70vw; height: 70vw; right: -30vw; top: 32%; opacity: .55; }
+  .toc a + a::before { margin: 0 8px; }
+  section.f { padding: 72px 0; }
+  .cols { grid-template-columns: 1fr; gap: 0; }
+  .facts.big div { grid-template-columns: 1fr; gap: 2px; }
+  .sky6 .grid { grid-template-columns: 1fr 1fr; }
+  .planets { flex-wrap: wrap; gap: 28px 6%; justify-content: center; }
+  .stages { grid-template-columns: 1fr 1fr 1fr; gap: 28px 0; }
+  .stages::before { display: none; }
+  .nums { grid-template-columns: 1fr 1fr; }
+  .nums > div { padding: 22px 12px 22px 0 !important; border-left: 0 !important; border-bottom: 1px solid var(--rule); }
+  .nums > div:nth-child(even) { padding-left: 16px !important; border-left: 1px solid var(--rule) !important; }
+  .ledger thead { display: none; }
+  .ledger tr { display: block; padding: 16px 0; border-bottom: 1px solid var(--rule); }
+  .ledger td { display: block; border: 0; padding: 2px 0; width: auto !important; white-space: normal !important; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <a class="logo" href="./"><img src="../assets/sc-mark.svg?v=3" width="32" height="32" alt="">Space <b>Commons</b></a>
+    <nav>
+      <a href="./" class="keep">소개</a>
+      <a href="features.html" aria-current="page">기능</a>
+      <a href="./#local">지역 연계</a>
+      <a class="btn" href="../">하늘 열기</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="moon" aria-hidden="true"></div>
+  <div class="wrap txt">
+    <div class="kicker"><span class="mono">기능</span><span>Alpha 0.0.9</span></div>
+    <h1>하나의 하늘을<br><span>세 가지 방법으로</span></h1>
+    <p class="lead">지상에서 올려다보고, 우주로 날아가고, 중력을 직접 다룹니다. 세 모드는 같은 시각과 같은 데이터를 쓰므로 어디서든 이어집니다. 여기에 배움의 자료와 실제 관측 데이터, 누구나 쓸 수 있게 하는 설정이 더해집니다.</p>
+    <nav class="toc"><a href="#ground">지상</a><a href="#space">우주</a><a href="#sandbox">샌드박스</a><a href="#learn">배움</a><a href="#data">데이터</a><a href="#access">누구나</a></nav>
+  </div>
+</section>
+
+<section class="f" id="ground">
+  <div class="wrap">
+    <div class="kicker"><span class="mono">01</span><span>지상 모드</span></div>
+    <h2 class="sec">지금 이 자리, 이 시각의 하늘</h2>
+    <p class="intro">관측지를 고르고 시각을 맞추면, 그 자리에서 실제로 보이는 하늘이 산 능선 위에 펼쳐집니다. 시간을 앞뒤로 돌려 별이 뜨고 지는 모습을 보고, 하늘의 점을 눌러 이름과 설명을 읽습니다.</p>
+
+    <div class="cols">
+      <dl class="facts big">
+        <div><dt>시간</dt><dd>−1시간부터 +1일까지 속도 7단계, 날짜·시각 입력, 시간을 끌어 보는 슬라이더. 1582년 이전은 율리우스력으로 표시하고 JD와 ΔT를 함께 보여 줍니다</dd></div>
+        <div><dt>장소</dt><dd>미리 정한 관측지 10곳, 위도·경도 입력, 내 위치. 현재 날씨도 함께 가져옵니다</dd></div>
+        <div><dt>별자리 문화</dt><dd>서양, 한국, 중국, 이집트 네 가지. 별자리 그림 85장, 천상열차분야지도 목판본과 채색 천문도 겹쳐 보기</dd></div>
+        <div><dt>대기</dt><dd>굴절과 소광, 별의 반짝임, 낮 하늘. 광공해는 보틀 1~9단계로 고르거나 위성 야간 영상으로 판정합니다</dd></div>
+      </dl>
+      <dl class="facts big">
+        <div><dt>인공위성</dt><dd>한국 위성 68기의 궤도 요소와 한국어 이름표 48개, 국제우주정거장을 비롯한 밝은 위성의 지나감</dd></div>
+        <div><dt>천문 현상</dt><dd>앞으로 90일의 천문 달력, 유성우 13개, 2026년부터 2035년까지 일식·월식 22건과 일식 지도, 안내 투어 6개</dd></div>
+        <div><dt>오로라</dt><dd>NOAA 예보 자료로 지금 오로라가 보일 범위를 그립니다</dd></div>
+        <div><dt>검색</dt><dd>별, 별자리, 행성, 성운·성단·은하, 위성을 이름으로 찾아 하늘에서 바로 가리킵니다</dd></div>
+      </dl>
+    </div>
+
+    <div class="horizon">
+      <div class="head">
+        <h3>실제 지형으로 만든 360° 지평선</h3>
+        <div class="tabs" role="tablist" aria-label="지평선 선택">
+          <button role="tab" aria-selected="true" data-img="land_bohyunsan" data-tag="보현산 · 경북 영천">보현산</button>
+          <button role="tab" aria-selected="false" data-img="land_sobaeksan" data-tag="소백산 · 충북 단양">소백산</button>
+          <button role="tab" aria-selected="false" data-img="land_jeju1100" data-tag="1100고지 · 제주">제주 1100고지</button>
+          <button role="tab" aria-selected="false" data-img="land_namsan" data-tag="남산 · 서울">남산</button>
+          <button role="tab" aria-selected="false" data-img="land_chiak" data-tag="치악산 · 강원 원주">치악산</button>
+        </div>
+      </div>
+      <div class="pano"><div class="land" id="land" style="background-image:url(../textures/land_bohyunsan.webp)"></div><span class="tag mono" id="landTag">보현산 · 경북 영천</span></div>
+      <p class="caption">산 능선의 높이는 실제 지형 고도 자료에서 계산했습니다. 사진으로 찍은 지평선 두 곳(파라날, 아르마소네스)을 더해 모두 7곳입니다.</p>
+    </div>
+
+    <div class="sky6">
+      <h3>눈에 보이지 않는 파장으로 바꿔 보기</h3>
+      <p class="caption">같은 하늘을 전파부터 감마선까지 여섯 파장으로 바꿔 봅니다. 은하수가 파장마다 어떻게 다르게 보이는지 비교할 수 있습니다.</p>
+      <div class="grid">
+        <figure><img src="img/allsky_radio.webp" alt="전파로 본 전천" loading="lazy"><figcaption class="mono"><b>전파</b>408 MHz</figcaption></figure>
+        <figure><img src="img/allsky_micro.webp" alt="마이크로파로 본 전천" loading="lazy"><figcaption class="mono"><b>마이크로파</b>우주배경복사</figcaption></figure>
+        <figure><img src="img/allsky_ir.webp" alt="적외선으로 본 전천" loading="lazy"><figcaption class="mono"><b>적외선</b>먼지와 별 탄생</figcaption></figure>
+        <figure><img src="img/allsky_halpha.webp" alt="H-알파로 본 전천" loading="lazy"><figcaption class="mono"><b>H-알파</b>수소 구름</figcaption></figure>
+        <figure><img src="img/allsky_xray.webp" alt="X선으로 본 전천" loading="lazy"><figcaption class="mono"><b>X선</b>뜨거운 가스</figcaption></figure>
+        <figure><img src="img/allsky_gamma.webp" alt="감마선으로 본 전천" loading="lazy"><figcaption class="mono"><b>감마선</b>가장 높은 에너지</figcaption></figure>
+      </div>
+      <p class="caption">확대하면 DSS2, 2MASS, SDSS9, AllWISE 네 가지 관측 사진(HiPS)이 화면 조각 단위로 내려와 실제 사진 위에서 별을 봅니다.</p>
+    </div>
+  </div>
+</section>
+
+<section class="f paper" id="space">
+  <div class="wrap">
+    <div class="kicker"><span class="mono">02</span><span>우주 모드</span></div>
+    <h2 class="sec">하늘의 점을 골라, 그쪽으로 날아갑니다</h2>
+    <p class="intro">지상에서 보던 행성을 누르면 화면이 그대로 이어져 우주로 나갑니다. 행성의 표면과 위성, 탐사선의 길, 소행성대, 그리고 태양계 바깥의 이웃 은하까지 한 공간에 있습니다.</p>
+
+    <div class="planets" aria-label="태양계 행성 여덟 개">
+      <div data-n="수성" style="width:5%;aspect-ratio:1;background-image:url(img/mercury.webp)"></div>
+      <div data-n="금성" style="width:7%;aspect-ratio:1;background-image:url(img/venus.webp)"></div>
+      <div data-n="지구" style="width:7.4%;aspect-ratio:1;background-image:url(img/earth.webp)"></div>
+      <div data-n="화성" style="width:5.6%;aspect-ratio:1;background-image:url(img/mars.webp)"></div>
+      <div data-n="목성" style="width:20%;aspect-ratio:1;background-image:url(img/jupiter.webp)"></div>
+      <div data-n="토성" class="ring" style="width:17%;aspect-ratio:1;background-image:url(img/saturn.webp)"></div>
+      <div data-n="천왕성" style="width:10%;aspect-ratio:1;background-image:url(img/uranus.webp)"></div>
+      <div data-n="해왕성" style="width:9.6%;aspect-ratio:1;background-image:url(img/neptune.webp)"></div>
+    </div>
+    <p class="caption">행성의 크기 비율은 실제에 가깝게 두었습니다. 거리는 아닙니다.</p>
+
+    <div class="cols">
+      <dl class="facts big">
+        <div><dt>행성과 위성</dt><dd>여덟 행성과 달, 명왕성과 왜소행성, 위성 24개. 달과 화성은 8K 표면 질감으로 가까이 볼 수 있습니다</dd></div>
+        <div><dt>탐사선</dt><dd>보이저와 뉴호라이즌스 등 탐사선 14기의 실제 궤적, 궤도선 10기(다누리 포함), 착륙 지점 32곳</dd></div>
+        <div><dt>명장면</dt><dd>탐사선이 행성을 스쳐 지나간 순간 12개를 그 시각, 그 각도에서 다시 봅니다</dd></div>
+      </dl>
+      <dl class="facts big">
+        <div><dt>소천체</dt><dd>소행성대와 카이퍼대 16,325개가 한 번에 움직이고, 궤도를 따로 그리는 소행성 1,391개와 혜성 30개, 지구 근접 소행성 40건</dd></div>
+        <div><dt>국부은하군</dt><dd>우리은하 밖으로 나가면 안드로메다를 비롯한 이웃 은하 10개가 실제 거리와 방향에 놓입니다</dd></div>
+        <div><dt>궤도 계산</dt><dd>행성과 탐사선의 위치는 JPL Horizons의 궤도 자료를 씁니다. 세차·장동·ΔT를 지상 모드와 같은 방식으로 반영합니다</dd></div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<section class="f" id="sandbox">
+  <div class="wrap">
+    <div class="kicker"><span class="mono">03</span><span>샌드박스</span></div>
+    <h2 class="sec">중력을 직접 다뤄 봅니다</h2>
+    <p class="intro">태양과 여덟 행성에서 시작해, 질량을 바꾸고 천체를 더하고 블랙홀을 놓습니다. 궤도가 어떻게 변하는지, 대기가 어떻게 온도를 바꾸는지 눈으로 확인합니다. 바꾼 장면은 링크로 저장해 나눕니다.</p>
+
+    <div class="orbits" aria-hidden="true">
+      <svg viewBox="0 0 1600 700" fill="none">
+        <g stroke="#3A4266" stroke-width="1.5">
+          <ellipse cx="800" cy="350" rx="150" ry="60"/><ellipse cx="800" cy="350" rx="260" ry="104"/><ellipse cx="800" cy="350" rx="400" ry="160"/><ellipse cx="800" cy="350" rx="560" ry="224"/>
+          <ellipse cx="900" cy="350" rx="700" ry="200" stroke="#4C8DF6" stroke-dasharray="6 8"/>
+        </g>
+        <circle cx="800" cy="350" r="26" fill="#F3E2A6"/>
+        <circle cx="950" cy="350" r="6" fill="#C9CEE3"/><circle cx="560" cy="330" r="9" fill="#9FC2FF"/><circle cx="1180" cy="420" r="11" fill="#E8B07A"/><circle cx="330" cy="290" r="8" fill="#B9C6E8"/>
+        <circle cx="1580" cy="300" r="7" fill="#4C8DF6"/>
+        <g transform="translate(260 520)"><circle r="22" fill="#000" stroke="#4C8DF6" stroke-width="2"/><circle r="36" stroke="#4C8DF6" stroke-opacity=".35"/></g>
+      </svg>
+    </div>
+
+    <div class="cols">
+      <dl class="facts big">
+        <div><dt>천체</dt><dd>태양계 천체 7개를 더하거나, 새 천체 6종(항성, 행성, 블랙홀 등)을 놓습니다. 어떤 행성이든 버튼 하나로 블랙홀로 바꿉니다</dd></div>
+        <div><dt>숫자 입력</dt><dd>질량은 단위를 골라 ×0.1부터 ×10까지, 거리는 AU로 직접 적습니다. 재생 속도는 8단계</dd></div>
+        <div><dt>바로 해 보기</dt><dd>빠른 실험 6개(태양을 블랙홀로, 달 없애기, 화성에 1기압 공기 등)와 시나리오 11개(목성 질량 10배, 목성이 별이었다면 등)</dd></div>
+      </dl>
+      <dl class="facts big">
+        <div><dt>대기</dt><dd>기압(0.001~160기압), 구름 반사율, 기체 8종의 비율을 바꾸면 온실 효과로 표면 온도가 어떻게 달라지는지 계산합니다. 금성·지구·화성에 맞춘 모형이고, 본보기 5개가 있습니다</dd></div>
+        <div><dt>기체 붙잡기</dt><dd>행성의 질량과 온도에 따라 어떤 기체를 붙잡을 수 있는지 보여 줍니다</dd></div>
+        <div><dt>저장과 공유</dt><dd>장면을 저장하고 링크로 보냅니다. 받은 사람은 같은 장면에서 이어서 실험합니다</dd></div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<section class="f paper" id="learn">
+  <div class="wrap">
+    <div class="kicker"><span class="mono">04</span><span>배움</span></div>
+    <h2 class="sec">공식보다 설명이 먼저 옵니다</h2>
+    <p class="intro">왜 그렇게 보이는지를 먼저 보여 주고, 원리는 그다음, 수식은 마지막에 둡니다. 실습은 여섯 단계로 깊어지고, 마지막 단계에서는 실제 관측 자료를 다룹니다.</p>
+
+    <div class="stages">
+      <div><i></i><span class="mono">1</span><b>관찰</b></div>
+      <div><i></i><span class="mono">2</span><b>측정</b></div>
+      <div><i></i><span class="mono">3</span><b>계산</b></div>
+      <div><i></i><span class="mono">4</span><b>설계</b></div>
+      <div><i></i><span class="mono">5</span><b>더 큰 실험</b></div>
+      <div><i></i><span class="mono">6</span><b>실제 관측 자료</b></div>
+    </div>
+    <p class="caption">실습 21개. 6단계에서는 TESS 자료로 외계 행성을 찾고, SDSS 자료로 은하의 적색편이를 재고, 가이아 자료로 H-R도를 직접 그려 봅니다.</p>
+
+    <div class="nums">
+      <div><div class="n">68</div><p>개념 카드, 7개 장. 화면에서 바로 열리는 짧은 설명</p></div>
+      <div><div class="n">272</div><p>확인 문제. 카드마다 바로 한 문제, 더 깊이 세 문제</p></div>
+      <div><div class="n">21</div><p>실습. 한 번에 하나씩 바꿔 보는 순서</p></div>
+      <div><div class="n">10</div><p>한국 천문학 역사 항목. 다섯 항목은 그날의 하늘로 바로 갑니다</p></div>
+    </div>
+
+    <div class="cols">
+      <dl class="facts big">
+        <div><dt>수업 링크</dt><dd>시각, 장소, 방향, 고른 천체를 담은 링크 하나로 같은 장면을 엽니다. 수업 자료에 붙이면 학생이 그 하늘을 그대로 봅니다</dd></div>
+        <div><dt>발표 스크립트</dt><dd>애드온 파일로 장면과 설명을 순서대로 묶어 발표합니다. 예시: 2027년 8월 2일 개기일식 둘러보기</dd></div>
+      </dl>
+      <dl class="facts big">
+        <div><dt>옛 기록</dt><dd>역사 속 천문 기록을 율리우스력 날짜로 그 밤의 하늘에 맞춰 봅니다</dd></div>
+        <div><dt>글쓰기 원칙</dt><dd>용어는 처음 나올 때 한글(영문)으로 적고, 근사값은 근사값이라고 밝힙니다. 볼 수 없는 것을 볼 수 있다고 쓰지 않습니다</dd></div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<section class="f" id="data">
+  <div class="wrap">
+    <div class="kicker"><span class="mono">05</span><span>실제 데이터</span></div>
+    <h2 class="sec">그려 넣은 별은 하나도 없습니다</h2>
+    <table class="ledger">
+      <thead><tr><th>항목</th><th>규모</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>가이아 별 목록</td><td class="q">약 3,020,000</td><td class="s">확대하면 불러옵니다. 맨눈 별 41,000개는 처음부터 표시합니다</td></tr>
+        <tr><td>성운·성단·은하</td><td class="q">12,000</td><td class="s">NGC/IC 목록 전체</td></tr>
+        <tr><td>관측 사진</td><td class="q">4 surveys</td><td class="s">DSS2, 2MASS, SDSS9, AllWISE HiPS 타일을 확대에 맞춰 불러옵니다</td></tr>
+        <tr><td>전천 파장 사진</td><td class="q">6 bands</td><td class="s">전파, 마이크로파, 적외선, H-알파, X선, 감마선</td></tr>
+        <tr><td>태양계 궤도</td><td class="q">JPL Horizons</td><td class="s">행성, 탐사선, 소천체 궤도 요소</td></tr>
+        <tr><td><span class="live"></span>인공위성</td><td class="q">실시간</td><td class="s">CelesTrak 궤도 요소로 계산한 위치. 한국 위성 68기</td></tr>
+        <tr><td><span class="live"></span>오로라</td><td class="q">실시간</td><td class="s">NOAA OVATION 예보로 그린 범위</td></tr>
+        <tr><td><span class="live"></span>어제의 지구</td><td class="q">매일</td><td class="s">하루 전 촬영한 실제 지구 사진</td></tr>
+        <tr><td><span class="live"></span>날씨</td><td class="q">실시간</td><td class="s">관측지의 현재 날씨(Open-Meteo)</td></tr>
+      </tbody>
+    </table>
+    <p class="caption">살아 있는 자료는 연결이 끊기면 마지막으로 받아 둔 사본을 쓰고, 그 사실을 화면에 알립니다.</p>
+  </div>
+</section>
+
+<section class="f paper" id="access">
+  <div class="wrap">
+    <div class="kicker"><span class="mono">06</span><span>누구나</span></div>
+    <h2 class="sec">설치도 가입도 없이, 어디서나</h2>
+    <div class="cols">
+      <dl class="facts big">
+        <div><dt>오프라인</dt><dd>한 번 누르면 기본 자료 205개(약 44 MB)를 받아 두어, 인터넷 없이도 별과 행성, 지형, 작은 모델까지 씁니다. 업데이트가 와도 받아 둔 자료는 유지됩니다</dd></div>
+        <div><dt>앱처럼</dt><dd>홈 화면에 추가하면 전체 화면으로 열립니다. 설치 파일도, 계정도 없습니다</dd></div>
+        <div><dt>언어</dt><dd>한국어가 기본이고 영어로 바꿀 수 있습니다</dd></div>
+      </dl>
+      <dl class="facts big">
+        <div><dt>큰 글씨</dt><dd>화면의 모든 글자를 키웁니다</dd></div>
+        <div><dt>색각 배려</dt><dd>구분이 필요한 색을 파랑과 주황으로 바꿉니다</dd></div>
+        <div><dt>움직임 줄이기</dt><dd>기기의 설정을 따라 애니메이션을 줄입니다</dd></div>
+        <div><dt>비용</dt><dd>무료입니다. 광고도 없습니다</dd></div>
+      </dl>
+    </div>
+    <div class="next"><a href="./#local">서대문에서는 이렇게 씁니다</a><span>지역 연계와 프로그램 소개로</span></div>
+  </div>
+  <footer>
+    <div class="wrap">
+      <a class="logo" href="../"><img src="../assets/sc-mark.svg?v=3" width="28" height="28" alt="">Space <b>Commons</b></a>
+      <span>모두의 창업 2기 선정사업</span>
+      <nav><a href="./">소개</a><a href="../">앱 열기</a><a href="https://github.com/radix24/space-commons">GitHub</a></nav>
+    </div>
+    <p class="credit">이미지: 은하수 파노라마 ESO/S. Brunier (CC BY 4.0) · 행성 텍스처 Solar System Scope (CC BY 4.0) · 다파장 전천 지도와 지형 자료의 출처는 <a href="https://github.com/radix24/space-commons#readme">README</a>에 있습니다.</p>
+  </footer>
+</section>
+
+<script>
+document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.tabs button').forEach(x => x.setAttribute('aria-selected', x === b));
+  const land = document.getElementById('land');
+  land.style.opacity = 0;
+  setTimeout(() => { land.style.backgroundImage = `url(../textures/${b.dataset.img}.webp)`; land.style.opacity = 1; }, 200);
+  document.getElementById('landTag').textContent = b.dataset.tag;
+}));
+</script>
+</body>
+</html>
