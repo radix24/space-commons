@@ -721,20 +721,26 @@ for (const p of PLANETS) {
     texLoader.load('textures/2k_saturn_ring_alpha.png', (t) => { t.colorSpace = THREE.SRGBColorSpace; ringMat.uniforms.map.value = t; });
     const ring = new THREE.Mesh(rg, ringMat); ring.rotation.x = -Math.PI / 2; ring.renderOrder = 6; p.mesh.add(ring); p.ringMesh = ring;
   }
-  const ATMO = { Earth: [1.025, [0.35, 0.62, 1.0], 1.2], Venus: [1.035, [1.0, 0.92, 0.7], 1.0], Mars: [1.012, [0.95, 0.62, 0.42], 0.7], Titan: [1.12, [1.0, 0.68, 0.3], 1.1] }[p.name];
+  // C4 atmospheres: [shell size, day colour, colour near the terminator, strength, forward scattering when backlit]
+  // Earth: blue (Rayleigh) turning red at sunset; Mars: butterscotch dust by day, blue at sunset (dust scatters blue forward); Titan and Pluto: haze that rings the night side
+  const ATMO = { Earth: [1.025, [0.35, 0.62, 1.0], [1.0, 0.45, 0.2], 1.2, 0.5], Venus: [1.035, [1.0, 0.92, 0.7], [1.0, 0.7, 0.4], 1.0, 0.6], Mars: [1.012, [0.95, 0.62, 0.42], [0.45, 0.6, 1.0], 0.7, 0.8],
+    Titan: [1.12, [1.0, 0.68, 0.3], [0.9, 0.45, 0.15], 1.1, 2.2], Pluto: [1.06, [0.45, 0.62, 1.0], [0.4, 0.55, 1.0], 0.5, 2.5], Jupiter: [1.008, [0.95, 0.88, 0.75], [0.8, 0.55, 0.35], 0.35, 0.3],
+    Saturn: [1.01, [0.95, 0.88, 0.7], [0.8, 0.6, 0.35], 0.35, 0.3], Uranus: [1.015, [0.6, 0.9, 0.95], [0.5, 0.75, 0.9], 0.6, 0.4], Neptune: [1.015, [0.4, 0.6, 1.0], [0.35, 0.5, 0.95], 0.6, 0.4] }[p.name];
   if (ATMO) { // a lit rim of atmosphere (Fresnel glow), brightest at the limb on the day side
-    const am = new THREE.ShaderMaterial({ uniforms: { sunDir: p.mesh.material.uniforms.sunDir, col: { value: new THREE.Vector3(...ATMO[1]) }, k: { value: ATMO[2] } },
+    const am = new THREE.ShaderMaterial({ uniforms: { sunDir: p.mesh.material.uniforms.sunDir, col: { value: new THREE.Vector3(...ATMO[1]) }, col2: { value: new THREE.Vector3(...ATMO[2]) }, k: { value: ATMO[3] }, fwd: { value: ATMO[4] } },
       vertexShader: `#include <common>
         #include <logdepthbuf_pars_vertex>
         varying vec3 vN, vW; void main(){ vN = normalize(mat3(modelMatrix) * normal); vW = (modelMatrix * vec4(position, 1.0)).xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         #include <logdepthbuf_vertex>
         }`,
       fragmentShader: `#include <logdepthbuf_pars_fragment>
-        uniform vec3 sunDir, col; uniform float k; varying vec3 vN, vW; void main(){
+        uniform vec3 sunDir, col, col2; uniform float k, fwd; varying vec3 vN, vW; void main(){
         #include <logdepthbuf_fragment>
-        vec3 n = normalize(vN), v = normalize(-vW); float rim = pow(1.0 - abs(dot(n, v)), 3.0);
-        float day = smoothstep(-0.35, 0.45, dot(n, sunDir));
-        gl_FragColor = vec4(col * rim * day * k, 1.0); }`,
+        vec3 n = normalize(vN), v = normalize(-vW); float rim = pow(1.0 - abs(dot(n, v)), 3.0), mu = dot(n, sunDir);
+        float day = smoothstep(-0.35, 0.45, mu);
+        vec3 c = mix(col2, col, smoothstep(-0.05, 0.4, mu));          // colour of light that crossed a long, low path through the air
+        float back = pow(max(0.0, -dot(v, sunDir)), 6.0) * smoothstep(-0.6, 0.1, mu); // sunlight scattered forward around the limb when we look toward the Sun
+        gl_FragColor = vec4((c * day + col2 * back * fwd) * rim * k, 1.0); }`,
       transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
     const atm = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 24), am); atm.scale.setScalar(ATMO[0]); atm.renderOrder = 7; p.mesh.add(atm);
   }
