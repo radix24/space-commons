@@ -1449,6 +1449,7 @@ function select(o) {
   } else if (o.kindName === 'site') {
     ra = NaN; $('info-title').textContent = o.ko; $('info-sub').textContent = `${PLANETS.find(p => p.name === o.body).ko} 착륙 지점${o.name === 'MESSENGER' ? ' (충돌)' : ''}`;
     row('도착', o.date); row('위치', `${Math.abs(o.lat).toFixed(2)}°${o.lat >= 0 ? 'N' : 'S'}, ${Math.abs(o.lon).toFixed(2)}°${o.lon >= 0 ? 'E' : 'W'}`); row('설명', o.note);
+    setTimeout(() => { if (selected !== o) return; const b = document.createElement('button'); b.textContent = '표면에 서서 하늘 보기'; b.onclick = () => standOn(o); $('info-exo').innerHTML = ''; $('info-exo').hidden = false; $('info-exo').append(b); }, 0);
     if (isFinite(o.camDist)) row('현재 위치에서', fmtDist(o.camDist));
   } else if (o.kindName === 'sat') {
     const st = o.st; ({ ra, dec } = o.world ? vecToRaDec(o.world.clone().applyMatrix4(new THREE.Matrix4().copy(sky.matrixWorld).invert())) : { ra: NaN, dec: NaN });
@@ -1757,7 +1758,8 @@ function stepSpaceFlight(now) {
   const curDir = startDir.lerp(dir, e).normalize();
   sp.pos.copy(tp).addScaledVector(curDir, dd);
   sp.quat.slerpQuaternions(f.q0, lookQuat(tp.clone().sub(sp.pos).normalize(), f.site ? f.p.normal : f.gal ? tp.clone().negate().normalize() : ECL_N), te);
-  if (k >= 1) { sp.flight = null; sp.target = f.p; sp.dist = f.d1; $('sp-target').textContent = `${f.p.ko} 주위`; writeHash(); }
+  if (k >= 1) { sp.flight = null; sp.target = f.p; sp.dist = f.d1; $('sp-target').textContent = f.stand ? `${f.p.ko}에 서 있음` : `${f.p.ko} 주위`; writeHash();
+    if (f.stand) { const n = f.p.normal, s = tp.clone().negate().normalize(), t = s.addScaledVector(n, -s.dot(n)); if (t.lengthSq() < 1e-6) t.set(1, 0, 0).addScaledVector(n, -n.x); sp.quat.copy(lookQuat(t.normalize().addScaledVector(n, 0.12).normalize(), n)); view.fov = 75; } }
 }
 function fmtDist(mkm) {
   const km = mkm * 1e6;
@@ -2946,6 +2948,29 @@ function cinematic() {
   next();
 }
 $('rec-btn').onclick = toggleRecord; $('cine-btn').onclick = cinematic;
+// ---------- C5. stand on the surface at a landing site: eye 8 m up, looking at the horizon; Mars gets its sky (butterscotch dust by day, a blue glow round the Sun at dusk) ----------
+const marsSkyMat = new THREE.ShaderMaterial({ uniforms: { up: { value: new THREE.Vector3(0, 1, 0) }, sunDir: { value: new THREE.Vector3(1, 0, 0) } },
+  vertexShader: `varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `uniform vec3 up, sunDir; varying vec3 vD;
+    void main(){ vec3 d = normalize(vD); float h = max(dot(d, up), 0.0), s = dot(sunDir, up), ct = dot(d, sunDir);
+      float day = smoothstep(-0.18, 0.12, s);
+      vec3 sky = mix(vec3(0.82, 0.6, 0.42), vec3(0.5, 0.36, 0.27), pow(h, 0.6));            // dust scatters red light everywhere
+      vec3 halo = vec3(0.35, 0.55, 0.95) * exp((ct - 1.0) * 18.0) * (0.6 + 0.8 * (1.0 - smoothstep(0.0, 0.5, s)));  // fine dust sends blue forward, round the Sun
+      vec3 col = (sky * day + halo * smoothstep(-0.25, 0.05, s)) * step(-0.02, dot(d, up));
+      gl_FragColor = vec4(col, clamp(day * 0.92 + 0.6 * exp((ct - 1.0) * 18.0) * smoothstep(-0.25, 0.05, s), 0.0, 0.95)); }`,
+  side: THREE.BackSide, depthTest: false, depthWrite: false, transparent: true });
+const marsSky = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 24), marsSkyMat); marsSky.renderOrder = -10; marsSky.frustumCulled = false; marsSky.visible = false; planetScene.add(marsSky);
+let standing = null;
+function standOn(site) {
+  standing = site; const b = PLANETS.find(q => q.name === site.body);
+  sp.flight = { p: site, from: sp.pos.clone(), q0: sp.quat.clone(), d1: 8e-9, t0: performance.now(), dur: 7000, site: true, stand: true }; sp.replay = null;
+  $('status').textContent = `${site.ko}에 서는 중 · ${b.ko}의 ${b.name === 'Mars' ? '붉은 하늘과 푸른 노을' : b.name === 'Moon' ? '공기가 없어 낮에도 검은 하늘과 지구' : '하늘'}`;
+}
+function updateStanding() {
+  const on = !!standing && mode.space && siteUp && standing.body === 'Mars'; marsSky.visible = on; if (!on) { if (standing && !siteUp && !sp.flight) standing = null; return; }
+  const k = 1 / Math.max(1e-12, sp.nearestAll || 1); marsSky.scale.setScalar(5 / k); marsSky.position.set(0, 0, 0);
+  marsSkyMat.uniforms.up.value.copy(siteUp); marsSkyMat.uniforms.sunDir.value.copy(helioPos.Mars).negate().normalize();
+}
 // ---------- 22. whole spacecraft journeys (S7) ----------
 function journeyTimeline(p) {
   const box = $('info-exo'), ev = JOURNEYS[p.name], e = probeEph[p.name]; box.innerHTML = ''; box.hidden = false;
@@ -3326,7 +3351,7 @@ function frame(now) {
   updateSkyMatrix();
   if (mode.space) { computeHelio(); stepSpaceFlight(now); spaceKeys(dt); }
   updatePlanets();   // positions for this frame first...
-  updateAsteroids(); updateSmallBodies(); updateAurora(); updateLight(); updateStations(); updateNeo(); updateStars3d(); updateGalaxy(); updateGaia(); updateHorizon(); updateArt(); updateAnalemma(); updateSkyPhoto();
+  updateAsteroids(); updateSmallBodies(); updateAurora(); updateStanding(); updateLight(); updateStations(); updateNeo(); updateStars3d(); updateGalaxy(); updateGaia(); updateHorizon(); updateArt(); updateAnalemma(); updateSkyPhoto();
   updateSats();
   stepFlight(now);   // ...then aim the camera at them (aiming at last frame's position made zoomed views shake)
   updateCamera();
