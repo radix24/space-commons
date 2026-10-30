@@ -233,6 +233,7 @@ function climateLine(T, b) { // T: equilibrium temperature for albedo 0.3
   const hot = impactHeat(b);
   const vesc = Math.sqrt(2 * 6.674e-11 * b.m * 1.989e30 / (b.Rkm * 1e3)) / 1000, kept = ATM.retention(vesc, k.Ts).filter(x => x[2]).map(x => x[1]);
   return (hot > 1 ? `<br>충돌 열: 표면이 +${fmt(hot, 0)} K 더 뜨거움 (천 년 남짓에 걸쳐 식음)` : '') + `<br>대기 ${k.a.P ? fmt(k.a.P, k.a.P < 0.1 ? 3 : 1) + '기압' : '없음'} · 온실 효과 +${fmt(k.Ts - k.Teq, 0)} K → 표면 약 ${fmt(k.Ts - 273.15, 0)} °C · 물: ${ATM.waterState(k.Ts, k.a.P)}`
+    + (() => { const x = ATM.extremes(k.Ts + hot, k.a.P); return `<br>열 고르게 퍼뜨림 ${fmt(x.eta * 100, 0)}% → 적도 약 ${fmt(x.eq - 273.15, 0)} °C · 극 약 ${fmt(x.pole - 273.15, 0)} °C · 밤 약 ${fmt(x.night - 273.15, 0)} °C`; })()
     + `<br>수십억 년 붙잡아 둘 수 있는 기체: ${kept.length ? kept.join(', ') : '거의 없음 (중력이 약하거나 너무 뜨거움)'} (탈출 속도 ${fmt(vesc, 1)} km/s)`; }
 
 // ---- seeing more: orbit predictions, velocity arrows, the gravity well, flashes ----
@@ -276,7 +277,7 @@ function updateFlashes(dt) { for (const f of [...flashGroup.children]) { f.userD
 // ---- making things: an asteroid belt, rings ----
 // swarm: massless particles feeling only the massive bodies, leapfrog in typed arrays (tens of thousands at a few ms per frame)
 const swarm = { n: 0, r: null, v: null, pts: null, acc: 0 };
-function makeBelt() {
+function makeBeltCPU() {
   const star = sim.bodies.filter(b => b.kind === 'star').sort((a, b) => b.m - a.m)[0]; if (!star) return toast('별이 있어야 소행성대를 만들 수 있습니다');
   const N = MOBILE_SB ? 8000 : 30000, mu = O.MU_SUN * star.m, r = new Float64Array(N * 3), v = new Float64Array(N * 3);
   for (let i = 0; i < N; i++) { const a = 1.9 + Math.random() * 1.6, e = Math.random() * 0.12, M = Math.random() * 2 * Math.PI, w = Math.random() * 2 * Math.PI, inc = (Math.random() - 0.5) * 0.15;
@@ -288,8 +289,55 @@ function makeBelt() {
   swarm.pts = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xb5aa9c, size: 1.6, sizeAttenuation: false, transparent: true, opacity: 0.8, depthWrite: false })); swarm.pts.frustumCulled = false; scene.add(swarm.pts); drawSwarm();
   toast(`소행성 ${N.toLocaleString()}개를 2~3.5 AU에 뿌렸습니다. 목성과 공명하는 거리(2.5, 2.82, 2.95, 3.27 AU)에서 수천 년 뒤 틈(커크우드 간극)이 생기는지 보세요`);
 }
-function clearSwarm() { if (swarm.pts) { scene.remove(swarm.pts); swarm.pts.geometry.dispose(); } swarm.n = 0; swarm.pts = null; }
-function swarmAdvance(days) { // leapfrog (half kicks fused) against the massive bodies where they are now; 4-day steps are fine at 2-3.5 AU
+// ---- GPU swarm: positions and velocities live in float textures; each step is two full-screen passes (kick, then drift) ----
+const gsw = { on: false, S: 0, rt: null, read: 0, simScene: null, simCam: null, kick: null, drift: null, pts: null, acc: 0 };
+function gpuOK() { const gl = renderer.getContext(); return renderer.capabilities.isWebGL2 && !!gl.getExtension('EXT_color_buffer_float'); }
+function makeBelt() {
+  const star = sim.bodies.filter(b => b.kind === 'star').sort((a, b) => b.m - a.m)[0]; if (!star) return toast('별이 있어야 소행성대를 만들 수 있습니다');
+  if (!gpuOK()) return makeBeltCPU();
+  clearSwarm(); const S = MOBILE_SB ? 256 : 512, N = S * S, mu = O.MU_SUN * star.m, P = new Float32Array(N * 4), V = new Float32Array(N * 4);
+  for (let i = 0; i < N; i++) { const a = 1.9 + Math.random() * 1.6, e = Math.random() * 0.12, M = Math.random() * 2 * Math.PI, w = Math.random() * 2 * Math.PI, inc = (Math.random() - 0.5) * 0.15;
+    const rr = a * (1 - e * e) / (1 + e * Math.cos(M)), th = M + w, h = Math.sqrt(mu / (a * (1 - e * e))), vr = h * e * Math.sin(M), vt = h * (1 + e * Math.cos(M));
+    P.set([star.r[0] + rr * Math.cos(th), star.r[1] + rr * Math.sin(th) * Math.cos(inc), star.r[2] + rr * Math.sin(th) * Math.sin(inc), 1], i * 4);
+    V.set([star.v[0] + vr * Math.cos(th) - vt * Math.sin(th), star.v[1] + (vr * Math.sin(th) + vt * Math.cos(th)) * Math.cos(inc), star.v[2] + (vr * Math.sin(th) + vt * Math.cos(th)) * Math.sin(inc), 0], i * 4); }
+  const mkRT = () => new THREE.WebGLRenderTarget(S, S, { type: THREE.FloatType, format: THREE.RGBAFormat, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: false });
+  const dt = (d) => { const t = new THREE.DataTexture(d, S, S, THREE.RGBAFormat, THREE.FloatType); t.needsUpdate = true; return t; };
+  gsw.rt = { p: [mkRT(), mkRT()], v: [mkRT(), mkRT()] }; gsw.S = S; gsw.read = 0; gsw.acc = 0;
+  gsw.simScene = new THREE.Scene(); gsw.simCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2)); gsw.simScene.add(quad); gsw.quad = quad;
+  const vs = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position, 1.0); }';
+  gsw.copy = new THREE.ShaderMaterial({ uniforms: { t: { value: null } }, vertexShader: vs, fragmentShader: 'uniform sampler2D t; varying vec2 vUv; void main(){ gl_FragColor = texture2D(t, vUv); }' });
+  gsw.kick = new THREE.ShaderMaterial({ uniforms: { pos: { value: null }, vel: { value: null }, B: { value: new Array(16).fill(0).map(() => new THREE.Vector4()) }, nB: { value: 0 }, h: { value: 0 } }, vertexShader: vs,
+    fragmentShader: `uniform sampler2D pos, vel; uniform vec4 B[16]; uniform int nB; uniform float h; varying vec2 vUv;
+      void main(){ vec3 x = texture2D(pos, vUv).xyz; vec4 v = texture2D(vel, vUv); vec3 a = vec3(0.0);
+        for (int k = 0; k < 16; k++) { if (k >= nB) break; vec3 d = B[k].xyz - x; float r2 = dot(d, d) + 1e-10; a += B[k].w * d / (r2 * sqrt(r2)); }
+        gl_FragColor = vec4(v.xyz + a * h, 0.0); }` });
+  gsw.drift = new THREE.ShaderMaterial({ uniforms: { pos: { value: null }, vel: { value: null }, h: { value: 0 } }, vertexShader: vs,
+    fragmentShader: 'uniform sampler2D pos, vel; uniform float h; varying vec2 vUv; void main(){ gl_FragColor = vec4(texture2D(pos, vUv).xyz + texture2D(vel, vUv).xyz * h, 1.0); }' });
+  const put = (rt, tex) => { gsw.copy.uniforms.t.value = tex; quad.material = gsw.copy; renderer.setRenderTarget(rt); renderer.render(gsw.simScene, gsw.simCam); };
+  const tp = dt(P), tv = dt(V); put(gsw.rt.p[0], tp); put(gsw.rt.v[0], tv); renderer.setRenderTarget(null); tp.dispose(); tv.dispose();
+  // drawing: one vertex per particle, its position read from the texture
+  const g = new THREE.BufferGeometry(), ref = new Float32Array(N * 2); for (let i = 0; i < N; i++) { ref[i * 2] = (i % S + 0.5) / S; ref[i * 2 + 1] = (Math.floor(i / S) + 0.5) / S; }
+  g.setAttribute('ref', new THREE.BufferAttribute(ref, 2)); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(N * 3), 3));
+  gsw.pts = new THREE.Points(g, new THREE.ShaderMaterial({ uniforms: { pos: { value: gsw.rt.p[0].texture }, pr: { value: renderer.getPixelRatio() } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    vertexShader: 'uniform sampler2D pos; uniform float pr; attribute vec2 ref; void main(){ vec3 x = texture2D(pos, ref).xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4(x, 1.0); gl_PointSize = 1.4 * pr; }',
+    fragmentShader: 'void main(){ gl_FragColor = vec4(0.71, 0.67, 0.61, 0.32); }' }));
+  gsw.pts.frustumCulled = false; scene.add(gsw.pts); gsw.on = true; swarm.n = 0;
+  toast(`소행성 ${N.toLocaleString()}개를 2~3.5 AU에 뿌렸습니다 (그래픽 카드로 계산). 목성과 공명하는 거리(2.5, 2.82, 2.95, 3.27 AU)에서 수천 년 뒤 틈(커크우드 간극)이 생기는지 보세요`);
+}
+function gpuAdvance(days) {
+  if (!gsw.on) return; gsw.acc += days; const n = Math.min(64, Math.ceil(Math.abs(gsw.acc) / 4)); if (!n) return;
+  const h = gsw.acc / n, ms = massive().slice(0, 16), B = gsw.kick.uniforms.B.value; gsw.acc = 0;
+  ms.forEach((o, k) => B[k].set(o.r[0], o.r[1], o.r[2], O.MU_SUN * o.m)); gsw.kick.uniforms.nB.value = ms.length;
+  for (let s = 0; s < n; s++) { const r = gsw.read, w = 1 - r;   // symplectic Euler: new velocity from the old position, then the position from the new velocity
+    gsw.kick.uniforms.pos.value = gsw.rt.p[r].texture; gsw.kick.uniforms.vel.value = gsw.rt.v[r].texture; gsw.kick.uniforms.h.value = h; gsw.quad.material = gsw.kick; renderer.setRenderTarget(gsw.rt.v[w]); renderer.render(gsw.simScene, gsw.simCam);
+    gsw.drift.uniforms.pos.value = gsw.rt.p[r].texture; gsw.drift.uniforms.vel.value = gsw.rt.v[w].texture; gsw.drift.uniforms.h.value = h; gsw.quad.material = gsw.drift; renderer.setRenderTarget(gsw.rt.p[w]); renderer.render(gsw.simScene, gsw.simCam);
+    gsw.read = w; }
+  renderer.setRenderTarget(null); gsw.pts.material.uniforms.pos.value = gsw.rt.p[gsw.read].texture;
+}
+function clearGpuSwarm() { if (!gsw.on) return; scene.remove(gsw.pts); gsw.pts.geometry.dispose(); for (const k of ['p', 'v']) gsw.rt[k].forEach(t => t.dispose()); gsw.on = false; }
+function clearSwarm() { clearGpuSwarm(); if (swarm.pts) { scene.remove(swarm.pts); swarm.pts.geometry.dispose(); } swarm.n = 0; swarm.pts = null; }
+function swarmAdvance(days) { gpuAdvance(days); // leapfrog (half kicks fused) against the massive bodies where they are now; 4-day steps are fine at 2-3.5 AU
   if (!swarm.n) return; swarm.acc += days; const n = Math.ceil(Math.abs(swarm.acc) / 4); if (!n) return;
   const dt = swarm.acc / n, ms = massive(), M = ms.length, P = new Float64Array(M * 4), r = swarm.r, v = swarm.v, L = swarm.n * 3; swarm.acc = 0;
   ms.forEach((o, k) => P.set([o.r[0], o.r[1], o.r[2], O.MU_SUN * o.m], k * 4));
@@ -492,7 +540,7 @@ function updateSelected() {
     (b.kind === 'star' ? `<br>밝기 ${fmt(lum(b), 3)} 태양 · 반지름 ${fmt(b.Rkm / 696000, 2)} 태양 · 생명 가능 지대 ${fmt(0.95 * Math.sqrt(lum(b)), 2)}~${fmt(1.37 * Math.sqrt(lum(b)), 2)} AU` : '') +
     (b.kind === 'bh' ? `<br>사건의 지평선 반지름 ${fmt(RS_KM(b.m), 1)} km · 이 안에서는 빛도 탈출 못 함` : '') +
     (!b.test && b.kind !== 'bh' && b.Rkm ? `<br>로슈 한계 (점선): 암석 위성 ${fmt(rocheKm(b, 3000), 0)} km · 얼음 위성 ${fmt(rocheKm(b, 900), 0)} km (평균 밀도 ${fmt(density(b), 0)} kg/m³)` : '') +
-    (b.kind === 'planet' && host && e.e < 1 && e.e > 0.001 && b.Rkm ? (() => { const G = 6.674e-11, Mh = host.m * MSUN_KG, Rb = b.Rkm * 1e3, a = e.a * 1.496e11, n = Math.sqrt(G * (Mh + b.m * MSUN_KG) / a ** 3);
+    (b.kind === 'planet' && host && host.kind === 'planet' && e.e < 1 && e.e > 0.001 && b.Rkm ? (() => { const G = 6.674e-11, Mh = host.m * MSUN_KG, Rb = b.Rkm * 1e3, a = e.a * 1.496e11, n = Math.sqrt(G * (Mh + b.m * MSUN_KG) / a ** 3);
       const P = 10.5 * 0.01 * G * Mh * Mh * Rb ** 5 * n * e.e * e.e / a ** 6, flux = P / (4 * Math.PI * Rb * Rb);
       return `<br>조석 가열 약 ${P.toExponential(1)} W (표면 1 m²당 ${flux < 0.01 ? flux.toExponential(1) : fmt(flux, 2)} W${flux > 0.5 ? ', 이오처럼 화산이 생길 만함' : ''})`; })() : '') +
     (b.kind === 'planet' ? `<br>평형 온도 ${fmt(ATM.climate(b, teq(b))?.Teq ?? teq(b), 0)} K` + climateLine(teq(b), b) : '');

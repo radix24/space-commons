@@ -33,3 +33,10 @@ export function waterState(Ts, P) {
   if (P < 0.006) return '물이 액체로 있을 수 없음 (기압이 물의 삼중점보다 낮음)';
   return Ts < 273 ? '얼음' : Ts < 373 + 30 * Math.log10(Math.max(P, 0.01)) ? '액체 물 가능' : '끓어서 수증기 (폭주 온실 위험)';
 }
+// how evenly the air spreads the heat: a thick atmosphere carries it to the poles and the night side, a thin one cannot.
+// eta = P / (P + 1.5 bar); without transport the equator runs ~10% warmer than the mean, the poles ~35% colder and the night ~25% colder.
+// Checks: Venus (92 bar) almost uniform; Earth about +32 C equator / -45 C pole; Mars (6 mbar) about -36 C equator, 140 K CO2-frost poles.
+export function extremes(Ts, P) {
+  const eta = (P || 0) / ((P || 0) + 1.5), k = 1 - eta;
+  return { eq: Ts * (1 + 0.1 * k), pole: Ts * (1 - 0.35 * k), night: Ts * (1 - 0.25 * k), eta };
+}
