@@ -338,3 +338,4 @@ input[type=number], input[type=date], input[type=datetime-local] { font-family: 
 .katex .text, .katex .mord.text, .katex .textrm { font-family: "Pretendard Variable", Pretendard, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif !important; }
 .sb-level { margin: 8px 0 2px; font: 700 11.5px var(--mono); color: var(--orbit); }
 #status { flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* a long message must not wrap into a tall column and push the top bar down */
+@media (min-width: 641px) { #topbar { max-height: 44px; } } /* never let the top bar grow into the sky and swallow drags */
