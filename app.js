@@ -1038,6 +1038,14 @@ const PROBES = [
   { name: 'Europa Clipper', ko: '유로파 클리퍼', model: null, size: 15, launch: 2024, note: '목성 위성 유로파 탐사선. 2030년 목성 도착 예정' },
   { name: 'Lucy', ko: '루시', model: null, size: 7.5, launch: 2021, note: '목성 트로이 소행성군 탐사선' },
   { name: 'Psyche', ko: '프시케', model: null, size: 12, launch: 2023, note: '금속 소행성 프시케 탐사선. 2029년 도착 예정' },
+  { name: 'Cassini', ko: '카시니', model: null, size: 7, launch: 1997, note: 'NASA·ESA 토성 탐사선. 13년 동안 토성을 돌고 2017년 토성 대기로 뛰어들어 임무를 마쳤습니다' },
+  { name: 'Rosetta', ko: '로제타', model: null, size: 16, launch: 2004, note: 'ESA 혜성 탐사선. 67P 혜성을 2년 동안 따라다녔고 착륙선 필레를 처음으로 혜성에 내려놓았습니다' },
+  { name: 'Dawn', ko: '돈', model: null, size: 10, launch: 2007, note: '이온 엔진으로 베스타와 세레스 두 천체의 궤도를 차례로 돈 첫 탐사선' },
+  { name: 'MESSENGER', ko: '메신저', model: null, size: 3.6, launch: 2004, note: '수성 궤도를 처음 돈 NASA 탐사선. 2015년 수성 표면에 떨어지며 임무를 마쳤습니다' },
+  { name: 'OSIRIS-REx', ko: '오시리스-렉스', model: null, size: 3.5, launch: 2016, note: '소행성 베누의 시료를 2023년 지구로 가져왔고, 지금은 OSIRIS-APEX로 아포피스를 향합니다' },
+  { name: 'Hayabusa2', ko: '하야부사 2', model: null, size: 3, launch: 2014, note: 'JAXA 탐사선. 소행성 류구의 시료를 2020년 지구로 가져온 뒤 다음 소행성으로 가는 중' },
+  { name: 'DART', ko: '다트', model: null, size: 9.5, launch: 2021, note: '2022년 소행성 위성 디모르포스에 일부러 부딪혀 궤도를 바꾼 첫 행성 방위 실험' },
+  { name: 'Ulysses', ko: '율리시스', model: null, size: 4, launch: 1990, note: '목성의 중력으로 궤도를 크게 기울여 태양의 극 위를 지나간 유일한 탐사선' },
 ];
 function probeModel() { // placeholder for craft without a NASA model: bus, dish and two solar wings, unit radius
   const g = new THREE.Group();

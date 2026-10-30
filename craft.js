@@ -78,6 +78,84 @@ function boom(g, len, dirVec, from = new THREE.Vector3(), r = 0.025) {
 function thrusters(g, w, h, d) { for (const sx of [-1, 1]) for (const sy of [-1, 1]) { const n = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.12, 8), M.dark()); n.position.set(sx * w / 2, sy * h / 2, -d / 2); n.rotation.x = -Math.PI / 2; g.add(n); } }
 
 const BUILDERS = {
+  // ---- deep-space missions added with their real trajectories (JPL Horizons) ----
+  // Cassini: 6.8 m stack - 4 m high-gain dish on top, bus and propulsion module, Huygens probe on the side, three RTGs, 11 m magnetometer boom
+  'Cassini'() {
+    const g = new THREE.Group();
+    dish(g, 4.0, 0.55, M.white(), 0, 0, 2.6, new THREE.Vector3(0, 0, 1));
+    cyl(g, 0.85, 1.6, M.gold(), 'z', 0, 0, 1.4, 10);
+    cyl(g, 0.65, 3.2, M.gold(), 'z', 0, 0, -0.9, 16);
+    cyl(g, 0.35, 0.6, M.dark(), 'z', 0, 0, -2.8, 12);
+    const hy = new THREE.Mesh(new THREE.ConeGeometry(1.35, 0.6, 24), std(0xb87a3a, 0.6, 0.5)); hy.rotation.z = -Math.PI / 2; hy.position.set(1.35, 0, -0.3); g.add(hy); // Huygens heat shield
+    for (const a of [0.6, 2.6, 4.3]) cyl(g, 0.2, 1.1, M.dark(), 'z', Math.cos(a) * 0.95, Math.sin(a) * 0.95, -2.2, 8); // RTGs
+    boom(g, 11, new THREE.Vector3(-1, 0.15, 0), new THREE.Vector3(-0.8, 0, 1.6));
+    return g;
+  },
+  // Rosetta: 2.8 x 2.1 x 2 m box, two 14 m five-panel wings (32 m span), 2.2 m dish, Philae lander on one face
+  'Rosetta'() {
+    const g = new THREE.Group();
+    box(g, 2.8, 2.0, 2.1, M.gold());
+    for (const s of [-1, 1]) wing(g, 5, 2.6, 2.25, s, 1.45, 0, 0, 0.1);
+    dish(g, 2.2, 0.35, M.white(), 0, 1.4, 0.9, new THREE.Vector3(0, 0.3, 1));
+    box(g, 1.0, 0.8, 0.8, M.silver(), 0, -1.4, 0);
+    return g;
+  },
+  // Dawn: 1.6 m bus, two long wings (19.7 m span), three xenon ion engines, 1.5 m dish
+  'Dawn'() {
+    const g = new THREE.Group();
+    box(g, 1.64, 1.27, 1.77, M.gold());
+    for (const s of [-1, 1]) wing(g, 5, 1.6, 2.27, s, 0.85, 0, 0, 0.05);
+    dish(g, 1.52, 0.22, M.white(), 0, 0, 1.0, new THREE.Vector3(0, 0, 1));
+    for (const x of [-0.45, 0, 0.45]) cyl(g, 0.17, 0.25, M.dark(), 'z', x, 0, -1.0, 16);
+    return g;
+  },
+  // MESSENGER: bus behind a 2.5 x 2 m ceramic-cloth sunshade, two 1.5 x 1.65 m wings, 3.6 m magnetometer boom
+  'MESSENGER'() {
+    const g = new THREE.Group();
+    box(g, 1.4, 1.27, 1.85, M.gold());
+    box(g, 2.5, 2.05, 0.1, std(0xeeeae0, 0.05, 0.85), 0, 0, -1.15);
+    for (const s of [-1, 1]) wing(g, 1, 1.5, 1.65, s, 0.75, 0, 0);
+    boom(g, 3.6, new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, -0.65, 0.4));
+    return g;
+  },
+  // OSIRIS-REx: 2.4 m box, two wings (6.2 m span), 2 m dish, TAGSAM sampling arm and the return capsule
+  'OSIRIS-REx'() {
+    const g = new THREE.Group();
+    box(g, 2.4, 2.4, 3.15, M.white());
+    for (const s of [-1, 1]) wing(g, 1, 1.8, 1.6, s, 1.25, 0.6, 0);
+    dish(g, 2.0, 0.3, M.white(), 0, 0, 1.8, new THREE.Vector3(0, 0, 1));
+    boom(g, 3.35, new THREE.Vector3(0.2, -1, -0.4), new THREE.Vector3(0.3, -1.2, -0.6), 0.04);
+    cyl(g, 0.4, 0.5, std(0x9a6a40, 0.3, 0.6), 'y', -0.6, 1.4, -0.6, 20);
+    return g;
+  },
+  // Hayabusa2: 1 x 1.6 x 1.25 m box, two wings (6 m span), flat high-gain antenna, sampler horn underneath
+  'Hayabusa2'() {
+    const g = new THREE.Group();
+    box(g, 1.6, 1.25, 1.0, M.gold());
+    for (const s of [-1, 1]) wing(g, 3, 0.75, 1.0, s, 0.85, 0, 0, 0.05);
+    box(g, 0.9, 0.05, 0.9, M.white(), 0, 0.68, 0.1);
+    const horn = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.15, 1.0, 12), M.silver()); horn.position.set(0, -1.1, 0); g.add(horn);
+    return g;
+  },
+  // DART: 1.2 m box, two Roll-Out Solar Arrays (8.5 m each, 19 m span), DRACO camera, LICIACube riding along
+  'DART'() {
+    const g = new THREE.Group();
+    box(g, 1.2, 1.3, 1.3, M.gold());
+    for (const s of [-1, 1]) { const arr = new THREE.Mesh(new THREE.BoxGeometry(8.5, 0.03, 2.4), [M.frame(), M.frame(), solarMat(), M.dark(), M.frame(), M.frame()]); arr.position.x = s * 4.9; g.add(arr);
+      cyl(g, 0.12, 2.4, M.frame(), 'z', s * 9.15, 0, 0, 10); }
+    cyl(g, 0.21, 0.6, M.dark(), 'z', 0, 0, 0.95, 16);
+    box(g, 0.1, 0.2, 0.3, solarMat(), 0.4, 0.75, -0.4);
+    return g;
+  },
+  // Ulysses: 3.2 x 3.3 x 2.1 m box, 1.65 m dish on top, one RTG on a short arm, 5.6 m radial boom
+  'Ulysses'() {
+    const g = new THREE.Group();
+    box(g, 3.2, 2.1, 3.3, M.white());
+    dish(g, 1.65, 0.25, M.white(), 0, 0, 1.75, new THREE.Vector3(0, 0, 1));
+    cyl(g, 0.22, 1.2, M.dark(), 'x', 2.4, 0, 0, 8);
+    boom(g, 5.6, new THREE.Vector3(-1, 0, 0), new THREE.Vector3(-1.6, 0, 0));
+    return g;
+  },
   // ---- Korean satellites (modelled here from published sizes and photos; no official open models exist) ----
   // KOMPSAT-3 / 3A (Arirang): hexagonal bus 2.0 m across, 3.5 m tall, three fixed solar panels in a fan, AEISS telescope barrel pointing down
   'KOMPSAT'() {
