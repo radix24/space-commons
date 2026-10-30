@@ -251,7 +251,7 @@ function loadScene(d) {
   buildMeshes(); sim.E0 = energy(); snapshot(); select(null); focus(sim.bodies.find(b => b.kind === 'star')?.name || sim.bodies[0]?.name, 6); toast('장면을 불러왔습니다');
 }
 function refreshSaves() { const sel = root.querySelector('.sb-loads'); sel.length = 1; loadSaves().forEach((x, i) => sel.append(new Option(`${x.name} (${x.at.slice(0, 16).replace('T', ' ')})`, i))); }
-function saveScene() { const name = prompt('장면 이름', `장면 ${loadSaves().length + 1}`); if (!name) return; const l = loadSaves(); l.push({ name, at: new Date().toISOString(), data: sceneData() });
+function saveScene() { let name; try { name = prompt('장면 이름', `장면 ${loadSaves().length + 1}`); } catch { name = `장면 ${loadSaves().length + 1}`; } if (!name) return; const l = loadSaves(); l.push({ name, at: new Date().toISOString(), data: sceneData() });
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(l.slice(-20))); toast('이 브라우저에 저장했습니다'); } catch { toast('저장 공간이 부족합니다'); } refreshSaves(); }
 async function shareScene() {
   const bytes = new TextEncoder().encode(JSON.stringify(sceneData())), cs = new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'));

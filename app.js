@@ -1884,7 +1884,7 @@ function readHash() {
 $('share').onclick = async () => {
   writeHash(); await new Promise(r => setTimeout(r, 350));
   try { await navigator.clipboard.writeText(location.href); $('status').textContent = '현재 화면 링크를 복사했습니다'; }
-  catch { prompt('이 링크를 복사하세요', location.href); }
+  catch { try { prompt('이 링크를 복사하세요', location.href); } catch { $('status').textContent = '주소창의 링크를 복사해 나눠 주세요'; } }
 };
 canvas.addEventListener('pointerup', () => writeHash());
 canvas.addEventListener('wheel', () => writeHash());
@@ -1950,7 +1950,7 @@ $('exp-go').onclick = () => longExposure();
 $('exp-close').onclick = () => { $('exp').hidden = true; $('exp-out').hidden = true; };
 $('full').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.();
 function tonight() { // what is up right now: planets, the Moon and bright Messier objects above 15 degrees
-  const list = [], up = (w) => Math.asin(Math.max(-1, Math.min(1, w.y))) * R2D;
+  const list = [], up = (w) => w ? Math.asin(Math.max(-1, Math.min(1, w.y))) * R2D : -90; // planets have no ground-frame direction in space mode
   for (const p of PLANETS) if (!p.probe && !p.parent && p.world && p.name !== 'Sun' && p.name !== 'Earth') { const alt = up(p.world); if (alt > 15) list.push({ o: planetObj(p), alt, kind: p.name === 'Moon' ? '위성' : '행성', rank: -10 }); }
   for (const o of dsos) if (o.messier && o.mag < 7.5) { const w = o.v.clone().applyMatrix4(sky.matrixWorld); const alt = up(w); if (alt > 15) list.push({ o: dsoObj(o), alt, kind: TYPE_RAW_KO[o.type] || '', rank: o.mag }); }
   list.sort((a, b) => a.rank - b.rank);
