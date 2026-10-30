@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { buildCraft } from './craft.js';
 
 // ---------- constants & helpers ----------
 const D2R = Math.PI / 180, R2D = 180 / Math.PI;
@@ -520,7 +522,10 @@ function probeModel() { // placeholder for craft without a NASA model: bus, dish
   }
   return g;
 }
-const probeSun = new THREE.DirectionalLight(0xffffff, 3.2); planetScene.add(probeSun, probeSun.target, new THREE.AmbientLight(0xaab2d0, 1.1));
+const probeSun = new THREE.DirectionalLight(0xffffff, 3.2); planetScene.add(probeSun, probeSun.target, new THREE.AmbientLight(0xaab2d0, 0.5));
+// metal foil and panels need something to reflect; a soft studio environment stands in for sunlit space + Earth/planet glow
+planetScene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+planetScene.environmentIntensity = 0.55;
 const trails = new THREE.Group(); planetScene.add(trails); // flown path, drawn in absolute coordinates like the orbit lines
 for (const d of PROBES) {
   const p = Object.assign(d, { probe: true, R: d.size / 1000, pole: [0, 90], period: 1, active: false });
@@ -536,6 +541,7 @@ function swapModel(model, obj) {
   ps.forEach((p, i) => { p.mesh.clear(); p.mesh.add(i ? obj.clone(true) : obj); });
 }
 const gltfLoader = new GLTFLoader();
+for (const p of PROBES) if (!p.model) { const c = buildCraft(p.name); if (c) { p.mesh.clear(); p.mesh.add(fitUnit(c)); } }
 for (const m of ['voyager', 'pioneer', 'jwst', 'juno', 'parker']) gltfLoader.load(`models/${m}.glb`, (g) => swapModel(m, fitUnit(g.scene)), undefined, () => {});
 (async () => { // New Horizons ships as 3D-printing STL parts; assemble them with flight-like materials
   const stl = new STLLoader(), parts = { antenna: 0xe8e6e0, body: 0xd8b25a, body_l: 0xd8b25a, body_r: 0xd8b25a, rtg: 0x4c4f57 };
@@ -759,8 +765,45 @@ function pick(x, y) {
 }
 
 let selected = null, flight = null;
+// Wikipedia summary for the selected object (Korean first, English fallback). Titles are candidates; redirects are followed.
+const WIKI_KO = { Sun: '태양', Moon: '달', Earth: '지구', Mercury: '수성', Venus: '금성', Mars: '화성', Jupiter: '목성', Saturn: '토성', Uranus: '천왕성', Neptune: '해왕성',
+  Io: '이오 (위성)', Europa: '유로파 (위성)', Ganymede: '가니메데 (위성)', Callisto: '칼리스토 (위성)', Titan: '타이탄 (위성)',
+  'Voyager 1': '보이저 1호', 'Voyager 2': '보이저 2호', 'New Horizons': '뉴호라이즌스', 'Pioneer 10': '파이어니어 10호', 'Pioneer 11': '파이어니어 11호',
+  JWST: '제임스 웹 우주 망원경', Juno: '주노 (탐사선)', 'Parker Solar Probe': '파커 태양 탐사선', 'Solar Orbiter': '솔라 오비터', BepiColombo: '베피콜롬보',
+  Juice: '주스 (탐사선)', 'Europa Clipper': '유로파 클리퍼', Lucy: '루시 (탐사선)', Psyche: '프시케 (탐사선)' };
+const WIKI_EN = { Mercury: 'Mercury (planet)', Io: 'Io (moon)', Europa: 'Europa (moon)', Ganymede: 'Ganymede (moon)', Callisto: 'Callisto (moon)', Titan: 'Titan (moon)',
+  JWST: 'James Webb Space Telescope', Juno: 'Juno (spacecraft)', Juice: 'Jupiter Icy Moons Explorer', Lucy: 'Lucy (spacecraft)', Psyche: 'Psyche (spacecraft)' };
+const wikiCache = new Map(); let wikiSeq = 0;
+async function wikiLookup(lang, titles) {
+  for (const t of titles) {
+    if (!t) continue;
+    const key = lang + ':' + t; if (wikiCache.has(key)) { const v = wikiCache.get(key); if (v) return v; continue; }
+    const url = `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&origin=*&redirects=1&prop=extracts|pageimages|info&inprop=url&exintro=1&explaintext=1&exsentences=3&piprop=thumbnail&pithumbsize=480&titles=${encodeURIComponent(t)}`;
+    try {
+      const js = await fetch(url).then(r => r.json());
+      const page = Object.values(js.query?.pages || {})[0];
+      const v = page && !('missing' in page) && page.extract && !/동음이의|may refer to/.test(page.extract) ? { text: page.extract, url: page.fullurl, img: page.thumbnail?.source, lang } : null;
+      wikiCache.set(key, v); if (v) return v;
+    } catch { wikiCache.set(key, null); }
+  }
+  return null;
+}
+async function showWiki(o) {
+  const box = $('info-wiki'), seq = ++wikiSeq; box.hidden = true;
+  let ko = [], en = [];
+  if (o.planet) { ko = [WIKI_KO[o.p.name]]; en = [WIKI_EN[o.p.name] || o.p.name]; }
+  else if (o.kindName === 'dso') { const n = o.name.replace(' ', ' '); ko = [o.messier && `메시에 ${o.messier.slice(1)}`, o.messier, n]; en = [o.messier && `Messier ${o.messier.slice(1)}`, o.common, n]; }
+  else if (o.kindName === 'star') { const n = starData.proper[o.i]; en = [n && `${n} (star)`, n]; ko = []; }
+  const r = (await wikiLookup('ko', ko)) || (await wikiLookup('en', en));
+  if (seq !== wikiSeq || !r) return;
+  $('wiki-text').textContent = r.text;
+  $('wiki-link').href = r.url; $('wiki-link').textContent = r.lang === 'ko' ? '위키백과에서 더 보기' : '영어 위키백과에서 더 보기';
+  const im = $('wiki-img'); im.hidden = !r.img || o.kindName === 'dso'; if (r.img) im.src = r.img;
+  box.hidden = false;
+}
+
 function select(o) {
-  selected = o; $('info').hidden = !o; if (!o) { showPhoto(null); return; }
+  selected = o; $('info').hidden = !o; if (!o) { showPhoto(null); writeHash(); return; }
   const t = $('info-table'); t.innerHTML = '';
   const row = (k, v) => { if (v === undefined || v === '' || (typeof v === 'number' && isNaN(v))) return; const tr = t.insertRow(); tr.insertCell().textContent = k; tr.insertCell().textContent = v; };
   let ra, dec;
@@ -792,6 +835,7 @@ function select(o) {
   if (!mode.space) { const aa = dirToAzAlt(worldOf(o)); row('방위 / 고도', `${aa.az.toFixed(1)}° / ${aa.alt.toFixed(1)}°`); }
   else if (o.planet) row('현재 위치에서', fmtDist(o.p.camDist));
   showPhoto(o.kindName === 'dso' ? o : null);
+  showWiki(o); writeHash();
   if (o.planet && o.p.probe) $('info-goto').textContent = mode.space ? '탐사선으로 비행' : '이동 · 확대'; else $('info-goto').textContent = '이동 · 확대';
 }
 $('info-close').onclick = () => select(null);
@@ -943,7 +987,7 @@ function stepSpaceFlight(now) {
   const curDir = startDir.lerp(dir, e).normalize();
   sp.pos.copy(tp).addScaledVector(curDir, dd);
   sp.quat.slerpQuaternions(f.q0, lookQuat(tp.clone().sub(sp.pos).normalize()), te);
-  if (k >= 1) { sp.flight = null; sp.target = f.p; sp.dist = f.d1; $('sp-target').textContent = `${f.p.ko} 주위 공전`; }
+  if (k >= 1) { sp.flight = null; sp.target = f.p; sp.dist = f.d1; $('sp-target').textContent = `${f.p.ko} 주위 공전`; writeHash(); }
 }
 function fmtDist(mkm) {
   const km = mkm * 1e6;
@@ -999,7 +1043,51 @@ $('search').addEventListener('change', (e) => {
 // ---------- UI ----------
 document.querySelectorAll('[data-speed]').forEach(b => b.onclick = () => { state.speed = +b.dataset.speed;
   document.querySelectorAll('[data-speed]').forEach(x => x.classList.toggle('on', x === b)); });
-$('now').onclick = () => { state.time = Date.now(); };
+$('now').onclick = () => { state.time = Date.now(); $('scrub').value = 0; };
+// time slider: drag to move up to ±1 year around the moment the drag started (log-ish response near the middle)
+let scrubBase = null;
+$('scrub').addEventListener('pointerdown', () => { scrubBase = state.time; });
+$('scrub').addEventListener('input', (e) => {
+  if (scrubBase === null) scrubBase = state.time;
+  const v = +e.target.value / 1000, days = Math.sign(v) * Math.pow(Math.abs(v), 2.2) * 365;
+  state.time = scrubBase + days * 86400000;
+  $('scrub-label').textContent = Math.abs(days) < 1 ? `${(days * 24).toFixed(1)}시간` : `${days.toFixed(0)}일`;
+});
+$('scrub').addEventListener('change', (e) => { e.target.value = 0; scrubBase = null; $('scrub-label').textContent = ''; });
+
+// shareable link: mode, time, place, view and selection live in the URL hash
+let hashTimer = 0;
+function writeHash() {
+  clearTimeout(hashTimer);
+  hashTimer = setTimeout(() => {
+    const q = new URLSearchParams();
+    q.set('m', mode.space ? 's' : 'g'); q.set('t', new Date(state.time).toISOString().slice(0, 16));
+    if (!mode.space) { q.set('lat', state.lat.toFixed(2)); q.set('lon', state.lon.toFixed(2)); q.set('az', view.az.toFixed(1)); q.set('alt', view.alt.toFixed(1)); q.set('fov', view.fov.toPrecision(3)); }
+    else if (sp.target) { q.set('at', sp.target.name); q.set('d', sp.dist.toPrecision(3)); }
+    if (selected) q.set('o', selected.planet ? selected.p.name : selected.kindName === 'dso' ? (selected.messier || selected.name) : selected.name);
+    history.replaceState(null, '', '#' + q.toString());
+  }, 300);
+}
+function readHash() {
+  const q = new URLSearchParams(location.hash.slice(1)); if (![...q.keys()].length) return;
+  if (q.get('t')) { const t = Date.parse(q.get('t') + 'Z'); if (!isNaN(t)) { state.time = t; state.speed = 0; document.querySelectorAll('[data-speed]').forEach(x => x.classList.toggle('on', x.dataset.speed === '0')); } }
+  if (q.get('lat')) { state.lat = +q.get('lat'); state.lon = +q.get('lon'); $('lat').value = state.lat; $('lon').value = state.lon; }
+  if (q.get('az')) { view.az = +q.get('az'); view.alt = +q.get('alt'); view.fov = +q.get('fov') || view.fov; }
+  if (q.get('m') === 's') {
+    setMode(true);
+    const p = PLANETS.find(x => x.name === q.get('at'));
+    if (p) { updateSkyMatrix(); computeHelio(); if (helioPos[p.name]) { sp.target = p; sp.dist = +q.get('d') || bodyR(p) * 4; $('sp-target').textContent = `${p.ko} 주위 공전`; } }
+  }
+  const o = q.get('o');
+  if (o) setTimeout(() => { const mk = searchIndex.get(o.toLowerCase().replace(/\s+/g, '')); if (mk) { const x = mk(); if (!x.planet || x.p.world) select(x); } }, 300);
+}
+$('share').onclick = async () => {
+  writeHash(); await new Promise(r => setTimeout(r, 350));
+  try { await navigator.clipboard.writeText(location.href); $('status').textContent = '현재 화면 링크를 복사했습니다'; }
+  catch { prompt('이 링크를 복사하세요', location.href); }
+};
+canvas.addEventListener('pointerup', () => writeHash());
+canvas.addEventListener('wheel', () => writeHash());
 $('lat').onchange = (e) => state.lat = Math.max(-90, Math.min(90, +e.target.value || 0));
 $('lon').onchange = (e) => state.lon = +e.target.value || 0;
 $('t-lines').onchange = (e) => linesGroup.visible = e.target.checked;
@@ -1148,4 +1236,5 @@ updateSkyMatrix(); requestAnimationFrame(frame);
   st.textContent = parts.join(' · ');
   document.body.classList.add('ready');
   buildSearch();
+  readHash();
 })();

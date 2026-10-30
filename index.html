@@ -37,6 +37,7 @@
   </div>
   <div id="tools">
     <button id="tonight-btn" class="ground-only" title="지금 볼 수 있는 천체 (T)">지금 하늘</button>
+    <button id="share" title="지금 보는 화면의 링크 복사">링크</button>
     <button id="shot" title="화면 저장 (P)">캡처</button>
     <button id="full" title="전체 화면 (F)">전체 화면</button>
   </div>
@@ -57,6 +58,9 @@
   </div>
   <div class="row">
     <label>날짜·시각 <input id="dt" type="datetime-local"></label>
+  </div>
+  <div class="row">
+    <label class="scrub">시간 끌기 <input id="scrub" type="range" min="-1000" max="1000" value="0"></label><span id="scrub-label" class="small"></span>
   </div>
   <div class="row space-only"><b id="sp-target">지구 주위 공전</b><button id="sp-free">자유 비행</button></div>
   <div class="row ground-only">
@@ -87,6 +91,11 @@
   <div id="info-sub"></div>
   <table id="info-table"></table>
   <img id="info-img" alt="" hidden>
+  <div id="info-wiki" hidden>
+    <img id="wiki-img" alt="" hidden>
+    <p id="wiki-text"></p>
+    <a id="wiki-link" target="_blank" rel="noopener"></a>
+  </div>
   <div class="row"><button id="info-goto">이동 · 확대</button></div>
 </div>
 

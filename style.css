@@ -98,3 +98,11 @@ select, input[type=datetime-local] { background: var(--panel-solid); color: inhe
 #tonight li span { color: var(--mute); font-size: 11px; white-space: nowrap; }
 #tonight-close { position: absolute; top: 10px; right: 10px; padding: 0 8px; }
 @media (max-width: 640px) { #tools #full { display: none; } #tonight { max-height: 40vh; } }
+
+/* wikipedia summary, time slider */
+#info-wiki { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+#info-wiki p { margin: 0 0 6px; font-size: 12.5px; line-height: 1.6; color: #cfd3e6; }
+#info-wiki a { color: var(--orbit); font-size: 12px; text-decoration: none; }
+#wiki-img { width: 100%; border-radius: 8px; margin-bottom: 8px; background: #000; }
+.scrub { display: flex; align-items: center; gap: 8px; }
+#scrub { width: min(260px, 50vw); accent-color: var(--orbit); }
