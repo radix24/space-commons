@@ -1,6 +1,6 @@
 // Space Commons service worker: keeps the app and its catalogs for offline use.
 // App files: cache first, refreshed in the background. Live data (satellites, Wikipedia, sky images): network first, cache as fallback.
-const CACHE = 'space-commons-v73';
+const CACHE = 'space-commons-v74';
 const SHELL = ['./', 'index.html', 'version.js', 'style.css', 'app.js', 'i18n.js', 'craft.js', 'moon.js', 'bodyinfo.js', 'sizes.js', 'labs2.js', 'atmos.js', 'quiz2.js', 'history.js', 'cards-en.js', 'data/smallbodies.json', 'orbits.js', 'sandbox.js', 'cards.js', 'content.js', 'content-missions.js', 'manifest.webmanifest', 'assets/sc-mark.svg', 'assets/favicon.svg',
   'assets/icon-192.png', 'data/probes.json', 'data/exoplanets.json', 'data/flybys.json', 'data/orbiters.json', 'data/korea.tle', 'data/asteroids.json', 'data/korean-constellations.json'];
 const LIVE = /celestrak\.org|wikipedia\.org|alasky|hips2fits|gibs\.earthdata|swpc\.noaa|open-meteo|ssd-api\.jpl/; // network first, last copy when offline

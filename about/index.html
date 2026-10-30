@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Space Commons 소개</title>
+<meta name="description" content="땅에서 올려다보고, 우주로 나아가는 모두의 하늘. 설치 없이 브라우저에서 쓰는 한국어 천체 관측·우주 비행·중력 실험실.">
+<link rel="icon" href="../assets/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../vendor/pretendard/pretendard.css">
+<style>
+:root { --bg: #0A0D1C; --panel: #0E1230; --line: #232850; --text: #EEF0FA; --mute: #8D93B3; --accent: #4C8DF6; --gold: #F3E2A6; --violet: #8B6CF2; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.7 Pretendard, 'Pretendard Variable', system-ui, sans-serif; word-break: keep-all; }
+a { color: var(--accent); }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+h1, h2, h3, .word { font-family: Manrope, Pretendard, sans-serif; letter-spacing: -0.02em; }
+header.top { position: sticky; top: 0; z-index: 5; background: rgba(10, 13, 28, .85); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+header.top .wrap { display: flex; align-items: center; gap: 12px; height: 60px; }
+.word { font-weight: 800; font-size: 20px; letter-spacing: -0.03em; } .word span { color: var(--accent); }
+header nav { margin-left: auto; display: flex; gap: 20px; font-size: 14px; } header nav a { color: var(--mute); text-decoration: none; } header nav a:hover { color: var(--text); }
+.btn { display: inline-block; padding: 12px 22px; background: var(--accent); color: #fff; text-decoration: none; font-weight: 700; border: 1px solid var(--accent); }
+.btn.ghost { background: transparent; color: var(--text); border-color: var(--line); }
+.hero { position: relative; overflow: hidden; padding: 110px 0 90px; border-bottom: 1px solid var(--line); }
+.hero canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.hero .wrap { position: relative; }
+.hero h1 { font-size: clamp(36px, 6vw, 68px); line-height: 1.12; margin: 0 0 20px; font-weight: 800; }
+.hero p.lead { font-size: clamp(17px, 2vw, 20px); color: #c9cde6; max-width: 640px; margin: 0 0 34px; }
+.hero .cta { display: flex; gap: 12px; flex-wrap: wrap; }
+.tag { display: inline-block; font-size: 13px; color: var(--accent); border: 1px solid var(--line); padding: 3px 10px; margin-bottom: 22px; }
+section { padding: 84px 0; border-bottom: 1px solid var(--line); }
+section h2 { font-size: clamp(26px, 3.4vw, 38px); margin: 0 0 12px; font-weight: 800; }
+section p.sub { color: var(--mute); max-width: 700px; margin: 0 0 40px; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.stats div { background: var(--panel); padding: 26px 22px; }
+.stats b { display: block; font-family: Manrope, sans-serif; font-size: 34px; font-weight: 800; letter-spacing: -0.03em; }
+.stats span { color: var(--mute); font-size: 14px; }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.card { background: var(--panel); padding: 30px 26px; }
+.card .no { font-family: Manrope, sans-serif; font-size: 13px; color: var(--accent); font-weight: 700; }
+.card h3 { font-size: 20px; margin: 8px 0 10px; }
+.card p { color: #b8bdd8; margin: 0; font-size: 15px; }
+.modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.mode { border: 1px solid var(--line); padding: 28px 24px; background: linear-gradient(180deg, var(--panel), var(--bg)); }
+.mode h3 { margin: 0 0 6px; font-size: 22px; } .mode .k { color: var(--gold); font-size: 14px; }
+.mode ul { padding-left: 18px; margin: 14px 0 0; color: #b8bdd8; font-size: 15px; }
+.korea { display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: center; }
+.korea img { width: 100%; border: 1px solid var(--line); display: block; }
+.korea ul { padding-left: 18px; color: #c4c8e2; }
+.korea li { margin-bottom: 8px; }
+.who { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.who div { background: var(--panel); padding: 24px 20px; } .who b { display: block; margin-bottom: 6px; } .who span { color: var(--mute); font-size: 14px; }
+.live { border: 1px solid var(--line); aspect-ratio: 16 / 9; background: #05070d; position: relative; }
+.live iframe { width: 100%; height: 100%; border: 0; display: block; }
+.live button { position: absolute; inset: 0; margin: auto; width: 240px; height: 56px; background: var(--accent); color: #fff; border: 0; font: 700 16px Pretendard, sans-serif; cursor: pointer; }
+.open { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; color: #b8bdd8; font-size: 15px; }
+.open h3 { color: var(--text); font-size: 18px; margin: 0 0 8px; }
+footer { padding: 40px 0 60px; color: var(--mute); font-size: 14px; }
+footer .wrap { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+@media (max-width: 860px) {
+  .stats, .who { grid-template-columns: 1fr 1fr; } .grid, .modes, .open { grid-template-columns: 1fr; } .korea { grid-template-columns: 1fr; }
+  header nav { display: none; } .hero { padding: 72px 0 60px; } section { padding: 60px 0; } .wrap { padding: 0 16px; }
+}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <img src="../assets/sc-mark.svg?v=3" width="32" height="32" alt="">
+  <span class="word">Space <span>Commons</span></span>
+  <nav><a href="#why">강점</a><a href="#modes">세 가지 모드</a><a href="#korea">한국의 하늘</a><a href="#class">수업</a><a href="#open">열린 자료</a></nav>
+  <a class="btn" href="../" style="padding:8px 16px;margin-left:12px">바로 열기</a>
+</div></header>
+
+<div class="hero">
+  <canvas id="sky" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <span class="tag">무료 · 설치 없음 · 한국어</span>
+    <h1>땅에서 올려다보고,<br>우주로 나아가는<br>모두의 하늘</h1>
+    <p class="lead">오늘 밤 우리 동네 하늘에서 출발해 달과 행성을 지나 은하 밖까지 날아가고, 마지막에는 태양계를 직접 바꿔 보는 실험실까지. 브라우저 하나로 끝까지 이어집니다.</p>
+    <div class="cta"><a class="btn" href="../">Space Commons 열기</a><a class="btn ghost" href="#live">여기서 미리 보기</a></div>
+  </div>
+</div>
+
+<section><div class="wrap">
+  <div class="stats">
+    <div><b>300만</b><span>확대하면 나타나는 가이아 별 (맨눈 별 4만 1천 개)</span></div>
+    <div><b>1만 2천</b><span>NGC·IC 성운·성단·은하</span></div>
+    <div><b>68</b><span>직접 조작하는 개념 카드와 확인 문제 205개</span></div>
+    <div><b>0원</b><span>가입·설치·광고 없이, 오프라인 저장까지</span></div>
+  </div>
+</div></section>
+
+<section id="why"><div class="wrap">
+  <h2>Space Commons만의 강점</h2>
+  <p class="sub">하늘을 보는 일, 우주를 여행하는 일, 물리 법칙을 실험하는 일은 보통 서로 다른 프로그램에서 따로 합니다. Space Commons는 이 셋을 하나의 하늘 위에서 끊김 없이 잇습니다.</p>
+  <div class="grid">
+    <div class="card"><div class="no">01</div><h3>관측에서 비행, 실험까지 한 흐름</h3><p>지금 보이는 토성을 누르고 그대로 날아가 고리를 보고, 샌드박스로 옮겨 목성 질량을 90배로 키우면 무슨 일이 생기는지 봅니다. 같은 천체, 같은 시각, 같은 자료로 이어집니다.</p></div>
+    <div class="card"><div class="no">02</div><h3>처음부터 한국어로 설계</h3><p>번역을 덧댄 것이 아니라 한국어로 먼저 쓰였습니다. 행성 이름표, 개념 설명, 확인 문제, 실습 기록지까지 한국어이고, 영어로도 전환됩니다.</p></div>
+    <div class="card"><div class="no">03</div><h3>한국의 하늘과 역사</h3><p>천상열차분야지도의 별자리, 다누리·천리안·무궁화 같은 한국 위성, 보현산·소백산 같은 관측지의 실제 능선, 옛 기록 속 그날 밤 하늘로 돌아가 보기.</p></div>
+    <div class="card"><div class="no">04</div><h3>배우도록 만든 구조</h3><p>설명이 먼저, 식은 그다음. 68개 개념 카드가 고등학교 지구과학부터 궤도역학까지 이어지고, 단계별 실습과 수업 링크로 교실에서 바로 씁니다.</p></div>
+    <div class="card"><div class="no">05</div><h3>실제 자료, 지금 이 순간</h3><p>가이아 별 목록, 4종의 확대 사진(가시광·적외선), 실시간 인공위성, 어제 찍은 지구 사진, 오로라 예보와 날씨까지. 꾸민 하늘이 아니라 지금의 하늘입니다.</p></div>
+    <div class="card"><div class="no">06</div><h3>누구나, 어디서나</h3><p>휴대폰과 노트북에서 그대로 열리고, 한 번 받아 두면 인터넷 없는 캠핑장에서도 쓸 수 있습니다. 큰 글씨, 색각 보정, 움직임 줄이기도 갖췄습니다.</p></div>
+  </div>
+</div></section>
+
+<section id="modes"><div class="wrap">
+  <h2>세 가지 모드, 하나의 하늘</h2>
+  <p class="sub">위쪽의 지상 · 우주 · 샌드박스 버튼으로 언제든 오갑니다.</p>
+  <div class="modes">
+    <div class="mode"><div class="k">지상</div><h3>올려다보기</h3><ul><li>우리 동네 오늘 밤 하늘, 날씨와 빛공해까지 반영</li><li>망원경·쌍안경 시야와 오늘 밤 볼거리 추천</li><li>일식·월식 지도, 유성우, 인공위성 통과 알림</li><li>확대하면 실제 망원경 사진이 이어짐</li></ul></div>
+    <div class="mode"><div class="k">우주</div><h3>날아가기</h3><ul><li>행성과 위성, 왜행성, 혜성 사이를 자유 비행</li><li>보이저·제임스 웹 등 탐사선의 실제 여정</li><li>가까운 별들 사이, 우리 은하 밖, 국부은하군까지</li><li>화성 표면에 서서 화성의 하늘 보기</li></ul></div>
+    <div class="mode"><div class="k">샌드박스</div><h3>바꿔 보기</h3><ul><li>태양을 블랙홀로, 지구를 금성 자리로, 목성을 별로</li><li>행성 대기의 기압과 성분을 바꾸면 기온이 달라짐</li><li>소행성 3만 개로 목성이 만드는 틈 찾기</li><li>궤도 설계부터 은하 충돌까지 단계별 실습</li></ul></div>
+  </div>
+</div></section>
+
+<section id="korea"><div class="wrap korea">
+  <div><img src="../assets/cheonsang.webp" alt="천상열차분야지도" loading="lazy"></div>
+  <div>
+    <h2>한국에서 보는 하늘</h2>
+    <p class="sub" style="margin-bottom:16px">서울에서 켜면 서울의 하늘이 열립니다.</p>
+    <ul>
+      <li>천상열차분야지도의 별자리로 바꿔 보기</li>
+      <li>보현산천문대, 소백산천문대, 제주 1100고지, 남산, 치악산의 실제 360° 능선</li>
+      <li>한국 위성(다누리, 천리안, 무궁화, 아리랑)의 위치와 궤도</li>
+      <li>삼국사기·조선왕조실록 속 천문 기록의 그날 밤으로 이동</li>
+      <li>1582년 이전 날짜는 율리우스력으로, 옛 기록 그대로</li>
+    </ul>
+  </div>
+</div></section>
+
+<section id="class"><div class="wrap">
+  <h2>누구에게 좋은가</h2>
+  <p class="sub">별을 처음 보는 사람부터 수업을 준비하는 교사까지.</p>
+  <div class="who">
+    <div><b>학생</b><span>교과서의 H-R도, 케플러 법칙, 별의 진화를 손으로 움직여 이해합니다.</span></div>
+    <div><b>교사</b><span>원하는 시각·장소·장면을 링크 하나로 나눠 주고, 발표 스크립트로 자동 진행합니다.</span></div>
+    <div><b>관측자</b><span>오늘 밤 볼거리, 망원경 시야, 관측 기록과 변광성 기록을 한곳에서.</span></div>
+    <div><b>호기심 많은 누구나</b><span>달이 없으면, 태양이 사라지면, 화성에 공기가 있으면? 직접 해 봅니다.</span></div>
+  </div>
+</div></section>
+
+<section id="live"><div class="wrap">
+  <h2>여기서 바로 보기</h2>
+  <p class="sub">아래 화면은 실제 Space Commons입니다. 눌러서 불러오세요.</p>
+  <div class="live" id="livebox"><button id="liveload">미리 보기 불러오기</button></div>
+</div></section>
+
+<section id="open"><div class="wrap">
+  <h2>열린 자료, 열린 하늘</h2>
+  <p class="sub">이름의 Commons는 하늘이 누구의 소유도 아닌 공유지라는 뜻입니다. 쓰는 자료도 그 정신을 따릅니다.</p>
+  <div class="open">
+    <div><h3>출처를 밝힌 공개 자료</h3>ESA 가이아, NASA·JPL, CDS·ESA의 확대 사진, 공개 지형 자료 등 라이선스를 지키는 자료만 쓰고 모든 출처를 README에 적었습니다.</div>
+    <div><h3>가입도 추적도 없음</h3>계정 없이 바로 쓰고, 관측 기록은 내 기기에만 저장됩니다.</div>
+    <div><h3>계속 자라는 하늘</h3>애드온 파일로 나만의 천체 목록과 발표 순서를 더할 수 있습니다.</div>
+  </div>
+  <div style="margin-top:44px" class="cta"><a class="btn" href="../">지금 하늘 열기</a> <a class="btn ghost" href="https://github.com/radix24/space-commons">GitHub</a></div>
+</div></section>
+
+<footer><div class="wrap"><span><span class="word" style="font-size:15px">Space <span>Commons</span></span> · 땅에서 올려다보고, 우주로 나아가는 모두의 하늘</span><span>자료 출처와 라이선스: <a href="https://github.com/radix24/space-commons#readme">README</a></span></div></footer>
+
+<script>
+// a slow drifting star field behind the title (drawn once per frame, stops when "reduce motion" is set)
+const cv = document.getElementById('sky'), g = cv.getContext('2d'); let W, H, stars = [];
+function size() { W = cv.width = cv.offsetWidth * devicePixelRatio; H = cv.height = cv.offsetHeight * devicePixelRatio;
+  stars = Array.from({ length: Math.round(W * H / 5000) }, () => ({ x: Math.random() * W, y: Math.random() * H, r: Math.random() ** 3 * 1.8 + 0.3, a: Math.random() * 0.8 + 0.2, t: Math.random() * 6 })); }
+size(); addEventListener('resize', size);
+const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function draw(t) { g.clearRect(0, 0, W, H); const grd = g.createLinearGradient(0, H, 0, 0); grd.addColorStop(0, 'rgba(76,141,246,.16)'); grd.addColorStop(.5, 'rgba(10,13,28,0)'); g.fillStyle = grd; g.fillRect(0, 0, W, H);
+  for (const s of stars) { const x = (s.x + (still ? 0 : t * 0.004 * s.r)) % W; g.globalAlpha = s.a * (0.75 + 0.25 * Math.sin(t / 900 + s.t)); g.fillStyle = s.r > 1.6 ? '#F3E2A6' : '#EEF0FA'; g.beginPath(); g.arc(x, s.y, s.r * devicePixelRatio * 0.7, 0, 7); g.fill(); }
+  g.globalAlpha = 1; if (!still) requestAnimationFrame(draw); }
+requestAnimationFrame(draw);
+document.getElementById('liveload').onclick = () => { const f = document.createElement('iframe'); f.src = '../#m=g'; f.title = 'Space Commons'; f.allow = 'fullscreen'; const b = document.getElementById('livebox'); b.innerHTML = ''; b.append(f); };
+</script>
+</body>
+</html>

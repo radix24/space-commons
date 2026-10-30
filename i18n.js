@@ -132,7 +132,7 @@ const PH = [
   ['예보 받는 중…', 'Fetching forecast…'], ['위치 확인 중…', 'Finding your location…'], ['저·중·고', 'Low·mid·high'], ['구름', 'Cloud'], ['습도', 'Humidity'], ['시정', 'Visibility'], ['기온', 'Temp'],
   ['땅에서 올려다보고, 우주로 나아가는 모두의 하늘', 'A sky for everyone, from the ground up and out into space'],
   ['검색: M31, NGC 7000, Jupiter, Sirius…', 'Search: M31, NGC 7000, Jupiter, Sirius…'], ['카탈로그 불러오는 중…', 'Loading catalogues…'],
-  ['우주를 당신에게 가져오는 중', 'Bringing the universe to you'], ['별 4만 1천 개를 하늘에 거는 중', 'Hanging 41,000 stars in the sky'],
+  ['우주를 당신에게 가져오는 중', 'Bringing the universe to you'], ['별 4만 1천 개를 먼저 걸고, 확대하면 가이아 별 300만 개를 더 거는 중', 'Hanging 41,000 stars first, and 3 million Gaia stars as you zoom in'],
   ['은하 1만 2천 개의 먼지를 터는 중', 'Dusting off 12,000 galaxies'], ['보이저 1호에게 안부를 묻는 중', 'Saying hello to Voyager 1'],
   ['달을 지구 쪽으로 돌려놓는 중', 'Turning the Moon to face Earth'], ['토성 고리를 닦는 중', 'Polishing Saturn\'s rings'],
   ['외계행성 6천 개의 주소를 확인하는 중', 'Checking the addresses of 6,000 exoplanets'], ['다누리와 교신하는 중', 'Talking to Danuri'],
@@ -203,7 +203,7 @@ const PH = [
   ['은하 쌍', 'Galaxy pair'], ['은하 삼중', 'Galaxy triplet'], ['은하군', 'Galaxy group'], ['발광성운', 'Emission nebula'], ['반사성운', 'Reflection nebula'], ['초신성 잔해', 'Supernova remnant'],
   ['성단+성운', 'Cluster + nebula'], ['행성상성운', 'Planetary nebula'], ['산개성단', 'Open cluster'], ['구상성단', 'Globular cluster'], ['성협', 'Association'], ['성운', 'Nebula'], ['은하', 'Galaxy'], ['기타', 'Other'],
   // recent features: lessons, history, sizes, labs, plan, gear, eclipse map, long exposure
-  ['별 4만 개와 NGC/IC 천체 1만 2천 개를 불러오는 중', 'Loading 40,000 stars and 12,000 NGC/IC objects'], ['샌드박스', 'Sandbox'], ['수업 링크', 'Lesson link'], ['한국 천문학', 'Korean astronomy'],
+  ['맨눈 별 4만 1천 개(확대하면 가이아 별 300만 개)와 NGC/IC 천체 1만 2천 개를 불러오는 중', 'Loading 41,000 naked-eye stars (3 million Gaia stars when zoomed) and 12,000 NGC/IC objects'], ['샌드박스', 'Sandbox'], ['수업 링크', 'Lesson link'], ['한국 천문학', 'Korean astronomy'],
   ['크기 비교', 'Size comparison'], ['우주 알아보기', 'Explore the universe'], ['카메라 겹치기', 'Camera overlay'], ['장노출', 'Long exposure'],
   ['녹화 중지', 'Stop recording'], ['녹화', 'Record'], ['자동 비행', 'Auto tour'], ['우리 은하 밖으로', 'Outside the Milky Way'],
   ['위성으로 판정', 'Rate from satellite'], ['실제 지형', 'Real terrain'], ['아날렘마', 'Analemma'], ['가시광', 'Visible light'],

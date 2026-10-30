@@ -442,3 +442,8 @@ body.space .menu-pop .ground-only, body:not(.space) .menu-pop .space-only { disp
 .guide-box p { margin: 6px 0 10px; line-height: 1.55; font-size: 13.5px; } .guide-box .row { justify-content: flex-end; gap: 8px; align-items: center; } .guide-box .small { margin-right: auto; }
 .guide-hl { outline: 2px solid var(--orbit); outline-offset: 3px; }
 .sb-atm { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); } .sb-atm .sb-field { display: grid; grid-template-columns: 1fr 1.2fr 64px; gap: 6px; align-items: center; }
+
+.sb-quick { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 6px 0 10px; }
+.sb-quick button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; padding: 8px 10px; }
+.sb-quick button span { font-size: 11px; opacity: .7; }
+.sb-num input[type=number] { width: 90px; }

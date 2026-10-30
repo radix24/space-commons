@@ -724,6 +724,10 @@ const planetMat = (tex, emissive) => new THREE.ShaderMaterial({
         if (abs(dn) > 1e-4) { float t = dot(ringC - vW, ringN) / dn;
           if (t > 0.0) { float rr = length(vW + sunDir * t - ringC) / ringR;
             if (rr > 1.11 && rr < 2.33) col *= 1.0 - 0.85 * texture2D(ringMap, vec2((rr - 1.11) / 1.22, 0.5)).a; } } }
+      if (hasNight > 0.5 && ndl > 0.0) { // Earth: sunlight glinting off the oceans (water is dark and blue in the map), a broad sheen plus a bright core
+        float sea = smoothstep(0.02, 0.10, c.b - max(c.r, c.g * 0.85)) * (1.0 - smoothstep(0.35, 0.55, dot(c, vec3(0.3, 0.59, 0.11))));
+        vec3 h = normalize(sunDir + normalize(-vW)); float nh = max(dot(n, h), 0.0);
+        col += vec3(1.0, 0.95, 0.85) * sea * (pow(nh, 18.0) * 0.55 + pow(nh, 160.0) * 1.4) * smoothstep(0.0, 0.15, ndl); }
       if (hasNight > 0.5) col += texture2D(night, vUv).rgb * (1.0 - smoothstep(-0.12, 0.08, ndl)) * 1.3; // city lights on the night side
       gl_FragColor = vec4(col, 1.0); }`,
   depthTest: true, depthWrite: true,
@@ -1842,7 +1846,7 @@ let sandboxOn = false, sandboxMod = null;
 async function setSandbox(on) {
   sandboxOn = on; document.body.classList.toggle('sandbox', on);
   document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('on', on ? b.dataset.mode === 'sandbox' : (b.dataset.mode === 'space') === mode.space));
-  if (on) { sandboxMod ||= await import('./sandbox.js'); sandboxMod.openSandbox({ helio, jdNow: () => jd(state.time) }); }
+  if (on) { sandboxMod ||= await import('./sandbox.js'); sandboxMod.openSandbox({ helio, jdNow: () => jd(state.time), small: (n, j) => { const s = PLANETS.find(x => x.name === n)?.sb; if (!s) return null; const v = smallHelio({ el: [s.a, s.e, s.i, s.om, s.w, s.ma, s.epoch] }, j); return [v.x, v.y, v.z]; } }); }
   else sandboxMod?.closeSandbox();
 }
 document.getElementById('sizes-btn')?.addEventListener('click', async () => { (await import('./sizes.js')).openSizes(); });
@@ -3649,7 +3653,8 @@ function drawLabels() {
   if (gOn) for (const c of cardinals) { const s = toScreen(c.w); if (s && c.w.dot(camFwd()) > 0) label(s[0], s[1], c.name, 'card'); }
   for (let i = used; i < pool.length; i++) pool[i].style.display = 'none';
   const ring = $('sel-ring');
-  if (selected && !(selected.planet && !selected.p.world)) { const s = toScreen(worldOf(selected)); ring.hidden = !s; if (s) { ring.style.left = s[0] + 'px'; ring.style.top = s[1] + 'px'; } } else ring.hidden = true;
+  if (selected && !(selected.planet && !selected.p.world)) { const s = toScreen(worldOf(selected)); const rp = selected.planet ? selected.p.rpx || 0 : 0, big = rp > 12, D = big ? Math.round(rp * 2 + 16) : 34; // a disc seen up close: the ring goes around the whole body, not a dot at its centre
+    ring.hidden = !s || rp > Math.min(innerWidth, innerHeight) * 0.45; if (s) { ring.style.left = s[0] + 'px'; ring.style.top = s[1] + 'px'; ring.style.width = ring.style.height = D + 'px'; ring.style.margin = `${-D / 2}px 0 0 ${-D / 2}px`; } } else ring.hidden = true;
 }
 
 // ---------- main loop ----------
@@ -3739,7 +3744,7 @@ updateSkyMatrix(); requestAnimationFrame(frame);
 (async () => {
   const st = $('status'); const parts = [];
   new MutationObserver(() => { st.title = st.textContent; }).observe(st, { childList: true, characterData: true, subtree: true });
-  const LOADING = ['우주를 당신에게 가져오는 중', '별 4만 1천 개를 하늘에 거는 중', '은하 1만 2천 개의 먼지를 터는 중', '보이저 1호에게 안부를 묻는 중',
+  const LOADING = ['우주를 당신에게 가져오는 중', '별 4만 1천 개를 먼저 걸고, 확대하면 가이아 별 300만 개를 더 거는 중', '은하 1만 2천 개의 먼지를 터는 중', '보이저 1호에게 안부를 묻는 중',
     '달을 지구 쪽으로 돌려놓는 중', '토성 고리를 닦는 중', '외계행성 6천 개의 주소를 확인하는 중', '다누리와 교신하는 중', '화성 탐사차를 깨우는 중', '은하수를 펼치는 중'];
   let li = Math.floor(Math.random() * LOADING.length); $('loader-step').textContent = LOADING[li];
   const loadTimer = setInterval(() => { li = (li + 1) % LOADING.length; $('loader-step').textContent = LOADING[li]; }, 1400);

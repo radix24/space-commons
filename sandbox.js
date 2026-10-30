@@ -99,7 +99,7 @@ const dotTex = (() => { const c = document.createElement('canvas'); c.width = c.
 function buildMesh(b) {
   const g = new THREE.Group();
   const bh = b.kind === 'bh', dot = new THREE.Sprite(new THREE.SpriteMaterial({ map: bh ? bhTex : dotTex, color: bh ? 0xffffff : b.color, sizeAttenuation: false, depthTest: false, transparent: true }));
-  dot.scale.setScalar(bh ? 0.05 : b.kind === 'star' ? 0.022 + 0.012 * Math.min(2, Math.cbrt(b.m)) : b.test ? (b.frag ? 0.007 : 0.012) : 0.018); dot.renderOrder = 3; g.add(dot);
+  dot.scale.setScalar(bh ? Math.min(0.05, 0.01 + 0.0057 * Math.max(0, Math.log10(b.m * 1e6))) : b.kind === 'star' ? 0.022 + 0.012 * Math.min(2, Math.cbrt(b.m)) : b.test ? (b.frag ? 0.007 : 0.012) : 0.018); dot.renderOrder = 3; g.add(dot);
   if (b.Rkm && !bh) { const s = new THREE.Mesh(new THREE.SphereGeometry(b.Rkm / O.AU_KM, 32, 16), new THREE.MeshBasicMaterial({ color: b.color })); g.add(s); }
   const tg = new THREE.BufferGeometry(); tg.setAttribute('position', new THREE.BufferAttribute(b.trail, 3)); tg.setDrawRange(0, 0);
   const line = new THREE.Line(tg, new THREE.LineBasicMaterial({ color: b.color, transparent: true, opacity: b.test ? 0.85 : 0.45 })); line.frustumCulled = false;
@@ -158,6 +158,19 @@ function toBlackHole(b) {
   toast(`${b.ko}을(를) 같은 질량의 블랙홀로 바꿨습니다 · 사건의 지평선 반지름 ${fmt(b.Rkm, 1)} km. 멀리 있는 행성의 궤도는 그대로입니다 (빛과 열만 사라짐)`);
 }
 function dominant(r) { let best = null, bs = 0; for (const o of massive()) { const d2 = (o.r[0] - r[0]) ** 2 + (o.r[1] - r[1]) ** 2 + (o.r[2] - r[2]) ** 2, s = o.m / d2; if (s > bs) { bs = s; best = o; } } return best; }
+const EXTRA = { // name: [Korean, mass (solar masses), radius km, colour]
+  Moon: ['달', 3.694e-8, 1737, 0xc9c6bf], Ceres: ['세레스', 4.72e-10, 470, 0xa79e93], Vesta: ['베스타', 1.30e-10, 263, 0xb8ad9e], Pluto: ['명왕성', 6.58e-9, 1188, 0xd8c3a5],
+  Eris: ['에리스', 8.36e-9, 1163, 0xe6e6e6], Haumea: ['하우메아', 2.01e-9, 816, 0xdedede], Makemake: ['마케마케', 1.56e-9, 715, 0xd9a888] };
+function addSolarBody(n) {
+  if (byName(n)) return toast(`${EXTRA[n][0]}은(는) 이미 있습니다`);
+  const [ko, m, Rkm, color] = EXTRA[n]; let r, v;
+  if (n === 'Moon') { const E = byName('Earth'); if (!E) return toast('지구가 있어야 달을 놓을 수 있습니다');
+    const d = 384400 / O.AU_KM, sp = Math.sqrt(O.MU_SUN * E.m / d); r = add(E.r, [d, 0, 0]); v = add(E.v, [0, sp, 0]); }
+  else { const pos = (j) => ctx.small?.(n, j); if (!pos(sim.t)) return toast('이 천체의 궤도 자료가 없습니다');
+    const s = { r: pos(sim.t), v: scale(add(pos(sim.t + 0.5), pos(sim.t - 0.5), -1), 1) }, sun = byName('Sun'); r = add(s.r, sun ? sun.r : [0, 0, 0]); v = add(s.v, sun ? sun.v : [0, 0, 0]); }
+  const b = makeBody(n, r, v, { ko, m, Rkm, color, kind: 'planet' }); sim.bodies.push(b); buildMesh(b); sim.E0 = energy();
+  toast(n === 'Moon' ? '달을 지구 둘레 38만 km 원 궤도에 놓았습니다' : `${ko}을(를) 오늘 실제 위치에 놓았습니다`);
+}
 const ADD = { asteroid: { ko: '소행성', m: 0 }, earth: { ko: '새 지구', m: MASS.Earth, Rkm: 6371, color: 0x6fa8ff }, jupiter: { ko: '새 목성', m: MASS.Jupiter, Rkm: 71492, color: 0xd9b48a },
   star: { ko: '새 별', m: 1, kind: 'star' }, reddwarf: { ko: '적색왜성', m: 0.2, kind: 'star' }, bh: { ko: '블랙홀', m: 10, kind: 'bh' } };
 function addBody(kind, r, v) {
@@ -394,7 +407,24 @@ function planePoint(ev) {
   const p = new THREE.Vector3(); return ray.ray.intersectPlane(plane, p) ? [p.x, p.y, 0] : null;
 }
 let selected = null, drag = null;
-function select(b) { selected = b; root.querySelector('.sb-sel').hidden = !b; if (b) { b.base = b.m; root.querySelector('.sb-mass').value = 0; root.querySelector('.sb-massv').textContent = ''; } atmEditor(b); }
+function showNums() { const b = selected; if (!b) return; const q = (s) => root.querySelector(s), u = +q('.sb-munit').value;
+  q('.sb-mnum').value = b.test ? 0 : +(b.m / u).toPrecision(4); q('.sb-mnum').disabled = !!b.test;
+  const st = hostStar(b); q('.sb-dnum').value = st && st !== b ? +Math.hypot(...add(b.r, st.r, -1)).toPrecision(3) : ''; }
+function hostStar(b) { return sim.bodies.filter(o => (o.kind === 'star' || o.kind === 'bh') && o !== b).sort((x, y) => y.m - x.m)[0] || null; }
+function moveToOrbit(b, d) { // put a body on a circular orbit d AU from its star, in the ecliptic, keeping its direction around the star
+  const st = hostStar(b); if (!st) return toast('별이 있어야 합니다'); const rel = add(b.r, st.r, -1), ang = Math.atan2(rel[1], rel[0]), sp = Math.sqrt(O.MU_SUN * (st.m + b.m) / d);
+  b.r = add(st.r, [d * Math.cos(ang), d * Math.sin(ang), 0]); b.v = add(st.v, [-sp * Math.sin(ang), sp * Math.cos(ang), 0]); b.trail.fill(0); b.tn = 0; sim.E0 = energy(); showNums();
+  toast(`${b.ko}을(를) 별에서 ${fmt(d, 2)} AU 원 궤도로 옮겼습니다. "보기 → 온도 지도"로 표면 온도를 확인해 보세요`); }
+function quick(k) {
+  const pick = (n) => { const b = byName(n); if (!b) toast(`${KO[n] || n}이(가) 없습니다. "보기 → 지금 태양계로 새로"를 누르세요`); return b; };
+  if (k === 'sunbh') { const s = pick('Sun'); if (s && s.kind !== 'bh') { toBlackHole(s); select(s); } }
+  if (k === 'nosun') { const s = pick('Sun'); if (s) { select(s); root.querySelector('.sb-del').click(); toast('태양을 지웠습니다: 붙잡아 두던 중력이 사라져 행성들이 마지막 속도 그대로 직선으로 날아갑니다'); } }
+  if (k === 'jup2star') { const j = pick('Jupiter'); if (j) { select(j); root.querySelector('.sb-mass').value = Math.log10(90); root.querySelector('.sb-mass').dispatchEvent(new Event('input')); showNums(); focus('Sun', 12); } }
+  if (k === 'earthvenus') { const e = pick('Earth'); if (e) { select(e); moveToOrbit(e, 0.72); root.querySelector('.sb-temp').checked = true; root.querySelector('.sb-temp').dispatchEvent(new Event('change')); } }
+  if (k === 'marsatm') { const m = pick('Mars'); if (m) { m.atm = JSON.parse(JSON.stringify(ATM.PRESETS.Earth)); select(m); root.querySelector('.sb-temp').checked = true; root.querySelector('.sb-temp').dispatchEvent(new Event('change')); toast('화성에 지구 같은 1기압 공기를 줬습니다. 아래 "대기 바꾸기"에서 이산화탄소를 늘려 보세요'); } }
+  if (k === 'moonaway') { const m = byName('Moon'); if (!m) return toast('달이 없습니다. 위의 "태양계 천체 더하기"에서 달을 먼저 놓아 보세요'); select(m); root.querySelector('.sb-del').click(); toast('달을 지웠습니다. 실제로는 조석이 약해지고 자전축이 오랜 세월에 걸쳐 크게 흔들리게 됩니다'); }
+}
+function select(b) { selected = b; root.querySelector('.sb-sel').hidden = !b; if (b) { b.base = b.m; root.querySelector('.sb-mass').value = 0; root.querySelector('.sb-massv').textContent = ''; showNums(); } atmEditor(b); }
 function atmEditor(b) { // pressure, cloud albedo and the gas mix of the selected rocky planet
   const box = root.querySelector('.sb-atm'); box.innerHTML = ''; const a = b && b.kind === 'planet' ? ATM.atmOf(b) : null; box.hidden = !a; if (!a) return;
   box.append(el('b', '', '대기 바꾸기'));
@@ -932,17 +962,30 @@ function buildUI() {
       </div>
       <div class="sb-row small sb-energy"></div>
       <div class="sb-sel" hidden><b class="sb-sel-name"></b><div class="small sb-sel-data"></div>
-        <label class="small">질량 바꾸기 <input class="sb-mass" type="range" min="-3" max="3" step="0.05" value="0"></label><span class="small sb-massv"></span>
+        <div class="sb-row sb-num"><span class="small">질량</span><input class="sb-mnum" type="number" min="0" step="any"><select class="sb-munit"><option value="${MASS.Earth}">지구 질량</option><option value="${MASS.Jupiter}">목성 질량</option><option value="1">태양 질량</option></select>
+          <button class="sb-mx" data-k="0.1">×0.1</button><button class="sb-mx" data-k="10">×10</button></div>
+        <div class="sb-row sb-num"><span class="small">별에서 거리</span><input class="sb-dnum" type="number" min="0.05" step="any"><span class="small">AU</span><button class="sb-dgo">이 거리 원 궤도로 옮기기</button></div>
+        <input class="sb-mass" type="range" min="-3" max="3" step="0.05" value="0" hidden><span class="small sb-massv"></span>
         <canvas class="sb-graph" width="560" height="120"></canvas>
         <div class="sb-row"><button class="sb-follow">따라가기</button><button class="sb-del">지우기</button><button class="sb-bh">블랙홀로 바꾸기</button></div><div class="sb-atm" hidden></div></div>
-      <div class="sb-tabs"><button data-tab="learn" class="on">우주 더 알아보기</button><button data-tab="make">만들기</button><button data-tab="scen">시나리오</button><button data-tab="view">보기</button></div>
-      <div class="sb-tab" data-tab="learn">
-        <button class="sb-bigcard"><b>개념으로 배우기</b><span>하늘의 좌표부터 은하 진화까지 46개 개념 · 직접 조작하는 그림과 확인 문제</span></button>
+      <div class="sb-tabs"><button data-tab="make" class="on">만들고 바꾸기</button><button data-tab="scen">해 보기</button><button data-tab="learn">궤도 실습</button><button data-tab="view">보기</button></div>
+      <div class="sb-tab" data-tab="learn" hidden>
+        <button class="sb-bigcard"><b>개념으로 배우기</b><span>하늘의 좌표부터 은하 진화까지 68개 개념 · 직접 조작하는 그림과 확인 문제</span></button>
         <div class="small sb-sub">실습: 1단계부터 차례로 해 보세요. 오른쪽 "개념"은 관련 개념 카드를 엽니다</div>
         <div class="sb-labs"></div>
         <button class="sb-recbtn">실습 기록지</button>
       </div>
-      <div class="sb-tab" data-tab="make" hidden>
+      <div class="sb-tab" data-tab="make">
+        <div class="small sb-sub">천체를 누르면 위에서 질량·거리·대기를 숫자로 바꿀 수 있습니다. 바로 해 볼 만한 것:</div>
+        <div class="sb-quick">
+          <button data-q="sunbh"><b>태양을 블랙홀로</b><span>행성 궤도는 그대로일까?</span></button>
+          <button data-q="nosun"><b>태양 없애기</b><span>행성들이 직선으로 날아갑니다</span></button>
+          <button data-q="jup2star"><b>목성을 별로</b><span>질량 90배: 핵융합이 켜집니다</span></button>
+          <button data-q="earthvenus"><b>지구를 금성 자리로</b><span>0.72 AU에서 바다는?</span></button>
+          <button data-q="marsatm"><b>화성에 두꺼운 대기</b><span>지구 같은 공기 1기압</span></button>
+          <button data-q="moonaway"><b>달 없애기</b><span>달을 지우고 지구만</span></button>
+        </div>
+        <div class="sb-row"><span class="small">태양계 천체 더하기</span><select class="sb-addsol"><option value="">고르기…</option>${Object.entries(EXTRA).map(([k, v]) => `<option value="${k}">${v[0]}</option>`).join('')}<option value="all">모두</option></select></div>
         <div class="sb-row"><button class="sb-throw">탐사선 던지기</button></div>
         <div class="sb-row"><select class="sb-addkind"><option value="asteroid">소행성 (질량 없음)</option><option value="earth">지구</option><option value="jupiter">목성</option><option value="reddwarf">적색왜성 (0.2)</option><option value="star">태양 같은 별</option><option value="bh">블랙홀 (10 태양질량)</option></select>
           <label class="small"><input type="checkbox" class="sb-circ" checked> 원 궤도로</label><button class="sb-add">천체 놓기</button></div>
@@ -992,6 +1035,14 @@ function buildUI() {
     else if (b.kind === 'bh') b.Rkm = RS_KM(b.m);
     sim.E0 = energy(); };
   q('.sb-bh').onclick = () => selected && toBlackHole(selected);
+  const setMass = (b, m) => { b.base = b.m; const k = m / (b.m || 1e-30); q('.sb-mass').value = Math.log10(Math.max(1e-3, Math.min(1e3, k))); b.base = b.m; q('.sb-mass').dispatchEvent(new Event('input'));
+    if (Math.abs(b.m - m) / m > 1e-6) { b.m = m; sim.E0 = energy(); } showNums(); };
+  q('.sb-mnum').onchange = () => { if (!selected || selected.test) return; const m = +q('.sb-mnum').value * +q('.sb-munit').value; if (m > 0) setMass(selected, m); };
+  q('.sb-munit').onchange = showNums;
+  root.querySelectorAll('.sb-mx').forEach(x => x.onclick = () => { if (selected && !selected.test) setMass(selected, selected.m * +x.dataset.k); });
+  q('.sb-dgo').onclick = () => { if (!selected) return; const d = +q('.sb-dnum').value; if (d > 0) moveToOrbit(selected, d); };
+  q('.sb-addsol').onchange = (e) => { const v = e.target.value; e.target.value = ''; if (v === 'all') Object.keys(EXTRA).forEach(n => byName(n) || addSolarBody(n)); else if (v) addSolarBody(v); };
+  root.querySelectorAll('.sb-quick button').forEach(x => x.onclick = () => quick(x.dataset.q));
   q('.sb-add').onclick = () => setTool(view.tool === 'add' ? null : 'add');
   scene.add(hzGroup, rocheGroup);
   for (const [t, f, card] of LABS) { if (!f) { q('.sb-labs').append(el('div', 'sb-level', t)); continue; } const row = el('div', 'sb-labrow'), go = btn(t, () => { labCard = card; f(); }), c = btn('개념', () => openCards({ card, openLab: (n) => openLab(n) }), 'sb-concept'); c.title = '관련 개념 카드 열기'; row.append(go, c); q('.sb-labs').append(row); }
