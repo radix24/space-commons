@@ -97,12 +97,12 @@ function addProbe(r, v, opts = {}) { const b = makeBody(opts.name || 'probe' + D
 // the surface follows the climate: ice spreads from the poles below freezing, oceans boil away, rock darkens and glows when scorching,
 // and a thick atmosphere wraps the planet in cloud tinted by its main gas. Driven every frame from the climate model (updateTempMap).
 function climateMat(m) {
-  const u = { uTeq: { value: 288 }, uTpole: { value: 250 }, uBoil: { value: 373 }, uCloud: { value: 0 }, uCloudCol: { value: new THREE.Color(1, 1, 1) }, uOn: { value: 0 } };
+  const u = { uTeq: { value: 288 }, uTpole: { value: 250 }, uBoil: { value: 373 }, uCloud: { value: 0 }, uCloudCol: { value: new THREE.Color(1, 1, 1) }, uOn: { value: 0 }, uSea: { value: -1 }, uLife: { value: 0 }, uH: { value: null }, uHasH: { value: 0 }, uWater: { value: 1 } };
   m.userData.climate = u;
   m.onBeforeCompile = (sh) => { Object.assign(sh.uniforms, u);
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vSurf;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvSurf = normalize(position);');
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
-      varying vec3 vSurf; uniform float uTeq, uTpole, uBoil, uCloud, uOn; uniform vec3 uCloudCol;
+      varying vec3 vSurf; uniform float uTeq, uTpole, uBoil, uCloud, uOn, uSea, uLife, uHasH, uWater; uniform vec3 uCloudCol; uniform sampler2D uH;
       float ch(vec3 p){ p = fract(p * 0.1031); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); }
       float cn(vec3 p){ vec3 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
         return mix(mix(mix(ch(i), ch(i + vec3(1,0,0)), f.x), mix(ch(i + vec3(0,1,0)), ch(i + vec3(1,1,0)), f.x), f.y), mix(mix(ch(i + vec3(0,0,1)), ch(i + vec3(1,0,1)), f.x), mix(ch(i + vec3(0,1,1)), ch(i + vec3(1,1,1)), f.x), f.y), f.z); }
@@ -112,7 +112,18 @@ function climateMat(m) {
         vec3 c = diffuseColor.rgb; float lat = abs(vSurf.y), T = mix(uTeq, uTpole, pow(lat, 1.6));      // local temperature, K
         float sea = smoothstep(0.02, 0.1, c.b - max(c.r, c.g * 0.9));                                      // dark blue pixels: open water
         c = mix(c, mix(c, vec3(0.45, 0.36, 0.27), sea), smoothstep(uBoil - 5.0, uBoil + 40.0, T));          // oceans boiled away: bare sea floor
-        float ice = smoothstep(271.0, 245.0, T + (cf(vSurf * 9.0) - 0.5) * 25.0);                         // ice sheets with a ragged edge
+        if (uSea > -0.5 && T < uBoil) {                                                       // terraformed water: fill the lowlands up to the sea level
+          #ifdef USE_MAP
+          float h = uHasH > 0.5 ? texture2D(uH, vMapUv).r : cf(vSurf * 3.0);
+          #else
+          float h = cf(vSurf * 3.0);
+          #endif
+          float wet = smoothstep(uSea + 0.004, uSea - 0.004, h);
+          vec3 sw = mix(vec3(0.04, 0.13, 0.28), vec3(0.12, 0.3, 0.44), smoothstep(uSea - 0.06, uSea, h));
+          c = mix(c, mix(sw, vec3(0.82, 0.88, 0.93), smoothstep(273.0, 262.0, T)), wet);                  // frozen sea: pale sea ice
+          float green = uLife * (1.0 - wet) * smoothstep(275.0, 288.0, T) * (1.0 - smoothstep(305.0, 320.0, T)) * smoothstep(0.35, 0.6, cf(vSurf * 7.0));
+          c = mix(c, vec3(0.2, 0.36, 0.16) * (0.8 + 0.4 * cf(vSurf * 20.0)), green * 0.85); }
+        float ice = uWater * smoothstep(271.0, 245.0, T + (cf(vSurf * 9.0) - 0.5) * 25.0) + smoothstep(160.0, 140.0, T + (cf(vSurf * 9.0) - 0.5) * 12.0); // water ice needs water; CO2 frost needs ~150 K
         c = mix(c, vec3(0.9, 0.94, 0.98), ice * 0.92);
         c = mix(c, c * vec3(0.5, 0.33, 0.26), smoothstep(450.0, 900.0, T) * 0.85);                         // scorched rock
         float cl = clamp(uCloud * 1.2 - 0.2 + (cf(vSurf * 4.0) - 0.5) * 0.9, 0.0, 1.0);                  // cloud deck from the atmosphere
@@ -127,7 +138,10 @@ const TEX = { Sun: 'sun', Mercury: 'mercury', Venus: 'venus_atmosphere', Earth: 
   Moon: 'moon', Ceres: 'ceres', Vesta: 'vesta', Pluto: 'pluto', Eris: 'eris_fictional', Haumea: 'haumea_fictional', Makemake: 'makemake_fictional' };
 const SPIN_H = { Sun: 609.1, Mercury: 1407.6, Venus: -5832.5, Earth: 23.93, Moon: 655.7, Mars: 24.62, Jupiter: 9.93, Saturn: 10.66, Uranus: -17.24, Neptune: 16.11, Pluto: -153.3, Ceres: 9.07, Vesta: 5.34 };
 const TILT = { Sun: 7.25, Mercury: 0.03, Venus: 177.4, Earth: 23.44, Moon: 6.68, Mars: 25.19, Jupiter: 3.13, Saturn: 26.73, Uranus: 97.77, Neptune: 28.32, Pluto: 122.5 };
-const texCache = {}; const texOf = (k) => texCache[k] ||= (() => { const t = new THREE.TextureLoader().load(`textures/2k_${k}.jpg`); t.colorSpace = THREE.SRGBColorSpace; return t; })();
+// close-up detail for the bodies with a high-resolution map and measured relief: 8k colour plus MOLA/LOLA heights as bump shading
+const HIRES_SB = { Mars: () => ({ map: hiTex('8k_mars.jpg', true), bumpMap: hiTex('disp_mars.png'), bumpScale: 2.2 }), Moon: () => ({ map: hiTex('8k_moon.jpg', true), bumpMap: hiTex('disp_moon.png'), bumpScale: 1.6 }) };
+const hiTex = (f, srgb) => texCache[f] ||= (() => { const t = new THREE.TextureLoader().load('textures/' + f); if (srgb) t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t; })();
+const texCache = {}; const texOf = (k, ext) => texCache[k] ||= (() => { const t = new THREE.TextureLoader().load(ext ? `textures/${k}${ext}` : `textures/2k_${k}.jpg`); if (!ext) t.colorSpace = THREE.SRGBColorSpace; return t; })();
 const starLight = new THREE.PointLight(0xffffff, 2.2, 0, 0); const ambient = new THREE.AmbientLight(0xffffff, 0.12);
 const dotTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'), r = g.createRadialGradient(32, 32, 0, 32, 32, 32);
   r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.35, 'rgba(255,255,255,.9)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
@@ -136,7 +150,7 @@ function buildMesh(b) {
   const bh = b.kind === 'bh', dot = new THREE.Sprite(new THREE.SpriteMaterial({ map: bh ? bhTex : dotTex, color: bh ? 0xffffff : b.color, sizeAttenuation: false, depthTest: false, transparent: true }));
   dot.scale.setScalar(bh ? Math.min(0.05, 0.01 + 0.0057 * Math.max(0, Math.log10(b.m * 1e6))) : b.kind === 'star' ? 0.022 + 0.012 * Math.min(2, Math.cbrt(b.m)) : b.test ? (b.frag ? 0.007 : 0.012) : 0.018); dot.renderOrder = 3; g.add(dot);
   if (b.Rkm && !bh) { const star = b.kind === 'star', tx = TEX[b.name], mat = star ? new THREE.MeshBasicMaterial({ color: b.color, map: texOf('sun') })
-      : climateMat(new THREE.MeshLambertMaterial({ color: tx ? 0xffffff : b.color, map: tx ? texOf(tx) : null }));
+      : climateMat(new THREE.MeshLambertMaterial(Object.assign({ color: tx ? 0xffffff : b.color, map: tx ? texOf(tx) : null }, HIRES_SB[b.name] && !MOBILE_SB ? HIRES_SB[b.name]() : {})));
     const s = new THREE.Mesh(new THREE.SphereGeometry(b.Rkm / O.AU_KM, 48, 24), mat); s.rotation.x = Math.PI / 2; g.add(s); }
   const tg = new THREE.BufferGeometry(); tg.setAttribute('position', new THREE.BufferAttribute(b.trail, 3)); tg.setDrawRange(0, 0);
   const line = new THREE.Line(tg, new THREE.LineBasicMaterial({ color: b.color, transparent: true, opacity: b.test ? 0.85 : 0.45 })); line.frustumCulled = false;
@@ -252,8 +266,8 @@ function updateTempMap() {
       limb.scale.setScalar(b.Rkm / O.AU_KM * (1.03 + 0.01 * Math.max(0, Math.log10(P) + 1))); limb.visible = true; }
     else if (limb) limb.visible = false;
     const cu = b.mesh?.children[1]?.material?.userData?.climate;
-    if (cu && k) { const x = ATM.extremes(k.Ts + impactHeat(b), k.a.P), top = Object.entries(k.a.mix).sort((p1, p2) => p2[1] - p1[1])[0]?.[0];
-      const tl = Math.abs(Math.sin((b.tilt ?? TILT[b.name] ?? 0) * Math.PI / 180)); cu.uOn.value = 1; cu.uTeq.value = x.eq - (x.eq - x.pole) * 0.3 * tl; cu.uTpole.value = x.pole + (x.eq - x.pole) * 0.6 * tl; cu.uBoil.value = 373 + 30 * Math.log10(Math.max(k.a.P, 0.01));
+    if (cu && k) { const x = ATM.extremes(k.Ts + impactHeat(b), k.a.P + ((b.sea ?? -1) > -0.5 ? 2 : 0)), top = Object.entries(k.a.mix).sort((p1, p2) => p2[1] - p1[1])[0]?.[0];
+      const tl = Math.abs(Math.sin((b.tilt ?? TILT[b.name] ?? 0) * Math.PI / 180)); cu.uWater.value = (k.a.mix.H2O || 0) > 0.001 || (b.sea ?? -1) > -0.5 || b.name === 'Earth' ? 1 : 0; cu.uSea.value = b.sea ?? -1; cu.uLife.value = b.life || 0; if (b.hmap && !cu.uH.value) { cu.uH.value = texOf(b.hmap, '.png'); cu.uHasH.value = 1; } cu.uOn.value = 1; cu.uTeq.value = x.eq - (x.eq - x.pole) * 0.3 * tl; cu.uTpole.value = x.pole + (x.eq - x.pole) * 0.6 * tl; cu.uBoil.value = 373 + 30 * Math.log10(Math.max(k.a.P, 0.01));
       cu.uCloud.value = Math.max(0, Math.min(1, (Math.log10(Math.max(k.a.P, 1e-4)) - 0.3) / 1.4)) + (k.a.mix.H2O > 0.005 && x.eq > 273 && x.eq < cu.uBoil.value ? 0.25 : 0);
       cu.uCloudCol.value.set(GAS_COL[top] || '#ffffff').lerp(new THREE.Color(0.95, 0.93, 0.86), 0.7); }
     if (!on) { if (lb.dataset.t) { lb.textContent = b.ko; lb.style.color = ''; delete lb.dataset.t; if (dot) dot.material.color.set(b.color); } continue; }
@@ -277,7 +291,7 @@ function updateRoche() {
   const b = selected; rocheGroup.visible = !!b && !b.test && b.kind !== 'bh' && b.Rkm > 0; if (!rocheGroup.visible) return;
   rocheGroup.position.set(...b.r); [3000, 900].forEach((rho, i) => { const l = rocheGroup.children[i]; l.scale.setScalar(rocheKm(b, rho) / O.AU_KM); l.computeLineDistances(); l.material.dashSize = l.material.gapSize = 0.25 * l.scale.x; });
 }
-const teq = (b) => { let F = 0; for (const s of sim.bodies) if (s.kind === 'star') { const d2 = (s.r[0] - b.r[0]) ** 2 + (s.r[1] - b.r[1]) ** 2 + (s.r[2] - b.r[2]) ** 2; F += lum(s) / d2; } return 255 * Math.pow(F, 0.25); }; // K, albedo 0.3
+const teq = (b) => { let F = 0; for (const s of sim.bodies) if (s.kind === 'star') { const d2 = (s.r[0] - b.r[0]) ** 2 + (s.r[1] - b.r[1]) ** 2 + (s.r[2] - b.r[2]) ** 2; F += lum(s) / d2; } return 255 * Math.pow(F * (1 - (b.shade || 0)), 0.25); }; // K, albedo 0.3
 // climate at a glance: an Earth-like greenhouse (+33 K) on top of the equilibrium temperature, and what water would do there
 function climateLine(T, b) { // T: equilibrium temperature for albedo 0.3
   const k = ATM.climate(b, T); if (!k) return '';
@@ -543,7 +557,43 @@ function moveToOrbit(b, d) { // put a body on a circular orbit d AU from its sta
   const st = hostStar(b); if (!st) return toast('별이 있어야 합니다'); const rel = add(b.r, st.r, -1), ang = Math.atan2(rel[1], rel[0]), sp = Math.sqrt(O.MU_SUN * (st.m + b.m) / d);
   b.r = add(st.r, [d * Math.cos(ang), d * Math.sin(ang), 0]); b.v = add(st.v, [-sp * Math.sin(ang), sp * Math.cos(ang), 0]); b.trail.fill(0); b.tn = 0; sim.E0 = energy(); showNums();
   toast(`${b.ko}을(를) 별에서 ${fmt(d, 2)} AU 원 궤도로 옮겼습니다. "보기 → 온도 지도"로 표면 온도를 확인해 보세요`); }
+// terraforming: each step is what has actually been proposed, with what it would take; the climate model then shows the result
+const MARS_H = { lo: -8200, span: 29500 }; const marsSea = (m) => (m - MARS_H.lo) / MARS_H.span, marsM = (h) => Math.round(MARS_H.lo + h * MARS_H.span);
+const TERRA = {
+  Mars: { ko: '화성', steps: [
+    ['극관을 검게 덮어 녹이기', '극관에 검은 먼지를 뿌려 햇빛을 더 흡수하게 하면, 얼어 있던 이산화탄소가 기체로 풀려나 대기가 짙어집니다. 다만 실제로 풀려날 수 있는 양은 기압 0.02기압 정도로 추정됩니다.', (b) => { b.atm.P = 0.03; b.atm.mix = { CO2: 0.95, N2: 0.03, Ar: 0.02 }; b.atm.albedo = 0.2; }],
+    ['온실 기체 공장', '불소 화합물 같은 강력한 온실 기체를 공장에서 만들어 뿜으면 적은 양으로도 기온이 크게 오릅니다. 여기서는 이산화탄소를 0.3기압까지 늘린 것으로 대신 계산합니다.', (b) => { b.atm.P = 0.3; b.atm.mix = { CO2: 0.9, N2: 0.06, Ar: 0.02, CH4: 0.02 }; }],
+    ['얼음 혜성으로 물과 질소 가져오기', '카이퍼대의 얼음 천체를 화성에 떨어뜨려 물과 질소를 보탭니다. 기압이 1기압 가까이 되고 물이 액체로 머물 수 있게 됩니다. 물은 실제 해발고도(MOLA)를 따라 낮은 곳부터 차서, 해수면 −3,300 m에서 헬라스 분지와 북쪽 저지대 가장 깊은 곳이 먼저 잠깁니다.', (b) => { b.atm.P = 0.9; b.atm.mix = { N2: 0.6, CO2: 0.3, H2O: 0.03, Ar: 0.02, CH4: 0.01 }; b.sea = marsSea(-3300); }],
+    ['바다와 이끼, 숲', '해수면을 −2,400 m(과학자들이 옛 바다의 해안선으로 보는 아라비아 해안선 높이)까지 올리면 북쪽 저지대(보레알리스 분지) 전체가 바다가 되고, 남쪽 고지대와 타르시스 화산들이 대륙과 섬으로 남습니다. 이끼와 남세균부터 풀어 놓으면 땅이 초록으로 바뀌기 시작합니다.', (b) => { b.sea = marsSea(-2400); b.life = 0.6; }],
+    ['산소 대기', '식물이 수천 년 동안 광합성으로 산소를 만들어 사람이 숨 쉴 수 있는 대기가 됩니다. 화성은 자기장이 약해서 이 대기도 태양풍에 조금씩 깎여 나간다는 점이 남는 숙제입니다.', (b) => { b.atm.P = 1.0; b.atm.mix = { N2: 0.62, O2: 0.2, CO2: 0.13, H2O: 0.04, Ar: 0.01 }; b.life = 1; }], // CO2 kept high enough to stay warm this far from the Sun
+  ] },
+  Venus: { ko: '금성', steps: [
+    ['L1 지점에 햇빛 가리개', '태양과 금성 사이의 라그랑주 L1 지점에 거대한 가리개를 띄워 햇빛을 90% 막습니다. 표면이 수백 년에 걸쳐 식기 시작합니다.', (b) => { b.shade = 0.9; }],
+    ['이산화탄소를 돌로 굳히기', '식은 대기의 이산화탄소를 칼슘·마그네슘과 반응시켜 탄산염 암석으로 묶어 둡니다. 92기압이던 대기가 3기압 정도로 줄어듭니다.', (b) => { b.atm.P = 3; b.atm.mix = { CO2: 0.6, N2: 0.4 }; b.atm.albedo = 0.4; }],
+    ['수소로 물 만들기, 비', '가져온 수소를 남은 이산화탄소와 반응시켜 물을 만들면 수백 년 동안 비가 내려 저지대에 바다가 생깁니다.', (b) => { b.atm.P = 1.5; b.atm.mix = { N2: 0.8, CO2: 0.15, H2O: 0.03, Ar: 0.02 }; b.atm.albedo = 0.32; b.sea = 0.42; }],
+    ['자전 빠르게, 가리개 조절', '금성의 하루는 243일이라 한쪽이 너무 오래 낮입니다. 가리개로 24시간 주기의 낮과 밤을 흉내 내고, 햇빛을 지구 수준으로 맞춥니다.', (b) => { b.shade = 0.45; b.spinH = 24; }],
+    ['초록 행성', '바다 주변에서 식물이 자라 산소를 만듭니다. 이론으로는 가능하지만 수천 년과 엄청난 에너지가 드는, 가장 어려운 테라포밍입니다.', (b) => { b.atm.mix = { N2: 0.75, O2: 0.2, CO2: 0.02, H2O: 0.02, Ar: 0.01 }; b.life = 1; }],
+  ] },
+};
+function terraform(name) {
+  let b = byName(name); if (!b) { root.querySelector('.sb-now').click(); b = byName(name); } if (!b) return;
+  const T = TERRA[name]; ATM.atmOf(b); if (name === 'Mars') b.hmap = 'disp_mars'; b.terraStep = 0; select(b); focus(name, b.Rkm / O.AU_KM * 5);
+  root.querySelector('.sb-temp').checked = true; root.querySelector('.sb-temp').dispatchEvent(new Event('change'));
+  const box = root.querySelector('.sb-terra'); box.hidden = false;
+  const draw = () => { const i = b.terraStep, s = T.steps[i];
+    box.innerHTML = `<header><b>${T.ko} 테라포밍</b><span>${i} / ${T.steps.length}</span><button class="sb-tx">닫기</button></header>
+      <ol>${T.steps.map((x, k) => `<li class="${k < i ? 'done' : k === i ? 'next' : ''}">${x[0]}</li>`).join('')}</ol>
+      ${name === 'Mars' && (b.sea ?? -1) > -0.5 ? `<div class="sb-prop"><label>해수면 (해발)</label><input class="sb-seam" type="number" step="100" value="${marsM(b.sea)}"><span class="u">m</span><input class="sb-sear" type="range" min="-8000" max="4000" step="50" value="${marsM(b.sea)}"></div>` : ''}
+      ${s ? `<p>${s[1]}</p><button class="sb-tgo">${i + 1}단계: ${s[0]}</button>` : `<p>모든 단계를 마쳤습니다. 오른쪽 정보 창에서 표면 온도와 물 상태를 확인하고, 시간을 흘려 보세요.</p>`}`;
+    box.querySelector('.sb-tx').onclick = () => { box.hidden = true; };
+    const sm = box.querySelector('.sb-seam'), sr = box.querySelector('.sb-sear'), setSea = (m) => { b.sea = marsSea(m); sm.value = m; sr.value = m; };
+    if (sm) { sm.onchange = () => setSea(Math.max(-8000, Math.min(4000, +sm.value))); sr.oninput = () => setSea(+sr.value); }
+    const go = box.querySelector('.sb-tgo'); if (go) go.onclick = () => { s[2](b); b.terraStep++; atmEditor(b); draw(); toast(`${T.ko}: ${s[0]}`); }; };
+  draw();
+}
 function quick(k) {
+  if (k === 'terra-mars') return terraform('Mars');
+  if (k === 'terra-venus') return terraform('Venus');
   const pick = (n) => { const b = byName(n); if (!b) toast(`${KO[n] || n}이(가) 없습니다. "보기 → 지금 태양계로 새로"를 누르세요`); return b; };
   if (k === 'sunbh') { const s = pick('Sun'); if (s && s.kind !== 'bh') { toBlackHole(s); select(s); } }
   if (k === 'nosun') { const s = pick('Sun'); if (s) { select(s); root.querySelector('.sb-del').click(); toast('태양을 지웠습니다: 붙잡아 두던 중력이 사라져 행성들이 마지막 속도 그대로 직선으로 날아갑니다'); } }
@@ -1127,6 +1177,8 @@ function buildUI() {
           <li><button data-q="marsatm">화성에 1기압 공기</button><span>대기가 기온을 바꾼다</span></li>
           <li><button data-q="moonaway">달 없애기</button><span>지구 혼자 남으면</span></li>
           <li><button data-q="random">새 행성계 만들기</button><span>별 하나와 무작위 행성들</span></li>
+          <li><button data-q="terra-mars">화성 테라포밍</button><span>극관을 녹여 바다와 숲까지 다섯 단계</span></li>
+          <li><button data-q="terra-venus">금성 테라포밍</button><span>햇빛 가리개부터 초록 행성까지</span></li>
         </ol>
         <h3>더하기</h3>
         <div class="sb-line"><label>태양계 천체</label><select class="sb-addsol"><option value="">고르기</option>${Object.entries(EXTRA).map(([k, v]) => `<option value="${k}">${v[0]}</option>`).join('')}<option value="all">모두</option></select></div>
@@ -1193,6 +1245,7 @@ function buildUI() {
     </div>
     <div class="small sb-hint"></div>
     <div class="sb-lab" hidden></div>
+    <div class="sb-terra" hidden></div>
     <div class="sb-toast" hidden></div>`;
   document.body.append(root);
   renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); root.prepend(renderer.domElement);

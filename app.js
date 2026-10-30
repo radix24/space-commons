@@ -3967,4 +3967,9 @@ updateSkyMatrix(); requestAnimationFrame(frame);
 })();
 if (new URLSearchParams(location.search).get('embed') === '1') { document.body.classList.add('embed'); // Eyes-style embed: just the view, for lesson pages
   const a = document.createElement('a'); a.id = 'embed-link'; a.href = location.href.replace(/([?&])embed=1&?/, '$1'); a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Space Commons에서 크게 보기'; document.body.append(a); }
+// sliders paint their filled part from the value (CSS reads --p); new sliders (sandbox, labs) are picked up as they appear
+const fillRange = (r) => { const lo = +r.min || 0, hi = r.max === '' ? 100 : +r.max; r.style.setProperty('--p', `${((+r.value - lo) / (hi - lo || 1)) * 100}%`); };
+document.addEventListener('input', (e) => { if (e.target.type === 'range') fillRange(e.target); }, true);
+new MutationObserver(() => document.querySelectorAll('input[type=range]').forEach(fillRange)).observe(document.body, { childList: true, subtree: true });
+document.querySelectorAll('input[type=range]').forEach(fillRange); setInterval(() => document.querySelectorAll('input[type=range]').forEach(fillRange), 500); // values set from code fire no input event
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
