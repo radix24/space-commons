@@ -401,3 +401,4 @@ button.on, .on > button { background: var(--orbit); border-color: var(--orbit); 
 .cc-card.seen b { color: var(--ink); opacity: .62; }
 .cc-num { color: var(--brass); }
 .cc-eq { background: #19191a; border: 1px solid var(--line); } .cc-deep summary { color: var(--brass); }
+.cc-eq-h { margin: 14px 0 -4px; font-size: 12px; color: var(--brass); }

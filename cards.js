@@ -483,19 +483,19 @@ const MORE = [
 // Textbook order: chapters, and what each card builds on (prerequisites). "Next" links are derived from these.
 const CHAPTERS = [
   { title: '0. 우주 첫걸음', intro: '수식이 낯설어도 괜찮은 우주 이야기: 크기, 하늘의 색, 오로라, 유성, 외계 문명, 우주의 역사', ids: ['scale', 'calendar', 'bluesky', 'aurora', 'meteor', 'microg', 'eht', 'drake'] },
-  { title: '1. 하늘의 좌표와 시간', intro: '하늘을 지도처럼 읽는 법: 좌표, 시간, 계절, 달', ids: ['coords', 'eot', 'seasons', 'precession', 'moonphase'] },
+  { title: '1. 하늘의 좌표와 시간', intro: '하늘을 지도처럼 읽는 법: 좌표, 시간, 계절, 달', ids: ['coords', 'eot', 'seasons', 'precession', 'moonphase', 'synodic'] },
   { title: '2. 지구와 우주 환경', intro: '지구의 자기장과 바다, 그리고 위성들이 사는 지구 둘레의 우주', ids: ['declination', 'paleomag', 'tides', 'spaceweather', 'vanallen', 'decay', 'debris', 'gps'] },
   { title: '3. 중력과 궤도', intro: '뉴턴의 중력에서 탐사선 궤도 설계까지', ids: ['gravity', 'keplerlaws', 'twobody', 'invariants', 'visviva', 'kepler', 'elements', 'rocket', 'hohmann', 'plane', 'oberth', 'soi', 'flyby', 'lambert', 'j2', 'cr3bp', 'cw'] },
-  { title: '4. 행성과 위성', intro: '행성의 온도, 대기, 충돌, 위성, 그리고 다른 별의 행성', ids: ['roche', 'moon', 'teq', 'atmos', 'impact', 'hz', 'transit'] },
-  { title: '5. 별', intro: '빛으로 별을 재고, 별의 탄생부터 최후까지', ids: ['blackbody', 'parallax', 'magnitude', 'doppler', 'sun', 'starbirth', 'stellar', 'nucleo', 'remnants', 'gw'] },
-  { title: '6. 은하와 우주', intro: '거리 사다리를 올라 우주의 역사까지', ids: ['distladder', 'hubble', 'darkmatter', 'cmb', 'galaxy'] },
+  { title: '4. 행성과 위성', intro: '행성의 온도, 대기, 충돌, 위성, 그리고 다른 별의 행성', ids: ['roche', 'moon', 'teq', 'atmos', 'impact', 'hz', 'transit', 'exodetect'] },
+  { title: '5. 별', intro: '빛으로 별을 재고, 별의 탄생부터 최후까지', ids: ['blackbody', 'spectral', 'parallax', 'magnitude', 'hrdiagram', 'doppler', 'sun', 'starstruct', 'starbirth', 'stellar', 'nucleo', 'remnants', 'gw'] },
+  { title: '6. 은하와 우주', intro: '거리 사다리를 올라 우주의 역사까지', ids: ['distladder', 'galaxytypes', 'hubble', 'bigbang', 'darkmatter', 'cmb', 'darkenergy', 'galaxy'] },
 ];
 const PRE = { eot: ['coords', 'keplerlaws'], seasons: ['coords'], precession: ['coords', 'j2'], moonphase: ['coords'], paleomag: ['declination'], tides: ['gravity'],
   keplerlaws: ['gravity'], twobody: ['keplerlaws'], invariants: ['twobody'], visviva: ['twobody'], kepler: ['invariants'], elements: ['kepler', 'coords'], hohmann: ['visviva'], plane: ['elements', 'hohmann'], oberth: ['visviva', 'rocket'],
   soi: ['twobody'], flyby: ['soi', 'hohmann'], lambert: ['kepler', 'hohmann'], j2: ['elements'], cr3bp: ['invariants'], cw: ['twobody', 'kepler'],
   roche: ['gravity', 'tides'], moon: ['roche', 'tides', 'impact'], teq: ['blackbody'], atmos: ['teq', 'visviva'], impact: ['visviva'], hz: ['teq', 'stellar'], transit: ['doppler', 'magnitude'],
   parallax: ['coords'], magnitude: ['blackbody', 'parallax'], doppler: ['blackbody'], sun: ['blackbody', 'gravity'], starbirth: ['gravity', 'blackbody'], stellar: ['sun', 'starbirth', 'magnitude'],
-  nucleo: ['stellar'], remnants: ['nucleo', 'visviva'], distladder: ['parallax', 'magnitude'], hubble: ['distladder', 'doppler'], darkmatter: ['keplerlaws', 'distladder'], cmb: ['blackbody', 'hubble'], galaxy: ['hubble', 'darkmatter', 'stellar'], spaceweather: ['declination', 'sun'], vanallen: ['spaceweather'], decay: ['visviva', 'atmos'], debris: ['decay', 'elements'], gps: ['visviva', 'remnants'], gw: ['remnants', 'keplerlaws'], aurora: ['bluesky'], meteor: ['scale'], eht: ['scale'], drake: ['calendar'] };
+  nucleo: ['stellar'], remnants: ['nucleo', 'visviva'], distladder: ['parallax', 'magnitude'], hubble: ['distladder', 'doppler'], darkmatter: ['keplerlaws', 'distladder'], cmb: ['blackbody', 'hubble'], galaxy: ['hubble', 'darkmatter', 'stellar'], spaceweather: ['declination', 'sun'], vanallen: ['spaceweather'], decay: ['visviva', 'atmos'], debris: ['decay', 'elements'], gps: ['visviva', 'remnants'], gw: ['remnants', 'keplerlaws'], aurora: ['bluesky'], meteor: ['scale'], eht: ['scale'], drake: ['calendar'], hrdiagram: ['blackbody', 'magnitude'], spectral: ['blackbody'], starstruct: ['sun', 'gravity'], stellar: ['sun', 'starbirth', 'magnitude', 'hrdiagram'], exodetect: ['doppler', 'transit'], galaxytypes: ['distladder'], bigbang: ['hubble'], darkenergy: ['hubble', 'darkmatter', 'distladder'], synodic: ['coords', 'keplerlaws'] };
 
 // ---- more concepts: foundations, measuring the sky, planets, stars, galaxies ----
 const EXTRA = [
@@ -617,6 +617,14 @@ const EXTRA = [
 
 // ---- one check question per concept: number (with tolerance) or choice ----
 const QUIZ = {
+  hrdiagram: { q: 'H-R도에서 온도가 같은데 위쪽(더 밝은 쪽)에 있는 별은?', opts: ['더 작다', '더 크다', '더 가깝다'], a: 1, why: 'L = 4πR²σT⁴이라 온도가 같으면 밝을수록 반지름이 큽니다. 거리는 광도와 무관합니다.' },
+  spectral: { q: '수소 흡수선이 가장 강한 분광형은?', opts: ['O형', 'A형', 'M형'], a: 1, why: '약 1만 K의 A형에서 수소가 가장 잘 들떠 흡수선이 가장 강합니다.' },
+  starstruct: { q: '태양의 바깥 30%에서 에너지는 주로 어떻게 전달될까요?', opts: ['복사', '대류', '전도'], a: 1, why: '태양은 안쪽 70%가 복사층, 바깥 30%가 대류층입니다.' },
+  exodetect: { q: '시선 속도법으로 가장 찾기 쉬운 행성은?', opts: ['별에 가깝고 무거운 행성', '별에서 멀고 가벼운 행성', '크기만 큰 행성'], a: 0, why: '무겁고 가까울수록 별을 크게 흔들어 도플러 이동이 커집니다.' },
+  galaxytypes: { q: '우리 은하는 어떤 은하일까요?', opts: ['타원 은하', '막대 나선 은하', '불규칙 은하'], a: 1, why: '중심에 막대가 있는 나선 은하(SBbc 정도)입니다.' },
+  bigbang: { q: '빅뱅 우주론의 증거가 아닌 것은?', opts: ['우주 배경 복사', '수소와 헬륨의 질량비 약 3:1', '별의 연주 시차'], a: 2, why: '연주 시차는 지구 공전의 증거이자 거리 측정법입니다.' },
+  darkenergy: { q: '지금 우주에서 보통 물질이 차지하는 비율은 약?', opts: ['5%', '26%', '69%'], a: 0, why: '보통 물질 약 5%, 암흑 물질 약 26%, 암흑 에너지 약 69%입니다.' },
+  synodic: { q: '외행성이 역행하는 때는?', opts: ['충 무렵', '합 무렵', '언제나'], a: 0, why: '지구가 외행성을 안쪽에서 앞지르는 충 무렵 역행합니다.' },
   scale: { q: '태양빛이 지구까지 오는 데 걸리는 시간은?', opts: ['8초', '약 8분', '약 8시간'], a: 1, why: '1억 5천만 km ÷ 초속 30만 km ≈ 500초 ≈ 8분 20초입니다.' },
   bluesky: { q: '파장이 절반인 빛은 몇 배 더 잘 흩어질까요?', a: 16, unit: '배', why: '(1/2)⁻⁴ = 16배입니다.' },
   aurora: { q: '오로라의 초록빛을 내는 원소는?', opts: ['질소', '산소', '수소'], a: 1, why: '높이 100~200 km의 산소 원자가 557.7 nm 초록빛을 냅니다.' },
@@ -832,8 +840,133 @@ const fmtLy = (x) => { const d = 10 ** (5 + Math.log10(x) * 15 / 20); return d >
 const fmtTime = (t) => t < 60 ? `${fmt(t, 1)}초` : t < 3600 ? `${fmt(t / 60, 1)}분` : t < 86400 ? `${fmt(t / 3600, 1)}시간` : t < 3.156e7 ? `${fmt(t / 86400, 1)}일` : `${fmt(t / 3.156e7, t < 3.156e9 ? 1 : 0)}년`;
 const fmtLen = (x) => x >= 1000 ? `${fmt(x / 1000, 0)} km` : `${fmt(x, 1)} m`;
 const agoText = (gyr) => gyr >= 0.1 ? `${fmt(gyr * 10, 1)}억 년 전` : gyr >= 1e-4 ? `${fmt(gyr * 1e5, 0)}만 년 전` : `${fmt(gyr * 1e9, 0)}년 전`;
+// ---- high-school earth science (지구과학Ⅰ·Ⅱ): H-R diagram, spectra, stellar interiors, exoplanet detection, galaxies, cosmology ----
+const HR_STARS = [ // [name, T (K), L (Lsun)]
+  ['태양', 5772, 1], ['시리우스 A', 9940, 25.4], ['시리우스 B', 25000, 0.056], ['베가', 9600, 40], ['알타이르', 7700, 10.6], ['프로키온 A', 6530, 6.9],
+  ['알파 센타우리 A', 5790, 1.52], ['프록시마', 3042, 0.0017], ['바너드별', 3130, 0.0035], ['아크투르스', 4290, 170], ['알데바란', 3900, 440],
+  ['카펠라', 4970, 79], ['폴룩스', 4670, 33], ['리겔', 12100, 120000], ['데네브', 8500, 196000], ['베텔게우스', 3600, 126000], ['안타레스', 3570, 75900],
+  ['스피카', 22400, 20500], ['레굴루스', 12460, 316], ['아케르나르', 15000, 3150], ['북극성', 6015, 1260], ['미라', 2900, 8400], ['40 에리다니 B', 16500, 0.013],
+  ['타우 고래', 5340, 0.52], ['엡실론 에리다니', 5080, 0.34], ['라이텐별', 3150, 0.0012], ['반 마넨별', 6220, 0.00017],
+];
+const SUN_TRACK = [ // the Sun's life on the H-R diagram: [T, L, stage, age]
+  [5600, 0.7, '주계열 시작', '0'], [5772, 1, '지금', '46억 년'], [5800, 1.8, '주계열 끝', '약 100억 년'], [4900, 2.3, '준거성', '약 110억 년'],
+  [4300, 30, '적색거성 가지', '약 121억 년'], [3100, 2300, '헬륨 섬광 직전 (가장 큰 적색거성)', '약 122억 년'], [4800, 45, '헬륨을 태우는 수평 가지', '약 122억 년'],
+  [3200, 5000, '점근 거성 가지 (바깥층을 날려 보냄)', '약 123억 년'], [100000, 3000, '행성상 성운의 중심별', '약 123억 년'], [30000, 0.5, '백색왜성', '이후'], [8000, 0.0005, '식어 가는 백색왜성', '수십억 년 뒤'],
+];
+const SPECTRAL = [['O', 40000, '이온화 헬륨'], ['B', 20000, '중성 헬륨'], ['A', 9000, '수소 (가장 강함)'], ['F', 7000, '이온화 칼슘, 수소'], ['G', 5500, '이온화 칼슘, 금속'], ['K', 4500, '중성 금속'], ['M', 3200, '산화 타이타늄 분자']];
+function hrAxes(K) { // log T (reversed) on x, log L on y
+  const { g, w, h } = K, L = 40, R = 10, T = 12, B = 26, X = (t) => L + (Math.log10(120000) - Math.log10(t)) / (Math.log10(120000) - Math.log10(2400)) * (w - L - R), Y = (l) => h - B - (Math.log10(l) + 5) / 11 * (h - T - B);
+  g.strokeStyle = C.grid; g.strokeRect(L, T, w - L - R, h - T - B);
+  for (const r of [0.01, 1, 100, 1000]) { g.strokeStyle = 'rgba(255,255,255,.08)'; g.setLineDash([2, 3]); g.beginPath(); // lines of equal radius: L = R^2 (T/5772)^4
+    for (let t = 2500; t <= 120000; t *= 1.05) { const x = X(t), y = Y(r * r * (t / 5772) ** 4); t === 2500 ? g.moveTo(x, y) : g.lineTo(x, y); } g.stroke(); g.setLineDash([]);
+    const tl = 3000, yl = Y(r * r * (tl / 5772) ** 4); if (yl > T && yl < h - B) text(g, `${r}R☉`, X(tl) - 2, yl - 2, C.mute, 8, 'right'); }
+  text(g, '← 뜨거움   표면 온도   차가움 →', (L + w - R) / 2, h - 6, C.mute, 9, 'center'); text(g, '광도 (태양=1)', 4, 9, C.mute, 9);
+  for (const l of [1e-4, 1, 1e4]) text(g, l === 1 ? '1' : l.toExponential(0), L - 3, Y(l) + 3, C.mute, 8, 'right');
+  return { X, Y };
+}
+function bvColor(t) { const r = t < 6600 ? 255 : 255 * (t / 6600) ** -0.13, gr = t < 6600 ? 100 + 140 * Math.log10(t / 1000) / Math.log10(6.6) : 255 * (t / 6600) ** -0.09, b = t > 6600 ? 255 : Math.max(0, 255 * (Math.log10(t / 2000) / Math.log10(3.3))); return `rgb(${r | 0},${Math.min(255, gr) | 0},${b | 0})`; }
+const HS = [
+  { id: 'hrdiagram', level: '기초', title: 'H-R도', tag: '별의 온도와 밝기로 그린 지도 · 고교 지구과학Ⅰ',
+    eq: String.raw`L = 4\pi R^2 \sigma T^4`,
+    body: `별을 표면 온도(가로, 왼쪽이 뜨거움)와 광도(세로)로 찍으면 아무 데나 흩어지지 않고 몇 무리로 모입니다. 왼쪽 위에서 오른쪽 아래로 이어지는 띠가 <b>주계열성</b>으로, 중심에서 수소를 태우는 별이며 별의 약 90%가 여기에 있습니다. 오른쪽 위는 차갑지만 아주 밝은 <b>거성과 초거성</b>, 왼쪽 아래는 뜨겁지만 어두운 <b>백색왜성</b>입니다. 온도가 같은데 더 밝다면 더 크다는 뜻이므로, H-R도에서 위로 갈수록 반지름이 큰 별입니다(점선은 반지름이 같은 선). 주계열에서는 위쪽 별일수록 무겁고 수명이 짧습니다.`,
+    deep: String.raw`관측으로는 색지수(B−V)와 절대 등급으로 그린 색-등급도를 씁니다. 성단의 H-R도는 별들의 나이가 같아서, 주계열에서 무거운 별부터 떨어져 나간 지점(전향점)으로 성단의 나이를 잽니다.`,
+    widget(box) { const K = canvas(box, 340, 260), s = slider(box, '태양의 일생 (단계)', 0, SUN_TRACK.length - 1, 1, 1, (k) => `${k + 1}/${SUN_TRACK.length}`), R = readout(box);
+      return () => { clear(K); const g = K.g, { X, Y } = hrAxes(K);
+        g.strokeStyle = 'rgba(217,166,80,.18)'; g.lineWidth = 16; g.beginPath(); g.moveTo(X(35000), Y(2e5)); g.lineTo(X(9500), Y(40)); g.lineTo(X(5772), Y(1)); g.lineTo(X(3000), Y(0.001)); g.stroke(); g.lineWidth = 1;
+        text(g, '주계열', X(12000), Y(30) + 22, C.amber, 9); text(g, '거성', X(4300), Y(300) - 10, C.mute, 9); text(g, '초거성', X(6000), Y(1.5e5) - 8, C.mute, 9); text(g, '백색왜성', X(16000), Y(0.002) + 14, C.mute, 9);
+        for (const [n, t, l] of HR_STARS) { dot(g, X(t), Y(l), 2.6, bvColor(t)); if (['태양', '베텔게우스', '리겔', '시리우스 B', '프록시마', '베가', '아크투르스'].includes(n)) text(g, n, X(t) + 4, Y(l) - 3, C.text, 8); }
+        g.strokeStyle = C.pink; g.setLineDash([3, 3]); g.beginPath(); SUN_TRACK.forEach(([t, l], i) => i ? g.lineTo(X(t), Y(l)) : g.moveTo(X(t), Y(l))); g.stroke(); g.setLineDash([]);
+        const [t, l, st, age] = SUN_TRACK[+s.value]; dot(g, X(t), Y(l), 5, C.pink);
+        R([['단계', st], ['나이', age], ['표면 온도', `${t.toLocaleString()} K`], ['광도', `태양 지금의 ${l < 0.01 ? l.toExponential(1) : fmt(l, l < 10 ? 1 : 0)}배`], ['반지름', `태양 지금의 ${fmt(Math.sqrt(l) / (t / 5772) ** 2, 2)}배`]]); }; } },
+  { id: 'spectral', level: '기초', title: '별의 분광형과 색', tag: 'OBAFGKM · 고교 지구과학Ⅰ',
+    eq: String.raw`\lambda_\text{max} = \frac{2898\ \mu\text{m·K}}{T}`,
+    body: `별빛을 프리즘으로 펼치면 군데군데 검은 선(흡수선)이 보입니다. 어떤 원소의 선이 세게 보이는지는 별의 성분보다 <b>표면 온도</b>에 따라 정해져서, 뜨거운 순서로 O, B, A, F, G, K, M으로 나눕니다. O형은 파랗고 4만 K 가까이 되며, 태양은 노란 G2형(약 5,800 K), M형은 붉고 3,000 K 정도입니다. 수소 흡수선은 1만 K 근처 A형에서 가장 강하고, 더 뜨거우면 수소가 이온화되어, 더 차가우면 들뜨지 못해 약해집니다. 같은 분광형 안에서는 0~9 숫자로 더 잘게 나눕니다.`,
+    deep: String.raw`흡수선 세기는 원자의 이온화(사하 방정식)와 들뜸(볼츠만 분포)이 함께 정합니다. 광도 등급(Ⅰ 초거성 ~ Ⅴ 주계열)을 덧붙여 태양은 G2Ⅴ, 베텔게우스는 M1-2Ⅰa로 씁니다.`,
+    widget(box) { const K = canvas(box, 340, 170), s = slider(box, '분광형', 0, 6, 1, 4, (k) => SPECTRAL[k][0] + '형'), R = readout(box);
+      return () => { clear(K); const g = K.g, [c, T, lines] = SPECTRAL[+s.value];
+        for (let x = 0; x < K.w - 40; x++) { const lam = 380 + x / (K.w - 40) * 370, hue = 270 - (lam - 380) / 370 * 270; g.fillStyle = `hsl(${hue},80%,${45 + 15 * Math.min(1, Math.max(0, 1 - Math.abs(lam - 2.898e6 / T) / 900))}%)`; g.fillRect(20 + x, 30, 1, 50); }
+        const LINES = { O: [468.6, 541.1], B: [447.1, 402.6, 486.1, 656.3], A: [410.2, 434.0, 486.1, 656.3, 397.0], F: [393.4, 396.8, 486.1, 656.3, 434.0], G: [393.4, 396.8, 430.8, 516.7, 589.0, 656.3], K: [393.4, 396.8, 422.7, 516.7, 589.0, 430.8], M: [476.0, 516.7, 589.0, 616.0, 705.0, 671.0] };
+        g.fillStyle = '#000'; for (const l of LINES[c]) if (l >= 380 && l <= 750) g.fillRect(20 + (l - 380) / 370 * (K.w - 40), 30, c === 'A' && [410.2, 434.0, 486.1, 656.3].includes(l) ? 3 : 1.6, 50);
+        dot(g, K.w / 2, 125, 22, bvColor(T)); text(g, '380 nm', 20, 95, C.mute, 9); text(g, '750 nm', K.w - 20, 95, C.mute, 9, 'right');
+        R([['표면 온도', `약 ${T.toLocaleString()} K`], ['강한 흡수선', lines], ['가장 센 빛의 파장', `${Math.round(2.898e6 / T)} nm`], ['예', { O: '오리온 허리띠의 알니탁', B: '리겔, 스피카', A: '시리우스, 베가', F: '프로키온, 북극성', G: '태양, 카펠라', K: '아크투르스, 알데바란', M: '베텔게우스, 안타레스' }[c]]]); }; } },
+  { id: 'starstruct', level: '교양', title: '별의 내부 구조', tag: '핵융합과 에너지 전달 · 고교 지구과학Ⅰ',
+    eq: String.raw`\frac{dP}{dr} = -\frac{G\,M(r)\,\rho(r)}{r^2}`,
+    body: `별은 자기 중력으로 안쪽을 누르는 힘과 뜨거운 기체의 압력이 바깥으로 미는 힘이 맞서는 <b>정역학 평형</b> 상태입니다. 중심부에서 수소 핵융합으로 만든 에너지는 바깥으로 나오는데, 태양 같은 별은 안쪽 70%에서는 빛이 흡수·방출을 반복하며 천천히 나오는 <b>복사층</b>, 바깥 30%에서는 끓는 물처럼 기체가 오르내리는 <b>대류층</b>으로 전달됩니다. 태양보다 훨씬 무거운 별은 반대로 중심부가 대류하고 바깥이 복사하며, 아주 가벼운 적색왜성은 전체가 대류합니다. 태양 질량의 약 2배보다 무거운 주계열성은 양성자-양성자 연쇄 대신 탄소·질소·산소를 촉매로 쓰는 <b>CNO 순환</b>이 주된 핵융합입니다.`,
+    deep: String.raw`복사로 운반할 수 있는 에너지보다 많이 흘러야 하면 온도 기울기가 가팔라져 대류가 시작됩니다(슈바르츠실트 조건). 핵융합 무게 중심이 중심부에 몰린 무거운 별일수록 중심의 에너지 흐름이 커서 대류핵을 가집니다.`,
+    widget(box) { const K = canvas(box, 340, 220), s = slider(box, '별의 질량 (태양 = 1)', 0.1, 20, 0.1, 1), R = readout(box);
+      return () => { clear(K); const g = K.g, M = +s.value, cx = K.w / 2, cy = 110, Rr = 90;
+        const conv = M < 0.35 ? [0, 1] : M < 1.3 ? [0.71 + (M - 1) * 0.2, 1] : [0, Math.min(0.45, 0.12 + 0.03 * M)];
+        g.fillStyle = '#3a2a1a'; g.beginPath(); g.arc(cx, cy, Rr, 0, 7); g.fill();
+        const ring = (a, b, col) => { g.fillStyle = col; g.beginPath(); g.arc(cx, cy, Rr * b, 0, 7); g.arc(cx, cy, Rr * a, 0, 7, true); g.fill(); };
+        ring(conv[0], conv[1], '#6a3e1e'); ring(0, M < 0.35 ? 0.25 : M < 1.3 ? 0.25 : 0.15, '#e2a23a');
+        text(g, '중심핵 (핵융합)', cx, cy + 4, '#120c0a', 9, 'center');
+        text(g, M < 0.35 ? '전체가 대류' : M < 1.3 ? '대류층 (바깥)' : '대류핵 (안쪽)', cx, M < 1.3 && M >= 0.35 ? cy - Rr + 12 : cy + Rr * 0.35, C.text, 9, 'center');
+        R([['에너지 전달', M < 0.35 ? '전체 대류' : M < 1.3 ? '안쪽 복사 → 바깥 대류' : '안쪽 대류 → 바깥 복사'], ['주된 핵융합', M < 1.5 ? '양성자-양성자 연쇄' : 'CNO 순환'], ['주계열 수명', `약 ${fmt(1e10 * M ** -2.5 / 1e8, 0)}억 년`]]); }; } },
+  { id: 'exodetect', level: '교양', title: '외계 행성을 찾는 방법', tag: '시선 속도 · 식 · 미세 중력 렌즈 · 고교 지구과학Ⅰ',
+    eq: String.raw`K = \left(\frac{2\pi G}{P}\right)^{1/3} \frac{m_p \sin i}{M_\star^{2/3}}`,
+    body: `외계 행성은 너무 어두워 직접 보기 어려워서, 별에 미치는 영향으로 찾습니다. <b>시선 속도법</b>: 행성이 별을 끌어당겨 별이 조금씩 앞뒤로 흔들리고, 그 흔들림이 도플러 효과로 스펙트럼선을 파랗게, 붉게 번갈아 옮깁니다. 행성이 무겁고 별에 가까울수록 흔들림(K)이 커서 잘 찾힙니다. <b>식 현상(통과)법</b>: 행성이 별 앞을 지나면 별빛이 잠깐 어두워지며, 어두워진 비율로 행성의 크기를 압니다. <b>미세 중력 렌즈법</b>: 앞쪽 별이 뒤쪽 별의 빛을 중력으로 모아 밝게 만들 때, 앞쪽 별의 행성이 짧은 추가 밝아짐을 만듭니다. 한국천문연구원의 KMTNet이 이 방법으로 많은 행성을 찾았습니다.`,
+    deep: String.raw`시선 속도로는 <span class="tex">m_p \sin i</span>(최소 질량)만 알 수 있지만, 식 현상까지 보이면 i ≈ 90°라서 질량과 반지름을 모두 알아 밀도를 구합니다. 직접 촬영은 코로나그래프로 별빛을 가려 멀리 떨어진 젊고 뜨거운 거대 행성을 찍습니다.`,
+    widget(box) { const K = canvas(box, 340, 180), ms = slider(box, '행성 질량 (목성 = 1)', 0.003, 10, 0.003, 1), ps = slider(box, '공전 주기 (일)', 1, 4000, 1, 365), R = readout(box);
+      return () => { clear(K); const g = K.g, mp = +ms.value, P = +ps.value, Kv = 28.4 * mp * (P / 365.25) ** (-1 / 3);
+        const xs = []; for (let i = 0; i <= 200; i++) xs.push(i / 200 * 2); plot(K, xs, [{ ys: xs.map(x => Kv * Math.sin(2 * Math.PI * x)), col: C.teal, label: '별의 시선 속도 (m/s)' }], { xl: '공전 주기 단위 시간', y0: -Math.max(1, Kv * 1.2), y1: Math.max(1, Kv * 1.2) });
+        R([['별의 흔들림 K', `${fmt(Kv, 2)} m/s`], ['지금 장비로 찾을 수 있나', Kv > 1 ? '예 (약 1 m/s 정밀도)' : Kv > 0.1 ? '차세대 장비가 필요' : '어려움'], ['참고', '지구가 태양을 흔드는 정도는 약 0.09 m/s']]); }; } },
+  { id: 'galaxytypes', level: '기초', title: '허블의 은하 분류', tag: '타원 · 나선 · 막대 나선 · 불규칙 · 고교 지구과학Ⅰ',
+    eq: String.raw`\text{E0} \to \text{E7} \to \text{S0} \to \text{Sa, SBa} \to \text{Sc, SBc}`,
+    body: `허블은 은하를 모양으로 나눴습니다. <b>타원 은하(E)</b>는 둥글거나 길쭉한 공 모양으로 나선팔이 없고, 늙은 붉은 별이 많으며 가스가 적어 새 별이 거의 생기지 않습니다. 숫자 0~7은 납작한 정도입니다. <b>나선 은하(S)</b>는 가운데 팽대부와 나선팔을 가진 원반으로, 나선팔에 가스와 젊은 파란 별이 많습니다. 중심을 가로지르는 막대가 있으면 <b>막대 나선 은하(SB)</b>로, 우리 은하가 여기에 속합니다. a에서 c로 갈수록 팽대부가 작고 팔이 느슨하게 벌어집니다. 정해진 모양이 없는 것은 <b>불규칙 은하(Irr)</b>로, 대·소 마젤란 은하가 예입니다.`,
+    deep: String.raw`허블은 이 순서를 진화 순서로 생각했지만, 지금은 은하가 합쳐지며 나선 은하가 타원 은하가 되는 쪽이 많다고 봅니다. 은하 색과 별 생성률로 보면 "파란 구름"과 "붉은 무리"로 나뉩니다.`,
+    widget(box) { const K = canvas(box, 340, 180), s = slider(box, '은하 유형', 0, 6, 1, 4, (k) => ['E0', 'E5', 'S0', 'Sa', 'Sb', 'SBb', 'Irr'][k]), R = readout(box);
+      return () => { clear(K); const g = K.g, k = +s.value, cx = K.w / 2, cy = 90; g.save(); g.translate(cx, cy);
+        if (k <= 1) { const gr = g.createRadialGradient(0, 0, 2, 0, 0, 60); gr.addColorStop(0, 'rgba(255,220,170,.95)'); gr.addColorStop(1, 'rgba(255,180,120,0)'); g.fillStyle = gr; g.scale(1, k ? 0.5 : 1); g.beginPath(); g.arc(0, 0, 60, 0, 7); g.fill(); }
+        else if (k === 6) { for (let i = 0; i < 260; i++) { const a = Math.sin(i * 12.9898) * 43758.5453 % 1, b = Math.sin(i * 78.233) * 12345.678 % 1; dot(g, a * 70, b * 40, 1.4, i % 3 ? 'rgba(170,200,255,.8)' : 'rgba(255,200,170,.8)'); } }
+        else { const bar = k === 5, open = k === 3 ? 0.18 : 0.32, bulge = k === 3 ? 22 : k === 2 ? 26 : 14;
+          if (k > 2) for (let arm = 0; arm < 2; arm++) for (let i = 0; i < 300; i++) { const t = i / 300 * 4.2, r = (bar ? 24 : 10) * Math.exp(open * t * 1.6), a = t + arm * Math.PI; if (r > 75) break; dot(g, r * Math.cos(a), r * Math.sin(a) * 0.55, 1.6, 'rgba(160,190,255,.75)'); }
+          if (bar) { g.fillStyle = 'rgba(255,210,160,.7)'; g.fillRect(-26, -5, 52, 10); }
+          const gr = g.createRadialGradient(0, 0, 1, 0, 0, bulge); gr.addColorStop(0, 'rgba(255,225,180,1)'); gr.addColorStop(1, 'rgba(255,200,140,0)'); g.fillStyle = gr; g.beginPath(); g.ellipse(0, 0, bulge * 1.6, bulge, 0, 0, 7); g.fill(); }
+        g.restore();
+        const D = [['타원', '늙은 붉은 별, 가스 적음', 'M87'], ['타원 (납작함)', '늙은 붉은 별, 가스 적음', 'M110'], ['렌즈형', '원반은 있으나 팔이 없음', 'NGC 5866'], ['나선 (팽대부 큼, 팔 감김)', '팔에 젊은 별', 'M104 솜브레로'], ['나선', '팔에 젊은 별과 성운', 'M31 안드로메다'], ['막대 나선', '중심에 막대', '우리 은하, M95'], ['불규칙', '젊은 별과 가스가 많음', '대·소 마젤란 은하']][k];
+        R([['모양', D[0]], ['특징', D[1]], ['예', D[2]]]); }; } },
+  { id: 'bigbang', level: '기초', title: '빅뱅 우주론과 그 증거', tag: '우주는 뜨겁고 작은 데서 시작했다 · 고교 지구과학Ⅰ',
+    eq: String.raw`\frac{\text{He}}{\text{H}+\text{He}} \approx 0.25 \ (\text{질량비})`,
+    body: `빅뱅 우주론은 우주가 약 138억 년 전 매우 뜨겁고 밀도가 높은 상태에서 팽창하며 식어 왔다는 이론입니다. 세 가지 큰 증거가 있습니다. 첫째, 먼 은하일수록 빨리 멀어지는 <b>허블 법칙</b>(우주 팽창). 둘째, 우주 어디서나 오는 2.7 K의 <b>우주 배경 복사</b>로, 우주가 3,000 K일 때 처음 자유롭게 퍼진 빛이 늘어나 식은 것입니다. 셋째, 우주의 보통 물질 질량 가운데 <b>수소가 약 75%, 헬륨이 약 25%</b>라는 비율로, 처음 3분 동안 일어난 핵융합 계산과 맞습니다. 정상 우주론(우주가 늘어나도 물질이 계속 생겨 밀도가 일정)은 배경 복사를 설명하지 못해 밀려났습니다.`,
+    deep: String.raw`초기 핵합성에서 중성자:양성자 비가 약 1:7로 얼어붙어, 중성자가 모두 헬륨-4로 들어가면 헬륨 질량비는 <span class="tex">2 \times 1/(1+7) = 0.25</span>입니다. 급팽창 이론은 우주가 평탄하고 어디나 고른 이유를 설명하려고 더해졌습니다.`,
+    widget(box) { const K = canvas(box, 340, 170), s = slider(box, '빅뱅 이후 시간 (로그)', -6, 17.6, 0.1, 13, (x) => fmtAge(10 ** x)), R = readout(box);
+      const ST = [[1e-6, '쿼크가 모여 양성자·중성자가 됨'], [180, '헬륨 원자핵이 만들어짐 (처음 3분)'], [1.2e13, '원자가 생기고 빛이 자유로워짐 (우주 배경 복사)'], [6e15, '첫 별과 은하'], [4.3e17, '지금']];
+      return () => { clear(K); const g = K.g, t = 10 ** +s.value, a = t < 1.5e12 ? Math.sqrt(t / 1.2e13) / 1100 * 3.2 : (t / 4.3e17) ** (2 / 3), T = 2.725 / Math.min(1, a);
+        const xs = []; for (let x = -6; x <= 17.6; x += 0.2) xs.push(x); plot(K, xs, [{ ys: xs.map(x => { const tt = 10 ** x, aa = tt < 1.5e12 ? Math.sqrt(tt / 1.2e13) / 1100 * 3.2 : (tt / 4.3e17) ** (2 / 3); return Math.log10(2.725 / Math.min(1, aa)); }), col: C.amber, label: '우주의 온도 (로그 K)' }], { xl: '시간 (로그 초)' });
+        let st = ST[0][1]; for (const [tt, n] of ST) if (t >= tt) st = n;
+        R([['시간', fmtAge(t)], ['온도', `${T > 1e6 ? T.toExponential(1) : fmt(T, 0)} K`], ['이때', st]]); }; } },
+  { id: 'darkenergy', level: '교양', title: '암흑 에너지와 가속 팽창', tag: '우주의 95%는 모른다 · 고교 지구과학Ⅰ',
+    eq: String.raw`\Omega_\Lambda \approx 0.69,\quad \Omega_\text{DM} \approx 0.26,\quad \Omega_\text{보통} \approx 0.05`,
+    body: `1998년 먼 Ia형 초신성들이 예상보다 어둡게, 곧 더 멀리 있다는 것이 밝혀졌습니다. Ia형 초신성은 최대 밝기가 거의 같아 거리를 재는 "표준 촛불"로 쓰는데, 이 결과는 우주 팽창이 느려지는 것이 아니라 약 50억 년 전부터 <b>빨라지고</b> 있음을 뜻합니다. 팽창을 가속시키는 정체 모를 에너지를 <b>암흑 에너지</b>라 합니다. 지금 우주의 에너지는 암흑 에너지 약 69%, 빛을 내지 않고 중력으로만 드러나는 <b>암흑 물질</b> 약 26%, 별·행성·우리 몸을 이루는 보통 물질은 약 5%뿐입니다.`,
+    deep: String.raw`가장 단순한 설명은 공간 자체가 가진 에너지(우주 상수 Λ)로, 공간이 늘어나도 밀도가 일정해서 시간이 지날수록 비중이 커집니다. 최근 DESI 관측은 암흑 에너지가 시간에 따라 변할 가능성을 내비쳐 연구가 이어지고 있습니다.`,
+    widget(box) { const K = canvas(box, 340, 170), s = slider(box, '우주 나이 (억 년)', 5, 138, 1, 138), R = readout(box);
+      return () => { clear(K); const g = K.g, t = +s.value, a = (Math.sinh(1.5 * Math.sqrt(0.69) * (t / 144)) / Math.sinh(1.5 * Math.sqrt(0.69) * (138 / 144))) ** (2 / 3);
+        const m = 0.31 / a ** 3, L = 0.69, tot = m + L, dm = m * 0.84, bm = m * 0.16, parts = [[L / tot, '암흑 에너지', C.blue], [dm / tot, '암흑 물질', C.mute], [bm / tot, '보통 물질', C.amber]];
+        let x = 20; for (const [f, n, c] of parts) { g.fillStyle = c; g.fillRect(x, 60, (K.w - 40) * f, 40); if (f > 0.08) text(g, `${n} ${fmt(f * 100, 0)}%`, x + 4, 52, c, 10); x += (K.w - 40) * f; }
+        R([['우주 크기 (지금 = 1)', fmt(a, 2)], ['팽창', L > m / 2 ? '가속 중' : '감속 중'], ['참고', '물질은 공간이 늘수록 묽어지지만 암흑 에너지 밀도는 그대로']]); }; } },
+  { id: 'synodic', level: '기초', title: '행성의 겉보기 운동', tag: '회합 주기와 역행 · 고교 지구과학Ⅱ',
+    eq: String.raw`\frac{1}{S} = \left|\frac{1}{P_\oplus} - \frac{1}{P}\right|`,
+    body: `행성은 보통 별자리 사이를 서쪽에서 동쪽으로 움직이지만(순행), 가끔 거꾸로 동쪽에서 서쪽으로 가는 <b>역행</b>을 합니다. 지구가 바깥쪽 행성(예: 화성)을 안쪽에서 앞지를 때, 마치 기차가 옆 기차를 추월하면 옆 기차가 뒤로 가는 것처럼 보이는 것과 같습니다. 그래서 외행성은 지구에 가장 가까운 <b>충</b> 무렵 역행하고 가장 밝습니다. 같은 배치(예: 충에서 다음 충)가 되풀이되는 시간을 <b>회합 주기</b>라 하며, 두 공전 각속도의 차이로 정해집니다. 화성은 약 780일(2년 2개월)마다 충이 됩니다.`,
+    deep: String.raw`프톨레마이오스는 역행을 주전원으로 설명했고, 코페르니쿠스는 태양 중심설로 같은 현상을 훨씬 간단히 설명했습니다. 내행성은 지구와 태양 사이에 오는 내합 무렵 역행합니다.`,
+    widget(box) { const K = canvas(box, 340, 220), ps = slider(box, '바깥 행성의 공전 주기 (년)', 1.2, 30, 0.1, 1.88), ts = slider(box, '시간 (년, 가운데가 충)', 0, 1, 0.005, 0.2), R = readout(box);
+      return () => { clear(K); const g = K.g, P = +ps.value, a = P ** (2 / 3), t = +ts.value, S = 1 / Math.abs(1 - 1 / P), cx = 110, cy = 110, sc = 80 / Math.max(a, 1.6);
+        dot(g, cx, cy, 5, C.sun); g.strokeStyle = C.grid; g.beginPath(); g.arc(cx, cy, sc, 0, 7); g.stroke(); g.beginPath(); g.arc(cx, cy, sc * a, 0, 7); g.stroke();
+        const E = (u) => [Math.cos(2 * Math.PI * (u - 0.5)), Math.sin(2 * Math.PI * (u - 0.5))], Pp = (u) => [a * Math.cos(2 * Math.PI * (u - 0.5) / P), a * Math.sin(2 * Math.PI * (u - 0.5) / P)];
+        const [ex, ey] = E(t), [px, py] = Pp(t); dot(g, cx + ex * sc, cy - ey * sc, 4, C.blue); dot(g, cx + px * sc, cy - py * sc, 4, C.pink);
+        g.strokeStyle = 'rgba(255,255,255,.25)'; g.beginPath(); g.moveTo(cx + ex * sc, cy - ey * sc); g.lineTo(cx + px * sc, cy - py * sc); g.stroke();
+        // the planet's direction seen from Earth, against the stars, over time
+        const lon = (u) => { const [e1, e2] = E(u), [p1, p2] = Pp(u); return Math.atan2(p2 - e2, p1 - e1); }; let prev = lon(0), acc = 0, pts = [];
+        for (let u = 0; u <= 1; u += 0.0025) { const l = lon(u); let d = l - prev; d = (d + 3 * Math.PI) % (2 * Math.PI) - Math.PI; acc += d; prev = l; pts.push([u, acc]); }
+        const x0 = 215, w = K.w - x0 - 10, mn = Math.min(...pts.map(p => p[1])), mx = Math.max(...pts.map(p => p[1]));
+        g.strokeStyle = C.grid; g.strokeRect(x0, 20, w, 180); text(g, '← 동쪽    별자리 사이    서쪽 →', x0 + w / 2, 14, C.mute, 9, 'center');
+        g.strokeStyle = C.teal; g.beginPath(); pts.forEach(([u, v], i) => { const X = x0 + (mx - v) / (mx - mn || 1) * w, Y = 20 + u * 180; i ? g.lineTo(X, Y) : g.moveTo(X, Y); }); g.stroke();
+        const cur = pts[Math.min(pts.length - 1, Math.round(t / 0.0025))]; dot(g, x0 + (mx - cur[1]) / (mx - mn || 1) * w, 20 + t * 180, 3.5, C.pink); text(g, '시간 ↓', K.w - 12, 212, C.mute, 9, 'right');
+        const d = lon(t + 0.005) - lon(t); const retro = ((d + 3 * Math.PI) % (2 * Math.PI) - Math.PI) < 0;
+        R([['회합 주기', `${fmt(S * 365.25, 0)}일 (${fmt(S, 2)}년)`], ['지금 움직임', retro ? '역행 (서쪽으로)' : '순행 (동쪽으로)'], ['오른쪽 그림', '지구에서 본 행성 위치가 시간에 따라 지나간 길']]); }; } },
+];
+const fmtAge = (s) => s < 1 ? `${s.toExponential(0)}초` : s < 3600 ? `${fmt(s, 0)}초` : s < 3.156e7 ? `${fmt(s / 86400, 0)}일` : s < 3.156e15 ? `${fmt(s / 3.156e7, 0)}년` : `${fmt(s / 3.156e15, 1)}억 년`;
 // ---- textbook UI: chapters in order, prerequisite and follow-up links on every card ----
-const ALL = [...CARDS, ...SCIENCE, ...MORE, ...EXTRA, ...SPACEENV, ...GENERAL], BYID = Object.fromEntries(ALL.map(c => [c.id, c]));
+const ALL = [...CARDS, ...SCIENCE, ...MORE, ...EXTRA, ...SPACEENV, ...GENERAL, ...HS], BYID = Object.fromEntries(ALL.map(c => [c.id, c]));
 const NUM = {}; CHAPTERS.forEach((ch, i) => ch.ids.forEach((id, j) => { NUM[id] = `${i}.${j + 1}`; }));
 const NEXT = {}; for (const [id, pre] of Object.entries(PRE)) for (const q of pre) (NEXT[q] ||= []).push(id);
 const chip = (id) => { const c = BYID[id]; const b = el('button', 'cc-chip', `${NUM[id] || ''} ${c.title}`); b.onclick = () => openCard(c); return b; };
@@ -853,6 +986,22 @@ const seen = () => { try { return new Set(JSON.parse(localStorage.getItem(SEEN_K
 function markSeen(id) { try { const s2 = seen(); s2.add(id); localStorage.setItem(SEEN_KEY, JSON.stringify([...s2])); } catch {} }
 // ---- reading each formula: what every symbol is, and what the equation says in words ----
 const EXPLAIN = {
+  hrdiagram: { s: [['L', '광도: 별이 1초에 내는 전체 에너지'], ['R', '별의 반지름'], ['\\sigma', '슈테판-볼츠만 상수'], ['T', '표면 온도']],
+    r: '광도는 표면적(4πR²)과 단위 면적이 내는 빛(σT⁴)의 곱입니다. 그래서 H-R도에서 같은 온도라면 위쪽 별이 더 크고, 같은 광도라면 왼쪽(뜨거운) 별이 더 작습니다.' },
+  spectral: { s: [['\\lambda_\\text{max}', '가장 세게 나오는 빛의 파장'], ['T', '표면 온도 (K)']],
+    r: '뜨거울수록 가장 센 빛이 짧은 파장(파랑) 쪽으로 옮겨 가서, 별의 색만 보고도 온도를 짐작할 수 있습니다. 분광형은 같은 온도를 흡수선의 모양으로 더 정밀하게 나눈 것입니다.' },
+  starstruct: { s: [['P', '그 깊이의 기체 압력'], ['r', '중심에서의 거리'], ['M(r)', 'r 안쪽에 있는 질량'], ['\\rho(r)', '그 깊이의 밀도'], ['G', '만유인력 상수']],
+    r: '안쪽으로 갈수록 위에 쌓인 무게를 버티려고 압력이 커져야 합니다. 이 식이 성립하는 동안 별은 커지지도 줄어들지도 않는 평형을 유지합니다.' },
+  exodetect: { s: [['K', '별의 시선 속도가 흔들리는 폭 (m/s)'], ['P', '행성의 공전 주기'], ['m_p \\sin i', '행성 질량 × 궤도 기울기의 사인 (최소 질량)'], ['M_\\star', '별의 질량'], ['G', '만유인력 상수']],
+    r: '행성이 무거울수록, 주기가 짧을수록(별에 가까울수록) 별을 크게 흔듭니다. 같은 행성이라도 가벼운 별을 더 크게 흔듭니다.' },
+  galaxytypes: { s: [['\\text{E}', '타원 은하 (숫자가 클수록 납작)'], ['\\text{S0}', '렌즈형 은하'], ['\\text{S}, \\text{SB}', '나선 은하, 막대 나선 은하 (a→c: 팽대부 작아지고 팔이 벌어짐)']],
+    r: '수식이 아니라 모양에 따른 순서를 나타낸 표기입니다. 왼쪽일수록 둥글고 늙은 별 위주, 오른쪽일수록 납작한 원반과 젊은 별이 많은 은하입니다.' },
+  bigbang: { s: [['\\text{He}', '헬륨의 질량'], ['\\text{H}', '수소의 질량']],
+    r: '처음 3분 동안의 핵융합 계산은 보통 물질의 약 25%가 헬륨이 되어야 한다고 예측하고, 실제로 관측된 값이 이와 맞습니다. 별이 만든 헬륨만으로는 이렇게 많을 수 없습니다.' },
+  darkenergy: { s: [['\\Omega_\\Lambda', '암흑 에너지가 차지하는 비율'], ['\\Omega_\\text{DM}', '암흑 물질의 비율'], ['\\Omega_\\text{보통}', '보통 물질의 비율']],
+    r: '세 값을 더하면 거의 1이라 우주는 평탄합니다. 우리가 아는 물질은 5%에 불과합니다.' },
+  synodic: { s: [['S', '회합 주기: 같은 배치가 되풀이되는 시간'], ['P_\\oplus', '지구의 공전 주기 (1년)'], ['P', '다른 행성의 공전 주기']],
+    r: '1/P는 1년에 도는 바퀴 수입니다. 두 행성의 바퀴 수 차이가 1이 될 때마다 같은 배치로 돌아오므로, 공전 주기가 지구와 비슷한 화성은 회합 주기가 깁니다(약 2.1년).' },
   scale: { s: [['d', '거리'], ['c', '빛의 속도 (초속 약 30만 km)'], ['t', '빛이 그 거리를 가는 데 걸리는 시간']],
     r: '빛은 1초에 지구를 일곱 바퀴 반 돕니다. 그 빛으로도 몇 년, 몇백만 년이 걸리는 거리가 우주의 거리입니다. 그래서 먼 천체를 볼수록 더 오래된 과거를 보게 됩니다.' },
   bluesky: { s: [['I', '흩어지는 빛의 세기'], ['\\lambda', '빛의 파장 (파랑 약 450 nm, 빨강 약 700 nm)']],
@@ -985,7 +1134,10 @@ function openCard(card) {
   const left = el('div', 'cc-left'), right = el('div', 'cc-right');
   left.append(el('div', 'cc-num', `${NUM[card.id] || ''} · ${CHAPTERS.find(ch => ch.ids.includes(card.id))?.title.replace(/^\d+\. /, '') || ''}`), el('span', 'cc-level ' + card.level, card.level), el('h2', '', card.title), el('div', 'cc-tag', card.tag));
   if (PRE[card.id]?.length) { const r = el('div', 'cc-links'); r.append(el('span', '', '먼저 볼 것'), ...PRE[card.id].map(chip)); left.append(r); }
-  left.append(el('div', 'cc-eq', `<span class="tex block">${card.eq}</span>`)); const rd = readBox(card.id); if (rd) left.append(rd); left.append(el('p', '', card.body));
+  // read first, then the formula: the explanation says what the topic is before any symbol appears
+  const isEq = /=|\\propto|\\approx|\\to\b|\\lt|\\gt/.test(card.eq);
+  left.append(el('p', '', card.body), el('div', 'cc-eq-h', isEq ? '식으로 쓰면' : '한눈에 보기'), el('div', 'cc-eq', `<span class="tex block">${card.eq}</span>`));
+  const rd = readBox(card.id); if (rd) left.append(rd);
   const d = el('details', 'cc-deep'); d.append(el('summary', '', '전공 심화: 유도와 실제'), el('div', '', card.deep)); left.append(d);
   if (QUIZ[card.id]) left.append(quizBox(card.id));
   if (card.lab && opts.openLab) left.append(Object.assign(el('button', 'cc-lab', '샌드박스에서 해 보기'), { onclick: () => { close(); opts.openLab(card.lab); } }));
