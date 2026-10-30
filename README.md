@@ -75,6 +75,7 @@
 
 - [다음 기능 명세 (관측·표현)](docs/SPEC-next.md)
 - [샌드박스와 천체물리학 실습 명세](docs/SPEC-sandbox-astrophysics.md)
+- [지상·우주 모드 고도화 명세](docs/SPEC-ground-space.md)
 
 ## 버전 기록
 
