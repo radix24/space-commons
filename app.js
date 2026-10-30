@@ -1335,7 +1335,9 @@ function zoomBy(f) { if (mode.space) return spaceZoom(f);
 
 // ---------- object model / picking ----------
 const tmp = new THREE.Vector3();
-function worldOf(o) { return o.planet ? o.p.world.clone() : o.kindName === 'sat' || o.kindName === 'site' ? (o.world || new THREE.Vector3(0, -1, 0)).clone() : o.v.clone().applyMatrix4(sky.matrixWorld).normalize(); }
+function worldOf(o) { // a direction in the ground frame; objects without one yet (e.g. right after a mode change) point at the nadir
+  const down = () => new THREE.Vector3(0, -1, 0);
+  return o.planet ? (o.p.world ? o.p.world.clone() : down()) : o.kindName === 'sat' || o.kindName === 'site' ? (o.world || down()).clone() : o.v ? o.v.clone().applyMatrix4(sky.matrixWorld).normalize() : down(); }
 function toScreen(w) {
   tmp.copy(w); if (atmoU.refractOn.value) refractVec(tmp.normalize());
   tmp.multiplyScalar(900).project(camera);
