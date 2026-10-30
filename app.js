@@ -200,14 +200,21 @@ const milkyWay = new THREE.Mesh(new THREE.SphereGeometry(R_MW, 96, 48), mwMat);
 milkyWay.renderOrder = 0; milkyWay.visible = false; sky.add(milkyWay);
 // Milky Way: the real all-sky photograph (ESO/S. Brunier, CC BY 4.0) by default, or the painted map (Solar System Scope)
 const mwTex = {};
+// A1: the same sphere also carries all-sky maps in other wavelengths (galactic plate carree like the photo); the visible stars dim so that light takes over
+const WAVE_INFO = { radio: '전파 21 cm: 별 사이의 차가운 중성 수소 기체. 은하 원반 전체가 두껍게 빛납니다', micro: '마이크로파 (Planck): 띠는 은하의 먼지와 전자, 그 밖의 얼룩은 우주 배경 복사입니다',
+  ir: '근적외선 2 μm (2MASS): 먼지를 뚫고 은하 중심의 늙은 별들이 드러납니다', halpha: 'H-알파 656 nm: 뜨거운 별이 이온화한 수소 구름(성운)이 붉게 빛납니다',
+  xray: 'X선 (eROSITA, 독일 측 하늘 절반): 수백만 도의 뜨거운 기체, 초신성 잔해, 은하단', gamma: '감마선 (Fermi): 우주선이 기체와 부딪혀 내는 빛, 펄서, 먼 블랙홀 제트' };
 function setMilkyWay(style) {
-  const file = style === 'photo' ? (matchMedia('(max-width: 640px)').matches ? 'textures/eso_milkyway_2k.jpg' : 'textures/eso_milkyway_4k.jpg') : 'textures/4k_milky_way.jpg';
-  const use = (t) => { mwMat.uniforms.map.value = t; mwMat.uniforms.photo.value = style === 'photo' ? 1 : 0; milkyWay.visible = $('t-mw').checked; };
+  const wave = $('wavelen')?.value || 'visible';
+  const file = wave !== 'visible' ? `textures/allsky_${wave}.jpg` : style === 'photo' ? (matchMedia('(max-width: 640px)').matches ? 'textures/eso_milkyway_2k.jpg' : 'textures/eso_milkyway_4k.jpg') : 'textures/4k_milky_way.jpg';
+  if (wave !== 'visible') $('status').textContent = WAVE_INFO[wave];
+  const use = (t) => { mwMat.uniforms.map.value = t; mwMat.uniforms.photo.value = style === 'photo' || wave !== 'visible' ? 1 : 0; milkyWay.visible = $('t-mw').checked || wave !== 'visible'; };
   if (mwTex[file]) return use(mwTex[file]);
-  new THREE.TextureLoader().load(file, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; mwTex[file] = t; if ($('mwstyle').value === style) use(t); });
+  new THREE.TextureLoader().load(file, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; mwTex[file] = t; if ($('mwstyle').value === style && file.includes(($('wavelen')?.value || 'visible') === 'visible' ? 'milky' : 'allsky_' + $('wavelen').value)) use(t); });
 }
 setMilkyWay($('mwstyle').value);
 $('mwstyle').onchange = (e) => setMilkyWay(e.target.value);
+$('wavelen').onchange = () => setMilkyWay($('mwstyle').value);
 
 // ---------- constellation lines & grid ----------
 const linesGroup = new THREE.Group(); sky.add(linesGroup);
@@ -3115,8 +3122,9 @@ function frame(now) {
   if (gOn && bortle > 3) bg.lerp(new THREE.Color(0x2a2620), (bortle - 3) / 6 * 0.35 * (1 - skyDayK)); renderer.setClearColor(bg); // skyglow
   starMat.uniforms.limit.value = Math.min(view.fov > 30 ? 8.5 : MOBILE ? 11 : 12.5, (gOn ? NELM[bortle - 1] : 6.4) + (view.fov > 30 ? 2.2 : 3) * zoom) - day * 5; // deeper when zoomed: Gaia tiles
   mwMat.uniforms.gain.value = 3.5 * dim * MWK[bortle - 1] / Math.max(1, Math.sqrt(70 / view.fov) * 0.6);
-  if (mwMat.uniforms.photo.value) mwMat.uniforms.gain.value *= Math.max(0, Math.min(1, (view.fov - 6) / 24)); // the photo's own stars smear into blobs when magnified: let the real stars take over
-  starMat.uniforms.pr.value = renderer.getPixelRatio(); starMat.uniforms.dim.value = dim;
+  if (mwMat.uniforms.photo.value) mwMat.uniforms.gain.value *= Math.max(0, Math.min(1, (view.fov - 6) / 24));
+  const waveOn = $('wavelen').value !== 'visible'; if (waveOn) mwMat.uniforms.gain.value = 0.95; // the photo's own stars smear into blobs when magnified: let the real stars take over
+  starMat.uniforms.pr.value = renderer.getPixelRatio(); starMat.uniforms.dim.value = dim * (waveOn ? 0.18 : 1);
   starMat.uniforms.time.value = now / 1000; starMat.uniforms.twinkle.value = gOn && $('t-twinkle').checked && atmo ? (MOBILE ? 0.5 : 1) : 0;
   exoMat.uniforms.pr.value = renderer.getPixelRatio(); exoMat.uniforms.alpha.value = Math.min(1, Math.max(0, (30 - view.fov) / 20)) * (1 - day * 0.8);
   dsoMat.uniforms.pxPerDeg.value = innerHeight / view.fov; dsoMat.uniforms.pr.value = renderer.getPixelRatio();

@@ -1,0 +1,38 @@
+{
+ "radio": {
+  "ko": "전파 21 cm (중성 수소)",
+  "credit": "Parkes Radio Telescope/100-m Effelsberg/CSIRO/MPIfR",
+  "licence": "CC BY 4.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Parkes-Effelsberg_Radio_All_Sky_(AllSky-01_Radio21cm-hi4pi_nhi_k_on_w_inferno).jpg"
+ },
+ "micro": {
+  "ko": "마이크로파 (Planck)",
+  "credit": "ESA/NASA/JPL-Caltech/Planck Collaboration",
+  "licence": "CC BY 4.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Planck_Microwave_All_Sky_(AllSky-10_Micro05-10mm-Planck-Radio-multiband).jpg"
+ },
+ "ir": {
+  "ko": "근적외선 2 μm (2MASS)",
+  "credit": "2MASS/J. Carpenter/T. H. Jarrett/R. Hurt/FLWO/CTIO",
+  "licence": "CC BY 4.0",
+  "source": "https://commons.wikimedia.org/wiki/File:2MASS_Infrared_All_Sky_(AllSky-14_IR2%CE%BCm-2mass).jpg"
+ },
+ "halpha": {
+  "ko": "H-알파 656 nm (전리 수소)",
+  "credit": "WHAM/VTSS/SHASSA/Douglas Finkbeiner",
+  "licence": "CC BY 4.0",
+  "source": "https://commons.wikimedia.org/wiki/File:WHAM_Visible_Light_H-alpha_All_Sky_(AllSky-17_Optical656nm-Halpha-WHAM-SHASSA-VTSS).jpg"
+ },
+ "xray": {
+  "ko": "X선 (eROSITA, 하늘 절반)",
+  "credit": "eROSITA/MPE/IKI/J. Sanders/H. Brunner/E. Churazov/M. Gilfanov & eSASS team (MPE)",
+  "licence": "CC BY 4.0",
+  "source": "https://commons.wikimedia.org/wiki/File:EROSITA_X-ray_All_Sky_(erass1-car-rgb-gal-10K).jpg"
+ },
+ "gamma": {
+  "ko": "감마선 (Fermi)",
+  "credit": "NASA's Scientific Visualization Studio - University of Maryland College Park/Francis Reddy",
+  "licence": "Public domain",
+  "source": "https://commons.wikimedia.org/wiki/File:Fermi%27s_12-year_View_of_the_Gamma-ray_Sky_(SVS14090_-_Fermi_144_month_all-sky-cyl_4000x2000).png"
+ }
+}
