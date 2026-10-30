@@ -287,7 +287,7 @@ body.sandbox #loader { display: none; }
 .cc-mini { margin-top: auto; font-size: 11px; color: #c9d1e6; max-width: 100%; overflow: hidden; }
 .cc-level { font: 700 10.5px var(--mono, monospace); padding: 1px 7px; border-radius: 99px; border: 1px solid; }
 .cc-level.기초 { color: #9fe0e6; } .cc-level.교양 { color: #ffb454; } .cc-level.전공 { color: #ff7aa2; }
-.cc-body { display: grid; grid-template-columns: 1fr 360px; gap: 18px; margin-top: 8px; }
+.cc-body { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; margin-top: 8px; }
 .cc-left h2 { margin: 6px 0 2px; font: 800 20px var(--display, sans-serif); } .cc-left p { line-height: 1.65; font-size: 14px; }
 .cc-eq { margin: 10px 0; padding: 8px; border-radius: 8px; background: rgba(79,227,193,.06); overflow-x: auto; }
 .cc-deep { font-size: 13px; line-height: 1.65; } .cc-deep summary { cursor: pointer; color: var(--orbit, #4FE3C1); margin: 6px 0; }
@@ -297,7 +297,7 @@ body.sandbox #loader { display: none; }
 .cc-slider b { font: 12px var(--mono, monospace); color: #e6ebf7; text-align: right; }
 .cc-read { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; font-size: 12px; margin-top: 4px; } .cc-read span { color: var(--mute, #9aa5c0); } .cc-read b { font: 12px var(--mono, monospace); font-weight: 400; }
 .cc-lab { margin-top: 10px; border-color: var(--orbit) !important; color: var(--orbit); } .cc-back { margin-bottom: 4px; }
-@media (max-width: 760px) { .cc-body { grid-template-columns: 1fr; } .cc-slider { grid-template-columns: 1fr 1fr 52px; } }
+@media (max-width: 760px) { .cc-body { grid-template-columns: minmax(0, 1fr); } .cc-left, .cc-right { min-width: 0; } .cc-head .small { display: none; } .cc-slider { grid-template-columns: 1fr 1fr 52px; } }
 .cc-left .cc-level { display: inline-block; }
 
 /* 0.0.3d: textbook */
