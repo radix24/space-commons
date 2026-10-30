@@ -211,6 +211,15 @@ function updateTempMap() {
     if (P > 0.005 && b.mesh) { if (!halo) { halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloTex, sizeAttenuation: false, depthTest: false, transparent: true })); halo.renderOrder = 2; b.mesh.add(halo); b.mesh.userData.halo = halo; }
       const top = Object.entries(a.mix).sort((x, y) => y[1] - x[1])[0]?.[0]; halo.material.color.set(GAS_COL[top] || '#9aa0ae'); halo.scale.setScalar(0.024 + 0.006 * Math.max(0, Math.log10(P) + 3)); halo.visible = true; }
     else if (halo) halo.visible = false;
+    // up close the same atmosphere is a glowing limb around the globe (fresnel shell 3% above the surface, thicker with pressure)
+    let limb = b.mesh?.userData.limb;
+    if (P > 0.005 && b.mesh && b.Rkm) { if (!limb) { limb = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 24), new THREE.ShaderMaterial({ uniforms: { col: { value: new THREE.Color() }, k: { value: 1 } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.BackSide,
+        vertexShader: 'varying vec3 vN, vV; void main(){ vec4 w = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-w.xyz); gl_Position = projectionMatrix * w; }',
+        fragmentShader: 'uniform vec3 col; uniform float k; varying vec3 vN, vV; void main(){ float f = pow(1.0 - abs(dot(vN, vV)), 2.5); gl_FragColor = vec4(col * f * k, f); }' }));
+        b.mesh.add(limb); b.mesh.userData.limb = limb; }
+      const top = Object.entries(a.mix).sort((x, y) => y[1] - x[1])[0]?.[0]; limb.material.uniforms.col.value.set(GAS_COL[top] || '#9aa0ae'); limb.material.uniforms.k.value = Math.min(2, 0.5 + 0.4 * (Math.log10(P) + 3));
+      limb.scale.setScalar(b.Rkm / O.AU_KM * (1.03 + 0.01 * Math.max(0, Math.log10(P) + 1))); limb.visible = true; }
+    else if (limb) limb.visible = false;
     if (!on) { if (lb.dataset.t) { lb.textContent = b.ko; lb.style.color = ''; delete lb.dataset.t; if (dot) dot.material.color.set(b.color); } continue; }
     if (!k) continue; const C = Math.round(k.Ts + impactHeat(b) - 273.15); if (lb.dataset.t === String(C)) continue;
     lb.dataset.t = C; lb.textContent = `${b.ko} ${C}°C`; lb.style.color = tempCol(C); if (dot) dot.material.color.set(tempCol(C)); } // the planet itself takes its temperature colour
