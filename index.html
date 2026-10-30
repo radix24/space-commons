@@ -29,7 +29,7 @@
   <div id="loader-step">별 4만 개와 NGC/IC 천체 1만 2천 개를 불러오는 중</div>
 </div>
 <video id="ar-video" playsinline muted hidden></video>
-<canvas id="c"></canvas>
+<canvas id="c" role="img" aria-label="별하늘 화면: 끌어서 둘러보고, 휠이나 두 손가락으로 확대합니다"></canvas>
 <div id="labels"></div>
 <div id="sel-ring" hidden></div>
 <div id="eye-ring" hidden><span id="eye-label"></span></div>
@@ -60,7 +60,7 @@
     <button id="full" title="전체 화면 (F)">전체 화면</button>
     <button id="lang" title="한국어 / English">EN</button>
   </div>
-  <span id="status">카탈로그 불러오는 중…</span>
+  <span id="status" aria-live="polite">카탈로그 불러오는 중…</span>
 </div>
 
 <div id="panel">
@@ -128,6 +128,9 @@
     <label class="space-only" title="어제 하루 동안 위성이 찍은 실제 지구 사진 (NASA GIBS)"><input type="checkbox" id="t-live"> 오늘의 지구</label>
     <label class="space-only" title="선택하지 않은 탐사선의 지나온 길도 모두 표시"><input type="checkbox" id="t-trails"> 탐사선 경로</label>
     <label><input type="checkbox" id="t-grid"> 적도 격자</label>
+    <label title="글자와 버튼을 크게"><input type="checkbox" id="a-large"> 큰 글씨</label>
+    <label title="빨강·초록을 구별하기 어려운 분을 위한 파랑·주황 색 구성"><input type="checkbox" id="a-cvd"> 색각 배려</label>
+    <label title="별의 반짝임과 화면 이동 애니메이션을 줄입니다"><input type="checkbox" id="a-calm"> 움직임 줄이기</label>
     <label title="미국 NOAA 오로라 예보 (30~90분 뒤): 우주에서는 지구 밤 쪽에, 지상에서는 가까우면 지평선에"><input type="checkbox" id="t-aurora"> 오로라 예보</label>
     <label><input type="checkbox" id="t-dso" checked> NGC/IC</label>
     <label><input type="checkbox" id="t-exo" checked> 외계행성</label>

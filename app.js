@@ -1741,7 +1741,7 @@ function spaceFlyTo(o) {
 }
 function stepSpaceFlight(now) {
   const f = sp.flight; if (!f) return;
-  const k = Math.min(1, (now - f.t0) / f.dur), e = k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+  const k = document.body.classList.contains('calm') ? 1 : Math.min(1, (now - f.t0) / f.dur), e = k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; // calm: jump straight there
   if (f.turnOnly) { sp.quat.slerpQuaternions(f.q0, f.q1, e); if (k >= 1) sp.flight = null; return; }
   const tp = helioPos[f.p.key || f.p.name]; if (!tp) return;
   // approach from the lit side, slightly above the ecliptic
@@ -2999,6 +2999,16 @@ async function scopeGoto(o) {
 $('scope-serial').onclick = scopeConnectSerial;
 $('scope-alpaca').onclick = () => { scope.alpaca = $('scope-url').value.trim(); $('scope-st').textContent = scope.alpaca ? `Alpaca 주소 설정: ${scope.alpaca}` : ''; };
 $('scope-goto').onclick = () => { if (selected) scopeGoto(selected); else $('scope-st').textContent = '하늘에서 천체를 먼저 고르세요'; };
+// ---------- E5. accessibility: large text, colour-blind-safe palette (Okabe-Ito blue/orange), less motion; remembered in this browser ----------
+const A11Y_KEY = 'space-commons-a11y';
+(function a11y() {
+  let st = {}; try { st = JSON.parse(localStorage.getItem(A11Y_KEY)) || {}; } catch {}
+  if (st.calm == null && matchMedia('(prefers-reduced-motion: reduce)').matches) st.calm = true;
+  const apply = () => { document.body.classList.toggle('large', !!st.large); document.body.classList.toggle('cvd', !!st.cvd); document.body.classList.toggle('calm', !!st.calm);
+    if (st.calm && $('t-twinkle')) $('t-twinkle').checked = false; try { localStorage.setItem(A11Y_KEY, JSON.stringify(st)); } catch {} };
+  for (const [id, k] of [['a-large', 'large'], ['a-cvd', 'cvd'], ['a-calm', 'calm']]) { const el = $(id); if (!el) continue; el.checked = !!st[k]; el.onchange = () => { st[k] = el.checked; apply(); }; }
+  apply();
+})();
 // ---------- 22. whole spacecraft journeys (S7) ----------
 function journeyTimeline(p) {
   const box = $('info-exo'), ev = JOURNEYS[p.name], e = probeEph[p.name]; box.innerHTML = ''; box.hidden = false;

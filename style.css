@@ -422,3 +422,11 @@ body.ar { background: #000; } body.ar #c { background: transparent; }
 .hist-y { color: var(--brass); font-weight: 700; } .hist p { margin: 4px 0 8px; line-height: 1.6; font-size: 13.5px; }
 #ls label, #lesson label { display: block; margin: 6px 0; font-size: 12.5px; } #ls input, #ls textarea, #lesson input, #lesson textarea { display: block; width: 100%; margin-top: 3px; background: #19191a; color: var(--ink); border: 1px solid var(--line); font: inherit; padding: 4px; }
 #lesson-qs { padding-left: 18px; } #lesson-qs li { margin: 8px 0; } #lesson-qs textarea { min-height: 44px; }
+
+/* ---- E5 accessibility ---- */
+:focus-visible { outline: 2px solid #ffd27a; outline-offset: 2px; }
+body.large { font-size: 15.5px; } body.large button, body.large select, body.large input, body.large label { font-size: 15px; } body.large .cc-left p { font-size: 16.5px; } body.large .lbl { font-size: 13.5px; }
+body.cvd { --orbit: #0072B2; --brass: #E69F00; } body.cvd button.on, body.cvd .on > button { color: #fff; }
+body.cvd .lbl.small.comet, body.cvd .lbl.sat { color: #56B4E9; }
+@media (prefers-reduced-motion: reduce) { #loader, .loader-mark, .loader-bar i { animation: none !important; transition: none !important; } }
+body.calm .loader-mark, body.calm .loader-bar i { animation: none; }
