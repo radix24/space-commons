@@ -371,3 +371,9 @@ input[type=number], input[type=date], input[type=datetime-local] { font-family: 
 #plan .plan-go { background: none; border: 0; padding: 0; color: var(--orbit, #4FE3C1); font: inherit; cursor: pointer; text-align: left; }
 @media print { body.print-plan > *:not(#obs) { display: none !important; } body.print-plan #obs { position: static; display: block; width: auto; max-height: none; background: #fff; color: #000; }
   body.print-plan #obs > *:not(#plan) { display: none; } body.print-plan #plan .plan-go { color: #000; } }
+/* prerequisite note sits under the one-line hook, so every row keeps the same height */
+.cc-card { grid-template-rows: auto auto; min-height: 60px; align-items: center; }
+.cc-card .cc-num, .cc-card > b, .cc-card .cc-level { grid-row: 1 / 3; }
+.cc-card .cc-tag { grid-column: 3; grid-row: 1; align-self: end; }
+.cc-card .cc-pre { grid-column: 3; grid-row: 2; align-self: start; font-size: 11px; line-height: 1.3; }
+@media (max-width: 640px) { .cc-card .cc-num, .cc-card > b, .cc-card .cc-level { grid-row: 1; } .cc-card .cc-tag { grid-column: 2; grid-row: 2; } .cc-card .cc-pre { grid-column: 2; grid-row: 3; } }
