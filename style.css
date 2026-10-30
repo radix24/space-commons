@@ -308,3 +308,10 @@ body.sandbox #loader { display: none; }
 .cc-links { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0; font-size: 12px; } .cc-links > span { color: var(--mute); margin-right: 2px; }
 .cc-chip { font-size: 12px; padding: 3px 9px; border-radius: 99px; }
 .cc-nav { display: flex; justify-content: space-between; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+.cc-progress { margin: 4px 0 2px; font: 12px var(--mono); color: var(--orbit); }
+.cc-intro { color: var(--mute); font-size: 12.5px; margin: -4px 0 8px; }
+.cc-quiz { margin: 12px 0; padding: 10px 12px; border-radius: 10px; border: 1px dashed var(--line); background: rgba(255,180,84,.04); }
+.cc-quiz p { margin: 4px 0 8px; font-size: 13.5px; }
+.cc-opts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; } .cc-opts input { width: 110px; }
+.cc-fb { margin-top: 8px; font-size: 13px; min-height: 1em; } .cc-fb.ok { color: var(--orbit); } .cc-fb.no { color: #ff7aa2; }
+.cc-show { margin-top: 6px; font-size: 12px; }

@@ -482,25 +482,205 @@ const MORE = [
 ];
 // Textbook order: chapters, and what each card builds on (prerequisites). "Next" links are derived from these.
 const CHAPTERS = [
-  { title: '1. 하늘의 좌표와 시간', ids: ['coords', 'eot', 'seasons', 'precession', 'moonphase'] },
-  { title: '2. 지구', ids: ['declination', 'paleomag', 'tides'] },
-  { title: '3. 중력과 궤도', ids: ['twobody', 'invariants', 'visviva', 'kepler', 'elements', 'rocket', 'hohmann', 'plane', 'oberth', 'soi', 'flyby', 'lambert', 'j2', 'cr3bp', 'cw'] },
-  { title: '4. 행성과 위성', ids: ['roche', 'moon', 'teq', 'hz'] },
-  { title: '5. 별', ids: ['blackbody', 'magnitude', 'stellar', 'remnants'] },
-  { title: '6. 은하와 우주', ids: ['hubble', 'cmb', 'galaxy'] },
+  { title: '1. 하늘의 좌표와 시간', intro: '하늘을 지도처럼 읽는 법: 좌표, 시간, 계절, 달', ids: ['coords', 'eot', 'seasons', 'precession', 'moonphase'] },
+  { title: '2. 지구', intro: '우리가 선 행성의 자기장과 바다', ids: ['declination', 'paleomag', 'tides'] },
+  { title: '3. 중력과 궤도', intro: '뉴턴의 중력에서 탐사선 궤도 설계까지', ids: ['gravity', 'keplerlaws', 'twobody', 'invariants', 'visviva', 'kepler', 'elements', 'rocket', 'hohmann', 'plane', 'oberth', 'soi', 'flyby', 'lambert', 'j2', 'cr3bp', 'cw'] },
+  { title: '4. 행성과 위성', intro: '행성의 온도, 대기, 충돌, 위성, 그리고 다른 별의 행성', ids: ['roche', 'moon', 'teq', 'atmos', 'impact', 'hz', 'transit'] },
+  { title: '5. 별', intro: '빛으로 별을 재고, 별의 탄생부터 최후까지', ids: ['blackbody', 'parallax', 'magnitude', 'doppler', 'sun', 'starbirth', 'stellar', 'nucleo', 'remnants'] },
+  { title: '6. 은하와 우주', intro: '거리 사다리를 올라 우주의 역사까지', ids: ['distladder', 'hubble', 'darkmatter', 'cmb', 'galaxy'] },
 ];
-const PRE = { eot: ['coords', 'kepler'], seasons: ['coords'], precession: ['coords', 'j2'], moonphase: ['coords'], paleomag: ['declination'], tides: ['twobody'],
-  invariants: ['twobody'], visviva: ['twobody'], kepler: ['invariants'], elements: ['kepler', 'coords'], hohmann: ['visviva'], plane: ['elements', 'hohmann'], oberth: ['visviva', 'rocket'],
+const PRE = { eot: ['coords', 'keplerlaws'], seasons: ['coords'], precession: ['coords', 'j2'], moonphase: ['coords'], paleomag: ['declination'], tides: ['gravity'],
+  keplerlaws: ['gravity'], twobody: ['keplerlaws'], invariants: ['twobody'], visviva: ['twobody'], kepler: ['invariants'], elements: ['kepler', 'coords'], hohmann: ['visviva'], plane: ['elements', 'hohmann'], oberth: ['visviva', 'rocket'],
   soi: ['twobody'], flyby: ['soi', 'hohmann'], lambert: ['kepler', 'hohmann'], j2: ['elements'], cr3bp: ['invariants'], cw: ['twobody', 'kepler'],
-  roche: ['twobody', 'tides'], moon: ['roche', 'tides'], teq: ['blackbody'], hz: ['teq', 'stellar'], magnitude: ['blackbody'], stellar: ['blackbody', 'magnitude'], remnants: ['stellar', 'visviva'],
-  hubble: ['magnitude'], cmb: ['blackbody', 'hubble'], galaxy: ['hubble', 'stellar'] };
+  roche: ['gravity', 'tides'], moon: ['roche', 'tides', 'impact'], teq: ['blackbody'], atmos: ['teq', 'visviva'], impact: ['visviva'], hz: ['teq', 'stellar'], transit: ['doppler', 'magnitude'],
+  parallax: ['coords'], magnitude: ['blackbody', 'parallax'], doppler: ['blackbody'], sun: ['blackbody', 'gravity'], starbirth: ['gravity', 'blackbody'], stellar: ['sun', 'starbirth', 'magnitude'],
+  nucleo: ['stellar'], remnants: ['nucleo', 'visviva'], distladder: ['parallax', 'magnitude'], hubble: ['distladder', 'doppler'], darkmatter: ['keplerlaws', 'distladder'], cmb: ['blackbody', 'hubble'], galaxy: ['hubble', 'darkmatter', 'stellar'] };
+
+// ---- more concepts: foundations, measuring the sky, planets, stars, galaxies ----
+const EXTRA = [
+  { id: 'gravity', level: '기초', title: '만유인력', tag: '사과와 달을 같은 법칙으로',
+    eq: String.raw`F = \frac{GMm}{r^2},\qquad g = \frac{GM}{r^2}`,
+    body: `질량을 가진 모든 것은 서로 당깁니다. 그 힘은 질량에 비례하고 거리의 제곱에 반비례합니다. 뉴턴은 사과를 떨어뜨리는 힘과 달을 붙잡아 두는 힘이 같은 것임을 보였습니다. 행성마다 표면 중력이 다른 이유도 질량과 반지름 때문입니다.`,
+    deep: String.raw`G = 6.674×10⁻¹¹ N·m²/kg²는 1798년 캐번디시가 비틀림 저울로 처음 쟀습니다. 구 대칭인 천체 밖에서는 모든 질량이 중심에 모인 것처럼 계산해도 됩니다(셸 정리). 지구 안으로 들어가면 바깥 껍질의 인력은 서로 상쇄되어 중력이 줄어듭니다.`,
+    widget(box) { const K = canvas(box, 340, 160), pl = el('select'); for (const [k, M, R2] of [['지구', 5.972e24, 6371], ['달', 7.342e22, 1737], ['화성', 6.417e23, 3390], ['목성', 1.898e27, 71492], ['세레스', 9.39e20, 470]]) pl.append(new Option(k, `${M},${R2}`)); box.append(pl);
+      const h = slider(box, '표면에서 높이 (km)', 0, 40000, 10, 400), R = readout(box);
+      return () => { clear(K); const [M, R2] = pl.value.split(',').map(Number), r = (R2 + +h.value) * 1e3, g = 6.674e-11 * M / (r * r), g0 = 6.674e-11 * M / (R2 * 1e3) ** 2, G2 = K.g;
+        G2.fillStyle = C.teal; G2.fillRect(20, 60, (K.w - 40) * Math.min(1, g / 30), 26); text(G2, `${fmt(g, 2)} m/s²`, 24, 54, C.text, 11); G2.fillStyle = C.mute; G2.fillRect(20, 110, (K.w - 40) * 9.81 / 30, 10); text(G2, '지구 표면 9.81', 24, 136, C.mute, 10);
+        R([['표면 중력', `${fmt(g0, 2)} m/s² (지구의 ${fmt(g0 / 9.81, 2)}배)`], ['이 높이의 중력', `${fmt(g, 2)} m/s²`], ['몸무게 60 kg인 사람이 느끼는 무게', `${fmt(60 * g / 9.81, 1)} kg중`]]); }; } },
+  { id: 'keplerlaws', level: '기초', title: '케플러의 세 법칙', tag: '타원, 같은 넓이, 주기와 크기',
+    eq: String.raw`\frac{T^2}{a^3} = \frac{4\pi^2}{GM}`,
+    body: `1. 행성은 태양을 한 초점으로 하는 타원을 그립니다. 2. 같은 시간 동안 태양과 행성을 잇는 선이 쓸고 지나가는 넓이는 같습니다(가까울 때 빠름). 3. 공전 주기의 제곱은 긴반지름의 세제곱에 비례합니다. 아래 색칠된 부채꼴들은 모두 같은 시간 동안 쓸고 지나간 넓이입니다.`,
+    deep: String.raw`케플러는 티코 브라헤의 화성 관측에서 경험적으로 이 법칙들을 찾았고(1609, 1619), 뉴턴이 만유인력으로 유도했습니다. 2법칙은 각운동량 보존 <span class="tex">\tfrac12 r^2\dot\theta = h/2</span>, 3법칙은 원 궤도에서 <span class="tex">GM/r^2 = (2\pi/T)^2 r</span>로 바로 확인됩니다.`,
+    widget(box) { const K = canvas(box), es = slider(box, '이심률', 0, 0.8, 0.01, 0.5, (x) => x.toFixed(2)), R = readout(box);
+      return () => { const g = K.g; clear(K); const e = +es.value, a = 1, p = a * (1 - e * e), S = 95 / (1 + e), cx = K.w / 2 + e * 50, cy = K.h / 2;
+        const pos = (M) => { let E = M; for (let i = 0; i < 12; i++) E -= (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E)); const nu = 2 * Math.atan2(Math.sqrt(1 + e) * Math.sin(E / 2), Math.sqrt(1 - e) * Math.cos(E / 2)), r = p / (1 + e * Math.cos(nu)); return [cx + S * r * Math.cos(nu), cy - S * r * Math.sin(nu)]; };
+        for (let k = 0; k < 12; k++) { g.fillStyle = k % 2 ? 'rgba(79,227,193,.18)' : 'rgba(255,180,84,.18)'; g.beginPath(); g.moveTo(cx, cy); for (let j = 0; j <= 20; j++) g.lineTo(...pos((k + j / 20) / 12 * 2 * Math.PI)); g.closePath(); g.fill(); }
+        conic(g, cx, cy, S, p, e); dot(g, cx, cy, 6, C.sun);
+        R([['근일점 속도 / 원일점 속도', fmt((1 + e) / (1 - e), 2)], ['부채꼴 12개', '모두 같은 시간 (주기의 1/12)'], ['3법칙 예', '목성 a = 5.2 AU → T = √5.2³ = 11.9년']]); }; } },
+  { id: 'parallax', level: '교양', title: '연주 시차로 별까지 거리 재기', tag: '1초각에 1파섹',
+    eq: String.raw`d\,[\text{pc}] = \frac{1}{p\,[\text{″}]}`,
+    body: `지구가 태양 둘레를 도는 동안 가까운 별은 먼 배경에 대해 조금씩 왔다 갔다 합니다. 그 각도의 절반이 연주 시차 p입니다. p가 1초각(1/3600°)이면 거리가 1 파섹(3.26광년)입니다. 가장 가까운 별 프록시마도 0.77초각밖에 안 되어, 1838년에야 처음 측정되었습니다.`,
+    deep: String.raw`작은 각도 근사 <span class="tex">\tan p \approx p = 1\,\text{AU}/d</span>에서 1 pc = 206,265 AU. 히파르코스 위성(1989~1993)은 약 1밀리초각, 가이아는 수십 마이크로초각 정밀도로 18억 개 별의 시차를 쟀습니다. 이것이 우주 거리 사다리의 첫 계단입니다.`,
+    widget(box) { const K = canvas(box, 340, 160), ps = slider(box, '시차 p (초각, 로그)', -5, 0, 0.01, -0.11, (x) => (10 ** x).toPrecision(3)), R = readout(box);
+      return () => { const g = K.g; clear(K); const p = 10 ** ps.value, d = 1 / p; g.strokeStyle = C.grid; g.beginPath(); g.ellipse(60, 120, 30, 10, 0, 0, 7); g.stroke(); dot(g, 60, 120, 5, C.sun); dot(g, 30, 120, 3, C.blue); dot(g, 90, 120, 3, C.blue);
+        const sx = 60, sy = 20; dot(g, sx, sy, 4, C.text); g.strokeStyle = C.amber; g.beginPath(); g.moveTo(30, 120); g.lineTo(sx, sy); g.lineTo(90, 120); g.stroke(); text(g, '별', sx + 6, sy + 4, C.text, 10); text(g, '1월 · 7월의 지구', 100, 124, C.blue, 10);
+        R([['거리', `${fmt(d, d < 10 ? 2 : 0)} pc = ${fmt(d * 3.2616, d < 10 ? 2 : 0)}광년`], ['예', '프록시마 0.768″, 시리우스 0.379″, 베텔게우스 약 0.006″'], ['가이아로 잴 수 있는 한계', `약 0.00002″ → ${fmt(1 / 2e-5 / 1000, 0)} kpc`]]); }; } },
+  { id: 'doppler', level: '교양', title: '스펙트럼과 도플러 효과', tag: '빛의 색으로 속도를 잰다',
+    eq: String.raw`\frac{\Delta\lambda}{\lambda_0} = \frac{v_r}{c}`,
+    body: `별빛을 프리즘으로 펼치면 원소마다 정해진 파장에 검은 흡수선이 보입니다. 별이 우리에게서 멀어지면 선들이 긴 파장(빨간 쪽)으로, 다가오면 짧은 파장(파란 쪽)으로 밀립니다. 이 어긋남으로 시선 방향 속도를 잽니다. 쌍성, 외계행성, 은하의 후퇴 속도가 모두 이 방법으로 측정됩니다.`,
+    deep: String.raw`빛의 속도에 가까우면 상대론적 식 <span class="tex">1+z = \sqrt{\frac{1+\beta}{1-\beta}}</span>을 씁니다. 먼 은하의 적색편이는 은하가 공간을 달리는 것이 아니라 빛이 오는 동안 공간이 늘어난 결과(우주론적 적색편이)라서 <span class="tex">1+z = a_\text{now}/a_\text{then}</span>입니다. 지금의 분광기는 초속 수십 cm의 별의 흔들림까지 잽니다.`,
+    widget(box) { const K = canvas(box, 340, 120), vs = slider(box, '시선 속도 (km/s, +는 멀어짐)', -3000, 3000, 10, 600), R = readout(box);
+      return () => { const g = K.g; clear(K); const v = +vs.value, f = 1 + v / 299792.458, X = (l) => 10 + (l - 380) / (760 - 380) * (K.w - 20);
+        for (let l = 380; l <= 760; l += 2) { const h = 270 - (l - 380) / 380 * 270; g.fillStyle = `hsl(${h},80%,${l < 420 || l > 700 ? 30 : 50}%)`; g.fillRect(X(l), 20, X(l + 2) - X(l) + 1, 50); }
+        for (const [n, l] of [['Hα', 656.28], ['Hβ', 486.13], ['Na', 589.0], ['Hγ', 434.05]]) { const ls = l * f; g.fillStyle = '#000'; g.fillRect(X(ls) - 1, 20, 3, 50); text(g, n, X(ls), 86, C.text, 10, 'center'); g.fillStyle = C.mute; g.fillRect(X(l), 72, 1, 6); }
+        text(g, '회색 눈금: 정지했을 때 위치', 10, 110, C.mute, 9);
+        R([['Hα 이동', `${fmt(656.28 * (f - 1), 3)} nm`], ['적색편이 z', fmt(v / 299792.458, 5)]]); }; } },
+  { id: 'transit', level: '교양', title: '외계행성 찾기: 횡단법', tag: '별빛이 아주 조금 어두워질 때',
+    eq: String.raw`\delta = \left(\frac{R_p}{R_\star}\right)^2`,
+    body: `행성이 별 앞을 지나가면 별빛이 행성 단면적만큼 어두워집니다. 목성이 태양 앞을 지나면 1%, 지구는 0.008%입니다. 케플러와 TESS 우주망원경은 이 미세한 밝기 변화로 수천 개의 외계행성을 찾았습니다. 어두워지는 간격이 공전 주기, 깊이가 크기를 알려 줍니다.`,
+    deep: String.raw`횡단 지속 시간 <span class="tex">t \approx \frac{P}{\pi}\frac{R_\star}{a}</span>(정면 통과), 궤도 기울기가 맞을 확률은 약 <span class="tex">R_\star/a</span>(지구 같은 행성은 0.5%). 시선속도법과 함께 쓰면 질량과 반지름을 모두 알아 밀도(암석인지 기체인지)를 구할 수 있습니다. 횡단 때 별빛이 행성 대기를 지나며 생기는 흡수로 대기 성분도 잽니다(JWST).`,
+    widget(box) { const K = canvas(box), rp = slider(box, '행성 반지름 (지구 = 1)', 0.5, 15, 0.1, 11, (x) => x.toFixed(1)), rs = slider(box, '별 반지름 (태양 = 1)', 0.1, 2, 0.01, 1, (x) => x.toFixed(2)), R = readout(box);
+      return () => { clear(K); const k = rp.value * 6371 / (rs.value * 696000), depth = k * k, xs = []; for (let t = -2; t <= 2; t += 0.01) xs.push(t);
+        const flux = (t) => { const x = Math.abs(t); if (x >= 1 + k) return 1; if (x <= 1 - k) return 1 - depth; const f = (1 + k - x) / (2 * k); return 1 - depth * f; };
+        plot(K, xs, [{ ys: xs.map(flux), col: C.amber, label: '별의 밝기' }], { x0: -2, x1: 2, y0: 1 - Math.max(depth * 1.4, 0.0002), y1: 1 + depth * 0.2 + 1e-5, xl: '시간 (통과 중심 = 0)', yd: 4 });
+        R([['어두워지는 정도', `${fmt(depth * 100, 4)}%`], ['예', '목성형 1%, 지구형 0.008%, TRAPPIST-1e 약 0.5% (별이 작아서)']]); }; } },
+  { id: 'atmos', level: '교양', title: '대기를 붙잡는 힘', tag: '달에 공기가 없는 이유',
+    eq: String.raw`v_\text{rms} = \sqrt{\frac{3kT}{m}},\qquad \text{유지 조건 } v_\text{esc} \gtrsim 6\,v_\text{rms}`,
+    body: `기체 분자는 온도에 따라 빠르게 움직입니다. 가벼운 분자일수록, 뜨거울수록 빠릅니다. 행성의 탈출 속도가 분자 평균 속력보다 충분히 크지 않으면, 수십억 년 동안 그 기체는 우주로 새어 나갑니다. 그래서 지구에는 수소가 거의 없고, 달과 수성에는 대기가 거의 없으며, 목성은 수소를 그대로 붙잡고 있습니다.`,
+    deep: String.raw`맥스웰-볼츠만 분포의 빠른 꼬리에 있는 분자가 대기 맨 위(외기권)에서 빠져나가는 것을 진스 탈출이라 합니다. 탈출 속도가 평균 속력의 6배쯤이면 태양계 나이 동안 대부분 남습니다. 화성은 자기장이 약해 태양풍이 대기를 깎아 낸 효과도 컸습니다(MAVEN).`,
+    widget(box) { const K = canvas(box, 340, 200), pl = el('select'); for (const [k, ve, T] of [['지구', 11.19, 1000], ['달', 2.38, 390], ['화성', 5.03, 300], ['목성', 59.5, 1000], ['타이탄', 2.64, 95], ['수성', 4.25, 700]]) pl.append(new Option(k, `${ve},${T}`)); box.append(pl);
+      const R = readout(box);
+      return () => { clear(K); const [ve, T] = pl.value.split(',').map(Number), g = K.g, gases = [['H₂', 2], ['He', 4], ['H₂O', 18], ['N₂', 28], ['O₂', 32], ['CO₂', 44]];
+        gases.forEach(([n, m], i) => { const v = Math.sqrt(3 * 1.380649e-23 * T / (m * 1.6605e-27)) / 1000, y = 16 + i * 30, w = (K.w - 110) * Math.min(1, 6 * v / 60); const keep = ve > 6 * v;
+          g.fillStyle = keep ? C.teal : C.pink; g.fillRect(70, y, w, 16); text(g, n, 8, y + 12, C.text, 11); text(g, `6×v = ${fmt(6 * v, 1)} km/s ${keep ? '유지' : '샘'}`, 74 + w, y + 12, C.mute, 9); });
+        const X = 70 + (K.w - 110) * Math.min(1, ve / 60); g.strokeStyle = C.amber; g.beginPath(); g.moveTo(X, 10); g.lineTo(X, 190); g.stroke(); text(g, `탈출 속도 ${ve}`, X + 3, 196, C.amber, 9);
+        R([['외기권 온도 (가정)', `${T} K`], ['읽는 법', '막대(6×평균 속력)가 노란 선(탈출 속도)보다 짧으면 그 기체는 남습니다']]); }; } },
+  { id: 'impact', level: '교양', title: '소행성 충돌과 크레이터', tag: '공룡을 멸종시킨 10 km',
+    eq: String.raw`E = \tfrac12 m v^2,\qquad D \approx 1.25\times 1.161\left(\frac{\rho_i}{\rho_t}\right)^{1/3}L^{0.78}v^{0.44}g^{-0.22}`,
+    body: `소행성은 초속 20 km 안팎으로 부딪혀 크기에 비해 엄청난 에너지를 냅니다. 2013년 첼랴빈스크 운석(지름 20 m)은 공중에서 터져 유리창을 깼고, 6,600만 년 전 지름 10 km 천체가 만든 칙술루브 크레이터(지름 약 180 km)는 공룡 멸종을 불렀습니다. 크기와 속도를 바꿔 보세요.`,
+    deep: String.raw`크레이터 크기 식은 실험과 수치 모의로 얻은 스케일링 법칙(Collins, Melosh, Marcus 2005)의 단순화입니다. 작은 천체는 대기에서 부서지고, 지름 수십 m 이상의 암석질·철질만 땅에 닿습니다. 지구 근접 천체는 NASA CNEOS가 감시하며, 2022년 DART 우주선은 소행성 디모르포스의 궤도를 실제로 바꿨습니다.`,
+    widget(box) { const K = canvas(box, 340, 120), Ls = slider(box, '지름 (m, 로그)', 0, 4.3, 0.01, 1.3, (x) => fmt(10 ** x, 0)), vs = slider(box, '속도 (km/s)', 11, 72, 0.5, 19), R = readout(box);
+      return () => { clear(K); const L = 10 ** Ls.value, v = vs.value * 1e3, m = 3000 * Math.PI / 6 * L ** 3, E = 0.5 * m * v * v, Mt = E / 4.184e15, D = 1.25 * 1.161 * Math.cbrt(3000 / 2500) * L ** 0.78 * v ** 0.44 * 9.81 ** -0.22, g = K.g;
+        const X = (e) => 10 + (Math.log10(e) + 3) / 12 * (K.w - 20); for (const [n, e] of [['히로시마 0.015', 0.015], ['첼랴빈스크 0.5', 0.5], ['퉁구스카 10', 10], ['차르 봄바 50', 50], ['칙술루브 1억', 1e8]]) { dot(g, X(e), 50, 3, C.mute); text(g, n, X(e), 40, C.mute, 9, 'center'); }
+        dot(g, X(Math.max(1e-3, Mt)), 50, 6, C.pink); text(g, 'TNT 메가톤 (로그)', K.w / 2, 100, C.mute, 9, 'center');
+        R([['에너지', `${E.toExponential(2)} J = TNT ${Mt < 1 ? fmt(Mt * 1000, 1) + '킬로톤' : fmt(Mt, Mt < 100 ? 1 : 0) + '메가톤'}`], ['크레이터 지름 (땅에 닿을 때)', L < 25 ? '대기에서 부서질 가능성이 큼' : D > 4000 ? `약 ${fmt(D / 1000, 0)} km (복합 크레이터)` : `약 ${fmt(D, 0)} m`]]); }; } },
+  { id: 'sun', level: '교양', title: '태양의 에너지와 구조', tag: '1초에 4백만 톤이 빛이 된다',
+    eq: String.raw`4\,{}^1\text{H} \to {}^4\text{He} + 2e^+ + 2\nu_e + 26.7\,\text{MeV},\quad E = mc^2`,
+    body: `태양 중심(1,500만 K)에서는 수소 4개가 헬륨 1개로 합쳐지며 질량의 0.7%가 에너지로 바뀝니다. 태양은 1초에 약 6억 톤의 수소를 태우고, 그중 400만 톤이 빛이 됩니다. 중심에서 만들어진 에너지는 복사층에서 수없이 흡수·방출되며 수만 년이 걸려 표면에 닿고, 표면에서 지구까지는 8분 20초면 옵니다.`,
+    deep: String.raw`양성자끼리는 전기적으로 밀어내지만 양자 터널 효과로 확률적으로 붙습니다(pp 연쇄 반응). 복사층에서 광자의 평균 자유 경로 ℓ가 짧아 무작위 걸음 <span class="tex">N \approx (R/\ell)^2</span>번을 거칩니다. 태양 중성미자는 이를 거치지 않고 곧장 나와, 지하 검출기로 중심부 반응을 직접 확인했습니다.`,
+    widget(box) { const K = canvas(box, 340, 180), mfp = slider(box, '복사층 광자의 평균 자유 경로 (cm, 로그)', -3, 1, 0.01, -1.6, (x) => (10 ** x).toPrecision(2)), R = readout(box);
+      return () => { const g = K.g; clear(K); const cx = 90, cy = 90; for (const [r, c, n] of [[80, '#e0703a', '대류층'], [57, '#f5a14a', '복사층'], [20, '#fff1b0', '중심핵']]) { g.fillStyle = c; g.beginPath(); g.arc(cx, cy, r, 0, 7); g.fill(); }
+        text(g, '중심핵 1,500만 K', 180, 40, C.text, 10); text(g, '복사층 (0.25~0.7 R)', 180, 70, C.text, 10); text(g, '대류층 (0.7~1 R)', 180, 100, C.text, 10); text(g, '광구 5,772 K', 180, 130, C.text, 10);
+        const L2 = 10 ** mfp.value / 100, Rr = 0.45 * 6.96e8, N = (Rr / L2) ** 2, t = N * L2 / 3e8 / 3.156e7;
+        R([['수소 소비', '초당 약 6억 톤'], ['질량 → 빛', '초당 약 426만 톤 (L = 3.83×10²⁶ W)'], ['복사층 통과 시간 (무작위 걸음)', `약 ${t > 1e6 ? fmt(t / 1e6, 1) + '백만' : fmt(t, 0)}년`]]); }; } },
+  { id: 'starbirth', level: '교양', title: '별의 탄생', tag: '차갑고 짙은 가스구름이 무너질 때',
+    eq: String.raw`M_J \approx \left(\frac{5kT}{G\mu m_H}\right)^{3/2}\left(\frac{3}{4\pi\rho}\right)^{1/2}`,
+    body: `별은 성간 분자구름에서 태어납니다. 가스의 열운동(압력)보다 자기 중력이 이기면 구름이 무너지며 뭉칩니다. 그 경계 질량이 <b>진스 질량</b>입니다. 차갑고 빽빽할수록 작은 덩어리도 무너질 수 있어, 별은 무리 지어 태어납니다(오리온 성운, 플레이아데스).`,
+    deep: String.raw`비리얼 정리 <span class="tex">2K + U = 0</span>에서 출발해 열에너지 <span class="tex">\tfrac32 NkT</span>와 중력 에너지 <span class="tex">-\tfrac35 GM^2/R</span>를 비교하면 진스 조건이 나옵니다. 붕괴하는 원시성은 각운동량 때문에 원반을 만들고, 그 원반에서 행성이 생깁니다(ALMA가 찍은 HL 타우리의 원반).`,
+    widget(box) { const K = canvas(box, 340, 120), Ts = slider(box, '온도 (K)', 5, 100, 1, 10), ns = slider(box, '수밀도 (개/cm³, 로그)', 1, 7, 0.01, 4, (x) => fmt(10 ** x, 0)), R = readout(box);
+      return () => { clear(K); const T = +Ts.value, n = 10 ** ns.value, mu = 2.33, rho = n * 1e6 * mu * 1.6726e-27, MJ = Math.pow(5 * 1.380649e-23 * T / (6.674e-11 * mu * 1.6726e-27), 1.5) * Math.sqrt(3 / (4 * Math.PI * rho)) / 1.989e30, g = K.g;
+        const X = (m) => 10 + (Math.log10(m) + 2) / 7 * (K.w - 20); for (const [nn, m] of [['갈색왜성 0.08', 0.08], ['태양 1', 1], ['O형 별 50', 50], ['성단 1,000', 1000], ['거대 분자구름 10만', 1e5]]) { dot(g, X(m), 50, 3, C.mute); text(g, nn, X(m), 40, C.mute, 9, 'center'); }
+        dot(g, X(Math.max(0.01, Math.min(1e5, MJ))), 50, 6, C.teal); text(g, '진스 질량 (태양질량, 로그)', K.w / 2, 100, C.mute, 9, 'center');
+        R([['진스 질량', `${MJ < 10 ? fmt(MJ, 2) : fmt(MJ, 0)} 태양질량`], ['붕괴 시간 (자유 낙하)', `약 ${fmt(Math.sqrt(3 * Math.PI / (32 * 6.674e-11 * rho)) / 3.156e13, 2)}백만 년`]]); }; } },
+  { id: 'nucleo', level: '교양', title: '원소의 기원과 초신성', tag: '우리는 별의 재로 만들어졌다',
+    eq: String.raw`\frac{B}{A}\ \text{최대: } {}^{56}\text{Fe},\ {}^{62}\text{Ni}\ (\approx 8.8\,\text{MeV/핵자})`,
+    body: `빅뱅은 수소와 헬륨(그리고 약간의 리튬)만 만들었습니다. 탄소, 산소부터 철까지는 별 속 핵융합이 만들었고, 철보다 무거운 원소는 초신성 폭발과 중성자별 충돌 속 빠른 중성자 포획(r 과정), 늙은 거성 속 느린 포획(s 과정)이 만들었습니다. 철에서 핵자당 결합 에너지가 가장 커서, 그 너머로는 핵융합이 에너지를 내지 않기 때문입니다.`,
+    deep: String.raw`결합 에너지 곡선은 준경험적 질량 공식 <span class="tex">B = a_vA - a_sA^{2/3} - a_c\frac{Z^2}{A^{1/3}} - a_a\frac{(A-2Z)^2}{A} \pm \delta</span>로 대략 그릴 수 있습니다. 철 핵이 1.4 M☉을 넘으면 1초도 안 되어 붕괴해 핵붕괴 초신성이 됩니다. 2017년 중성자별 충돌(GW170817)에서 금·백금 같은 r 과정 원소가 생긴 흔적이 관측되었습니다.`,
+    widget(box) { const K = canvas(box), As = slider(box, '질량수 A', 2, 238, 1, 56), R = readout(box);
+      const BA = (A) => { const Z = A / (1.98 + 0.0155 * A ** (2 / 3)); return (15.75 * A - 17.8 * A ** (2 / 3) - 0.711 * Z * Z / A ** (1 / 3) - 23.7 * (A - 2 * Z) ** 2 / A) / A; };
+      const NAME = { 4: '헬륨', 12: '탄소', 16: '산소', 28: '규소', 56: '철', 63: '구리', 107: '은', 197: '금', 208: '납', 238: '우라늄' };
+      return () => { clear(K); const xs = []; for (let A = 4; A <= 240; A++) xs.push(A); const P = plot(K, xs, [{ ys: xs.map(BA), col: C.teal, label: '핵자당 결합 에너지 (근사)' }], { x0: 4, x1: 240, y0: 6.5, y1: 9.2, xl: '질량수 A', yl: 'MeV', yd: 1 });
+        const A = +As.value; dot(K.g, P.X(A), P.Y(BA(A)), 5, C.amber); const nm = NAME[A] || Object.entries(NAME).sort((a, b) => Math.abs(a[0] - A) - Math.abs(b[0] - A))[0][1] + ' 근처';
+        R([['원소', nm], ['만드는 곳', A <= 7 ? '빅뱅' : A <= 56 ? '별 속 핵융합' : A <= 209 ? '거성의 s 과정, 초신성·중성자별 충돌의 r 과정' : '주로 r 과정 (중성자별 충돌)']]); }; } },
+  { id: 'darkmatter', level: '교양', title: '은하 회전 곡선과 암흑 물질', tag: '보이는 것보다 훨씬 무겁다',
+    eq: String.raw`v(r) = \sqrt{\frac{G M(<r)}{r}}`,
+    body: `별과 가스만 있다면 은하 바깥쪽 별은 태양계 바깥 행성처럼 느리게 돌아야 합니다. 그런데 실제로는 바깥까지 거의 같은 속도로 돕니다(평평한 회전 곡선). 보이지 않는 질량, 암흑 물질이 은하를 감싸고 있다는 가장 직접적인 증거입니다. 1970년대 베라 루빈이 확립했습니다.`,
+    deep: String.raw`평평한 곡선은 <span class="tex">M(<r) \propto r</span>, 즉 밀도 <span class="tex">\rho \propto r^{-2}</span>인 헤일로를 뜻합니다. 은하단의 중력 렌즈, 우주 배경 복사의 요동, 총알 은하단도 같은 결론을 줍니다. 우주 전체 에너지의 약 27%가 암흑 물질, 5%가 보통 물질입니다. 정체는 아직 모릅니다.`,
+    widget(box) { const K = canvas(box), hs = slider(box, '암흑 물질 헤일로 세기', 0, 2, 0.01, 1), R = readout(box);
+      return () => { clear(K); const xs = []; for (let r = 0.2; r <= 30; r += 0.2) xs.push(r);
+        const vis = (r) => { const Mb = 1.5e10 * r ** 2 / (r + 0.6) ** 2, Md = 6e10 * (1 - (1 + r / 3) * Math.exp(-r / 3)); return Math.sqrt(4.30e-6 * (Mb + Md) / r); }; // kpc, Msun, km/s
+        const halo = (r) => Math.sqrt(4.30e-6 * hs.value * 9.5e11 * (Math.log(1 + r / 16) - (r / 16) / (1 + r / 16)) / (Math.log(1 + 12) - 12 / 13) / r) * 1; // NFW, c ~ 12
+        const P = plot(K, xs, [{ ys: xs.map(vis), col: C.amber, label: '보이는 물질만' }, { ys: xs.map(r => Math.hypot(vis(r), halo(r))), col: C.teal, label: '보이는 물질 + 암흑 물질' }], { x0: 0, x1: 30, y0: 0, y1: 320, xl: '은하 중심에서 거리 (kpc)', yl: 'km/s', yd: 0 });
+        dot(K.g, P.X(8.2), P.Y(230), 4, C.pink); text(K.g, '태양 (8.2 kpc, 230 km/s)', P.X(8.2) + 5, P.Y(230) - 5, C.pink, 9);
+        R([['태양 위치 속도 (모형)', `${fmt(Math.hypot(vis(8.2), halo(8.2)), 0)} km/s`], ['보이는 물질만이라면', `${fmt(vis(8.2), 0)} km/s`]]); }; } },
+  { id: 'distladder', level: '교양', title: '우주 거리 사다리', tag: '한 계단씩 더 멀리',
+    eq: String.raw`\text{레이더} \to \text{시차} \to \text{세페이드} \to \text{Ia형 초신성} \to \text{허블 법칙}`,
+    body: `한 가지 방법으로 우주 끝까지 잴 수는 없습니다. 태양계는 레이더로, 가까운 별은 시차로, 그 거리로 밝기를 맞춘 세페이드 변광성(주기-광도 관계)으로 가까운 은하를, 세페이드로 맞춘 Ia형 초신성으로 먼 은하를, 그 너머는 허블 법칙으로 잽니다. 아래 계단마다 닿는 거리를 보세요.`,
+    deep: String.raw`헨리에타 레빗(1912)이 소마젤란은하의 세페이드에서 주기-광도 관계를 발견했습니다. Ia형 초신성은 백색왜성이 찬드라세카르 한계 부근에서 폭발해 최대 밝기가 거의 일정합니다(M ≈ −19.3). 각 계단의 오차가 다음 계단으로 전해지므로, 허블 상수 논쟁은 이 사다리의 보정 문제이기도 합니다.`,
+    widget(box) { const K = canvas(box, 340, 210), R = readout(box);
+      return () => { const g = K.g; clear(K); const X = (pc) => 70 + (Math.log10(pc) + 6) / 16 * (K.w - 80), rows = [['레이더', 1e-6, 1e-4], ['연주 시차', 1, 1e4], ['세페이드', 1e3, 4e7], ['Ia 초신성', 1e6, 3e9], ['허블 법칙', 1e7, 1.4e10]];
+        rows.forEach(([n, a, b], i) => { const y = 20 + i * 34; g.fillStyle = [C.blue, C.teal, C.amber, C.pink, '#c9d1e6'][i]; g.fillRect(X(a), y, X(b) - X(a), 18); text(g, n, 4, y + 13, C.text, 11); });
+        for (const [n, pc] of [['태양', 4.8e-6], ['프록시마', 1.3], ['은하 중심', 8200], ['안드로메다', 7.7e5], ['처녀자리 은하단', 1.65e7]]) { g.strokeStyle = C.grid; g.beginPath(); g.moveTo(X(pc), 14); g.lineTo(X(pc), 190); g.stroke(); text(g, n, X(pc), 204, C.mute, 9, 'center'); }
+        R([['가로축', '파섹 (로그 눈금, 10⁻⁶ ~ 10¹⁰)']]); }; } },
+];
+
+// ---- one check question per concept: number (with tolerance) or choice ----
+const QUIZ = {
+  coords: { q: '위도 37.5°인 서울에서 하늘의 북극(북극성 근처)은 지평선 위 몇 도에 있을까요?', a: 37.5, tol: 1, unit: '°', why: '천구 북극의 고도는 관측지의 위도와 같습니다.' },
+  eot: { q: '1년 중 균시차가 가장 큰 때는 약 몇 분일까요?', a: 16, tol: 1.5, unit: '분', why: '11월 초 약 +16.4분, 2월 중순 약 −14.2분입니다.' },
+  seasons: { q: '북반구에서 지구가 태양에 가장 가까운 때(근일점)는 언제일까요?', opts: ['1월 초', '4월 초', '7월 초', '10월 초'], a: 0, why: '근일점은 1월 3~4일 무렵입니다. 계절은 거리 때문이 아니라 자전축 기울기 때문입니다.' },
+  precession: { q: '약 1만 2천 년 뒤 북극 근처에 올 밝은 별은?', opts: ['시리우스', '베가', '카펠라', '아크투루스'], a: 1, why: '세차 운동으로 하늘의 북극이 거문고자리 베가 근처로 갑니다.' },
+  moonphase: { q: '월식이 일어날 수 있는 달의 위상은?', opts: ['삭', '상현', '망(보름)', '하현'], a: 2, why: '지구가 해와 달 사이에 있어야 하므로 보름달일 때만 일어납니다.' },
+  declination: { q: '서울의 자기 편각이 −9°(서편각)라면, 나침반 바늘이 가리키는 북쪽에서 진북은 어느 쪽으로 몇 도일까요?', opts: ['동쪽으로 9°', '서쪽으로 9°', '같다', '남쪽'], a: 0, why: '바늘이 진북보다 9° 서쪽을 가리키므로, 진북은 바늘에서 동쪽(시계 방향)으로 9°입니다.' },
+  paleomag: { q: '가장 최근의 지자기 역전(브뤼느-마쓰야마 경계)은 약 몇 만 년 전일까요?', a: 77, tol: 3, unit: '만 년 전', why: '약 77만 3천 년 전입니다.' },
+  tides: { q: '태양의 조석력은 달의 약 몇 %일까요?', a: 46, tol: 4, unit: '%', why: '태양은 훨씬 무겁지만 조석력이 거리의 세제곱에 반비례해 달의 약 46%입니다.' },
+  gravity: { q: '지구에서 반지름이 같고 질량이 2배인 행성의 표면 중력은 지구의 몇 배일까요?', a: 2, tol: 0.05, unit: '배', why: 'g = GM/r², 반지름이 같으면 질량에 비례합니다.' },
+  keplerlaws: { q: '긴반지름이 4 AU인 궤도의 공전 주기는 몇 년일까요?', a: 8, tol: 0.1, unit: '년', why: 'T² = a³ → T = √64 = 8년.' },
+  twobody: { q: '원 궤도 속도로 던진 것을 √2배 빠르게 던지면 궤도는?', opts: ['더 큰 원', '타원', '포물선 (탈출)', '떨어짐'], a: 2, why: '√2배는 탈출 속도라 포물선이 됩니다.' },
+  invariants: { q: '타원 궤도의 비에너지 ε가 −μ/(2a)일 때, 긴반지름이 2배가 되면 ε는?', opts: ['2배', '절반 (0에 가까워짐)', '그대로', '4배'], a: 1, why: 'ε ∝ −1/a 이므로 절반이 되어 0에 가까워집니다(덜 묶임).' },
+  visviva: { q: '1 AU에서 원 궤도 속도가 29.8 km/s일 때 탈출 속도는 약 몇 km/s일까요?', a: 42.1, tol: 0.5, unit: 'km/s', why: 'v_esc = √2 × 29.8 ≈ 42.1 km/s.' },
+  kepler: { q: '이심률이 0이면 E와 M의 관계는?', opts: ['E = M', 'E = 2M', 'E = M/2', 'E = 0'], a: 0, why: 'e = 0이면 M = E − 0이므로 같습니다(원 궤도에서는 고르게 움직임).' },
+  elements: { q: '경사각 i가 90°보다 큰 궤도는?', opts: ['순행 궤도', '역행 궤도', '적도 궤도', '극궤도'], a: 1, why: '90°를 넘으면 자전 방향과 반대로 도는 역행 궤도입니다. 태양동기 궤도(약 98°)가 그 예입니다.' },
+  rocket: { q: 'I_sp 300초인 로켓의 질량비가 e(약 2.72)일 때 Δv는 약 몇 km/s일까요?', a: 2.94, tol: 0.1, unit: 'km/s', why: 'Δv = I_sp g₀ ln(e) = 300 × 9.81 ≈ 2.94 km/s.' },
+  hohmann: { q: '호만 전이는 분사를 몇 번 할까요?', a: 2, tol: 0, unit: '번', why: '출발 궤도에서 한 번, 도착 궤도에서 한 번입니다.' },
+  plane: { q: '7.8 km/s로 도는 위성이 궤도면을 60° 바꾸려면 Δv는 몇 km/s일까요?', a: 7.8, tol: 0.2, unit: 'km/s', why: '2v sin(30°) = v = 7.8 km/s. 새로 발사하는 것과 비슷합니다.' },
+  oberth: { q: '같은 Δv라면 어디서 분사해야 에너지를 가장 많이 얻을까요?', opts: ['원일점', '근일점', '어디서나 같다', '궤도 밖'], a: 1, why: '가장 빠를 때(근일점) 분사해야 v·Δv가 커집니다.' },
+  soi: { q: '달은 지구의 영향권(약 92만 km) 안에 있을까요?', opts: ['안에 있다', '밖에 있다'], a: 0, why: '달까지 38만 km라 영향권 안이므로 지구 중심으로 계산해도 됩니다.' },
+  flyby: { q: '플라이바이에서 행성 기준 속력 v∞는 들어올 때와 나갈 때 어떻게 될까요?', opts: ['커진다', '작아진다', '같다'], a: 2, why: '행성 기준으로는 에너지 보존이라 같고, 방향만 바뀝니다. 태양 기준 속도가 바뀝니다.' },
+  lambert: { q: '램버트 문제에서 주어지는 것이 아닌 것은?', opts: ['출발 위치', '도착 위치', '비행 시간', '출발 속도'], a: 3, why: '출발 속도는 구하려는 답입니다.' },
+  j2: { q: '태양동기 궤도의 경사각은 대략?', opts: ['약 28°', '약 63°', '약 98°', '0°'], a: 2, why: '저궤도에서 약 97~99°의 역행 궤도여야 궤도면이 1년에 한 바퀴 돕니다.' },
+  cr3bp: { q: '안정한 라그랑주점은?', opts: ['L1과 L2', 'L3', 'L4와 L5', '모두'], a: 2, why: 'L4, L5는 질량비가 충분히 작으면 안정합니다(트로이 소행성).' },
+  cw: { q: '정거장 바로 뒤에서 정거장 쪽(앞)으로 밀면 우주선은 처음에 어떻게 움직일까요?', opts: ['곧장 다가간다', '위로 떠오르며 뒤처진다', '아래로 떨어진다', '멈춘다'], a: 1, why: '속도가 늘면 궤도가 커져(높아져) 결국 더 느리게 돌아 뒤처집니다.' },
+  roche: { q: '토성 고리가 위성으로 뭉치지 못한 가장 큰 이유는?', opts: ['너무 차가워서', '로슈 한계 안에 있어서', '태양풍 때문에', '너무 가벼워서'], a: 1, why: '조석력이 자기 중력보다 커서 뭉치지 못합니다.' },
+  moon: { q: '달은 지금 해마다 지구에서 몇 cm씩 멀어질까요?', a: 3.8, tol: 0.3, unit: 'cm', why: '달 레이저 반사 측정으로 약 3.82 cm/년.' },
+  teq: { q: '반사율 0.3인 지구의 평형 온도는 약 몇 °C일까요?', a: -18, tol: 3, unit: '°C', why: '약 255 K = −18 °C. 실제 평균 15 °C와의 차이가 온실 효과입니다.' },
+  hz: { q: '밝기가 태양의 4배인 별의 생명 가능 지대 거리는 태양의 몇 배일까요?', a: 2, tol: 0.05, unit: '배', why: '거리는 √L에 비례하므로 √4 = 2배.' },
+  blackbody: { q: '표면 온도 5,800 K인 별의 가장 센 빛의 파장은 약 몇 nm일까요?', a: 500, tol: 15, unit: 'nm', why: '2898 μm·K / 5800 K ≈ 0.50 μm = 500 nm.' },
+  magnitude: { q: '5등급 차이는 밝기로 몇 배일까요?', a: 100, tol: 1, unit: '배', why: '포그슨의 정의로 정확히 100배입니다.' },
+  parallax: { q: '연주 시차가 0.1초각인 별까지 거리는 몇 파섹일까요?', a: 10, tol: 0.1, unit: 'pc', why: 'd = 1/p = 10 pc.' },
+  doppler: { q: '656.3 nm의 Hα선이 657.0 nm로 보였다면 별은?', opts: ['다가온다', '멀어진다', '정지'], a: 1, why: '긴 파장으로 밀렸으니(적색편이) 멀어지는 중이며 약 320 km/s입니다.' },
+  transit: { q: '목성 크기(태양 반지름의 1/10) 행성이 태양 같은 별을 가리면 몇 % 어두워질까요?', a: 1, tol: 0.1, unit: '%', why: '(1/10)² = 1%.' },
+  atmos: { q: '달에 대기가 거의 없는 주된 이유는?', opts: ['너무 차가워서', '탈출 속도가 작아서', '자기장이 강해서', '너무 멀어서'], a: 1, why: '탈출 속도가 2.4 km/s로 작아 기체 분자가 쉽게 빠져나갑니다.' },
+  impact: { q: '같은 크기의 소행성이 2배 빨리 부딪히면 에너지는 몇 배일까요?', a: 4, tol: 0.05, unit: '배', why: 'E = ½mv²이므로 4배.' },
+  sun: { q: '태양 핵융합에서 수소 질량의 몇 %가 에너지로 바뀔까요?', a: 0.7, tol: 0.1, unit: '%', why: '수소 4개 → 헬륨 1개에서 약 0.7%의 질량이 사라집니다.' },
+  starbirth: { q: '분자구름이 더 차가워지면 진스 질량은?', opts: ['커진다', '작아진다', '그대로'], a: 1, why: 'M_J ∝ T^{3/2}이라 차가울수록 작은 덩어리도 무너집니다.' },
+  stellar: { q: '태양보다 10배 무거운 별의 주계열 수명은 태양의 약 몇 분의 1일까요?', a: 316, tol: 30, unit: '분의 1', why: 't ∝ M^−2.5 → 10^2.5 ≈ 316분의 1(약 3천만 년).' },
+  nucleo: { q: '핵융합으로 에너지를 낼 수 있는 가장 무거운 쪽 원소는?', opts: ['탄소', '산소', '철', '우라늄'], a: 2, why: '철 근처에서 핵자당 결합 에너지가 가장 크기 때문입니다.' },
+  remnants: { q: '태양 질량 블랙홀의 사건의 지평선 반지름은 약 몇 km일까요?', a: 3, tol: 0.1, unit: 'km', why: 'r_s = 2GM/c² ≈ 2.95 km.' },
+  hubble: { q: 'H₀ = 70 km/s/Mpc일 때 200 Mpc 떨어진 은하의 후퇴 속도는 몇 km/s일까요?', a: 14000, tol: 100, unit: 'km/s', why: 'v = 70 × 200 = 14,000 km/s.' },
+  distladder: { q: '안드로메다 은하까지 거리를 재는 데 쓰는 계단은?', opts: ['레이더', '연주 시차', '세페이드 변광성', '허블 법칙'], a: 2, why: '77만 pc는 시차로는 너무 멀고 허블 법칙으로는 너무 가까워, 세페이드를 씁니다(허블, 1924).' },
+  darkmatter: { q: '평평한 회전 곡선은 은하의 질량 분포가 어떻다는 뜻일까요?', opts: ['중심에 몰려 있다', '바깥까지 질량이 계속 늘어난다', '질량이 없다'], a: 1, why: 'v가 일정하면 M(<r) ∝ r로 바깥까지 보이지 않는 질량이 늘어납니다.' },
+  cmb: { q: '우주 배경 복사가 나올 때(z ≈ 1,100) 온도는 약 몇 K일까요?', a: 3000, tol: 100, unit: 'K', why: '2.7255 × 1,101 ≈ 3,000 K.' },
+  galaxy: { q: '우주의 별 생성이 가장 활발했던 때는 약 몇십억 년 전일까요?', a: 10, tol: 1, unit: '십억 년 전', why: '적색편이 약 2(우주 나이 약 33억 년), 즉 약 100억 년 전입니다.' },
+};
 
 // ---- textbook UI: chapters in order, prerequisite and follow-up links on every card ----
-const ALL = [...CARDS, ...SCIENCE, ...MORE], BYID = Object.fromEntries(ALL.map(c => [c.id, c]));
+const ALL = [...CARDS, ...SCIENCE, ...MORE, ...EXTRA], BYID = Object.fromEntries(ALL.map(c => [c.id, c]));
 const NUM = {}; CHAPTERS.forEach((ch, i) => ch.ids.forEach((id, j) => { NUM[id] = `${i + 1}.${j + 1}`; }));
 const NEXT = {}; for (const [id, pre] of Object.entries(PRE)) for (const q of pre) (NEXT[q] ||= []).push(id);
 const chip = (id) => { const c = BYID[id]; const b = el('button', 'cc-chip', `${NUM[id] || ''} ${c.title}`); b.onclick = () => openCard(c); return b; };
-const SEEN_KEY = 'space-commons-cards-seen';
+const SEEN_KEY = 'space-commons-cards-seen', OK_KEY = 'space-commons-cards-correct';
+const solved = () => { try { return new Set(JSON.parse(localStorage.getItem(OK_KEY)) || []); } catch { return new Set(); } };
+function markSolved(id) { try { const s2 = solved(); s2.add(id); localStorage.setItem(OK_KEY, JSON.stringify([...s2])); } catch {} }
+function quizBox(id) {
+  const Q = QUIZ[id], box = el('div', 'cc-quiz'), fb = el('div', 'cc-fb'); box.append(el('b', '', '확인 문제'), el('p', '', Q.q));
+  const done = (ok, extra = '') => { fb.className = 'cc-fb ' + (ok ? 'ok' : 'no'); fb.innerHTML = `${ok ? '정답입니다.' : '다시 생각해 보세요.' + extra} ${ok ? Q.why : ''}`; if (ok) markSolved(id); };
+  if (Q.opts) { const row = el('div', 'cc-opts'); Q.opts.forEach((o, k) => { const b = el('button', '', o); b.onclick = () => done(k === Q.a); row.append(b); }); box.append(row); }
+  else { const row = el('div', 'cc-opts'), inp = el('input'); inp.type = 'number'; inp.step = 'any'; const go = el('button', '', '확인'); go.onclick = () => { const v = parseFloat(inp.value); done(Math.abs(v - Q.a) <= (Q.tol || Math.abs(Q.a) * 0.03)); };
+    inp.onkeydown = (e) => { if (e.key === 'Enter') go.click(); }; row.append(inp, el('span', '', Q.unit || ''), go); box.append(row); }
+  const show = el('button', 'cc-show', '풀이 보기'); show.onclick = () => { fb.className = 'cc-fb'; fb.innerHTML = `답: ${Q.opts ? Q.opts[Q.a] : Q.a + ' ' + (Q.unit || '')}. ${Q.why}`; }; box.append(fb, show);
+  if (solved().has(id)) { fb.className = 'cc-fb ok'; fb.textContent = '이미 맞힌 문제입니다.'; } return box;
+}
 const seen = () => { try { return new Set(JSON.parse(localStorage.getItem(SEEN_KEY)) || []); } catch { return new Set(); } };
 function markSeen(id) { try { const s2 = seen(); s2.add(id); localStorage.setItem(SEEN_KEY, JSON.stringify([...s2])); } catch {} }
 function openCard(card) {
@@ -511,6 +691,7 @@ function openCard(card) {
   if (PRE[card.id]?.length) { const r = el('div', 'cc-links'); r.append(el('span', '', '먼저 볼 것'), ...PRE[card.id].map(chip)); left.append(r); }
   left.append(el('div', 'cc-eq', `<span class="tex block">${card.eq}</span>`), el('p', '', card.body));
   const d = el('details', 'cc-deep'); d.append(el('summary', '', '전공 심화: 유도와 실제'), el('div', '', card.deep)); left.append(d);
+  if (QUIZ[card.id]) left.append(quizBox(card.id));
   if (card.lab && opts.openLab) left.append(Object.assign(el('button', 'cc-lab', '샌드박스에서 해 보기'), { onclick: () => { close(); opts.openLab(card.lab); } }));
   if (NEXT[card.id]?.length) { const r = el('div', 'cc-links'); r.append(el('span', '', '이어서 볼 것'), ...NEXT[card.id].map(chip)); left.append(r); }
   const order = CHAPTERS.flatMap(c => c.ids), k = order.indexOf(card.id), nav = el('div', 'cc-nav');
@@ -522,10 +703,12 @@ function openCard(card) {
 let anim = 0;
 function renderToc() {
   const grid = root.querySelector('.cc-grid'), sn = seen(); grid.innerHTML = '';
-  for (const ch of CHAPTERS) { grid.append(el('h3', 'cc-ch', `${ch.title} <span>${ch.ids.filter(id => sn.has(id)).length}/${ch.ids.length}</span>`)); const row = el('div', 'cc-row');
+  const ok = solved(); grid.append(el('div', 'cc-progress', `읽은 개념 ${ALL.filter(c => sn.has(c.id)).length}/${ALL.length} · 맞힌 확인 문제 ${ALL.filter(c => ok.has(c.id)).length}/${Object.keys(QUIZ).length}`));
+  for (const ch of CHAPTERS) { grid.append(el('h3', 'cc-ch', `${ch.title} <span>${ch.ids.filter(id => sn.has(id)).length}/${ch.ids.length} 읽음 · ${ch.ids.filter(id => ok.has(id)).length} 맞힘</span>`), el('div', 'cc-intro', ch.intro || '')); const row = el('div', 'cc-row');
     for (const id of ch.ids) { const c = BYID[id], b = el('button', 'cc-card' + (sn.has(id) ? ' seen' : ''));
       b.append(el('span', 'cc-num', NUM[id]), el('span', 'cc-level ' + c.level, c.level), el('b', '', c.title), el('span', 'cc-tag', c.tag), el('span', 'cc-mini', `<span class="tex">${c.eq}</span>`));
-      if (PRE[id]?.length) b.append(el('span', 'cc-pre', '먼저: ' + PRE[id].map(q => NUM[q]).join(', ')));
+      if (PRE[id]?.length) b.append(el('span', 'cc-pre', '먼저: ' + PRE[id].map(q => NUM[q]).join(', ') + (ok.has(id) ? ' · 문제 맞힘 ✓' : '')));
+      else if (ok.has(id)) b.append(el('span', 'cc-pre', '문제 맞힘 ✓'));
       b.onclick = () => openCard(c); row.append(b); }
     grid.append(row); }
   renderTex(grid);
