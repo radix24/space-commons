@@ -288,8 +288,8 @@ const gridGroup = new THREE.Group(); gridGroup.visible = false; sky.add(gridGrou
   for (let ra = 0; ra < 360; ra += 15) for (let dec = -88; dec < 88; dec += 2) {
     const a = eqVec(ra, dec, R_SKY), b = eqVec(ra, dec + 2, R_SKY); pts.push(a.x, a.y, a.z, b.x, b.y, b.z); }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-  const l = new THREE.LineSegments(g, skyLineMat(0x2a5560, 0.5));
-  l.frustumCulled = false; gridGroup.add(l);
+  const l = new THREE.LineSegments(g, skyLineMat(0x5aa7c0, 0.42));
+  l.frustumCulled = false; l.renderOrder = 1; gridGroup.add(l);
 })();
 
 // ---------- NGC / IC deep-sky objects (OpenNGC) ----------
@@ -1659,7 +1659,7 @@ function fmtDist(mkm) {
 function setMode(space) {
   if (mode.space === space) return;
   mode.space = space; document.body.classList.toggle('space', space);
-  document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('on', (b.dataset.mode === 'space') === space));
+  document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('on', b.dataset.mode === (space ? 'space' : 'ground')));
   flight = null; tracking = null; showPhoto(null); select(null);
   orbits.visible = space && $('t-orbits').checked;
   if (space) {
@@ -2787,6 +2787,9 @@ function drawLabels() {
   }
   if (mode.space) starLabels();
   if (anaGroup.visible && anaGroup.userData.marks) for (const [w, m] of anaGroup.userData.marks) { const sc = toScreen(w.clone().normalize()); if (sc && w.clone().normalize().dot(camFwd()) > 0) label(sc[0], sc[1], `${m}월`, 'planet'); }
+  if (gridGroup.visible && !mode.space) { const fwd = camFwd(), lim = Math.cos(Math.min(85, view.fov * 0.7) * D2R);
+    for (let h = 0; h < 24; h += view.fov > 60 ? 2 : 1) { const w = eqVec(h * 15, 0).applyMatrix4(sky.matrixWorld); if (w.dot(fwd) < lim || (gOn && w.y < 0)) continue; const sc = toScreen(w); if (sc) label(sc[0], sc[1], `${h}h`, 'grid'); }
+    for (const ra0 of [0, 90, 180, 270]) for (let d = -60; d <= 80; d += 20) { if (!d) continue; const w = eqVec(ra0, d).applyMatrix4(sky.matrixWorld); if (w.dot(fwd) < lim || (gOn && w.y < 0)) continue; const sc = toScreen(w); if (sc) label(sc[0], sc[1], `${d > 0 ? '+' : ''}${d}°`, 'grid'); } }
   if (gOn) for (const c of cardinals) { const s = toScreen(c.w); if (s && c.w.dot(camFwd()) > 0) label(s[0], s[1], c.name, 'card'); }
   for (let i = used; i < pool.length; i++) pool[i].style.display = 'none';
   const ring = $('sel-ring');

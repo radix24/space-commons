@@ -339,3 +339,15 @@ input[type=number], input[type=date], input[type=datetime-local] { font-family: 
 .sb-level { margin: 8px 0 2px; font: 700 11.5px var(--mono); color: var(--orbit); }
 #status { flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* a long message must not wrap into a tall column and push the top bar down */
 @media (min-width: 641px) { #topbar { max-height: 44px; } } /* never let the top bar grow into the sky and swallow drags */
+
+.lbl.grid { color: #7fc4d8; font: 10px var(--mono); opacity: .8; }
+/* narrow screens: the top bar scrolls sideways instead of hiding its right end */
+@media (max-width: 900px) {
+  #topbar { flex-wrap: nowrap !important; overflow-x: auto; overflow-y: hidden; pointer-events: auto; max-height: none; padding-bottom: 6px; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+  #topbar > * { flex: none; } #topbar #status { display: none; } #search { width: 46vw; }
+}
+@media (max-width: 900px) { #topbar { scrollbar-width: none; } #topbar::-webkit-scrollbar { display: none; } } /* swipe sideways, no visible bar */
+.cc-explain { margin: 6px 0 12px; padding: 10px 12px; border-left: 3px solid #5aa7c0; background: rgba(90,167,192,.08); border-radius: 4px; }
+.cc-explain > b { display: block; margin-bottom: 6px; font-size: 13px; color: #8fd0e4; }
+.cc-explain .cc-sym { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; font-size: 13px; margin-bottom: 8px; align-items: baseline; }
+.cc-explain p { margin: 4px 0 0; font-size: 13px; line-height: 1.6; }
