@@ -7,6 +7,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { buildCraft } from './craft.js';
 import { moonMeeus } from './moon.js';
 import { BODY_INFO } from './bodyinfo.js';
+import { BODY_INFO_EN } from './bodyinfo-en.js';
 import { SHOWERS, TOURS, MOON_STATES, FLYBY_INFO, ECLIPSES, JOURNEYS } from './content.js';
 import { KR_SATS, ORBITERS, SITES } from './content-missions.js';
 
@@ -267,7 +268,7 @@ async function loadLines() {
       pts.push(a.x, a.y, a.z, b.x, b.y, b.z);
     }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-  const l = new THREE.LineSegments(g, skyLineMat(0x3a5a92, 0.55));
+  const l = new THREE.LineSegments(g, skyLineMat(0x6d93d6, 0.6));
   l.frustumCulled = false; l.renderOrder = 1; linesGroup.add(l);
   if (cj) for (const f of cj.features) {
     let [ra, dec] = f.geometry.coordinates; if (ra < 0) ra += 360;
@@ -664,8 +665,15 @@ const PLANETS = [
   { name: 'Callisto', img: 'textures/2k_callisto.jpg', ko: '칼리스토', parent: 'Jupiter', R: 2410, pole: [268.06, 64.5], tex: () => rocky('#5e554b', ['#3b342d', '#a59c8f'], 53, 400), period: 16.689 },
   { name: 'Ceres', img: 'textures/2k_ceres.jpg', ko: '세레스', R: 470, pole: [291.4, 66.8], period: 0.378, small: '왜행성',
     sb: { epoch: 2461200.5, a: 2.765552595034094, e: .07969229514816586, i: 10.58802780183462, om: 80.24862682043221, w: 73.29421453021587, ma: 274.4193463761342, n: .21430445064843 } },
-  { name: 'Vesta', img: 'textures/2k_vesta.jpg', ko: '베스타', R: 263, pole: [309, 42], period: 0.223, small: '소행성', tex: () => rocky('#8f8a80', ['#5f5a52', '#b8b2a6'], 61, 200),
+  { name: 'Vesta', shape: 'models/shape-vesta.glb', img: 'textures/2k_vesta.jpg', ko: '베스타', R: 263, pole: [309, 42], period: 0.223, small: '소행성', tex: () => rocky('#8f8a80', ['#5f5a52', '#b8b2a6'], 61, 200),
     sb: { epoch: 2461200.5, a: 2.361365965127599, e: .09020374382834395, i: 7.143925545058711, om: 103.701293265032, w: 151.4686478221564, ma: 81.19015607686903, n: .2716183613599909 } },
+  // real shapes (NASA 3D Resources, public domain) replace the sphere up close; orbits: JPL SBDB
+  { name: 'Bennu', shape: 'models/shape-bennu.glb', ko: '베누', R: 0.245, pole: [85.65, -60.17], period: 0.1788, small: '근지구 소행성', tex: () => rocky('#5a5650', ['#3a3732', '#7a756c'], 31, 80),
+    sb: { epoch: 2455562.5, a: 1.126391025894812, e: .2037450762416414, i: 6.03494377024794, om: 2.06086619569642, w: 66.22306084084298, ma: 101.703952002457, n: .8244613503320309 } },
+  { name: 'Eros', shape: 'models/shape-eros.glb', ko: '에로스', R: 8.4, pole: [11.35, 17.22], period: 0.2196, small: '근지구 소행성', tex: () => rocky('#9a8a72', ['#6a5c48', '#b8a88e'], 37, 120),
+    sb: { epoch: 2461200.5, a: 1.458243716760167, e: .2228779627700761, i: 10.82854410314273, om: 304.2679713350896, w: 178.9181319135911, ma: 62.51145501986792, n: .5597046347038453 } },
+  { name: 'Arrokoth', shape: 'models/shape-arrokoth.glb', ko: '아로코스', R: 9, pole: [317.5, -24.9], period: 0.6633, small: '카이퍼대 천체', tex: () => rocky('#8a4a36', ['#5a2c20', '#b0705a'], 41, 90),
+    sb: { epoch: 2461200.5, a: 44.05257835991367, e: .03555717645015258, i: 2.450613924655929, om: 159.0377267890618, w: 188.8507463365642, ma: 310.9839309924138, n: .003370909362685521 } },
   { name: 'Pluto', img: 'textures/2k_pluto.jpg', ko: '명왕성', R: 1188, pole: [132.99, -6.16], period: -6.387, small: '왜행성', tex: () => rocky('#c9a982', ['#6b4a35', '#efe2cf', '#8a6a52'], 67),
     sb: { epoch: 2457588.5, a: 39.58862938517124, e: .2518378778576892, i: 17.14771140999114, om: 110.2923840543057, w: 113.7090015158565, ma: 38.68366347318184, n: .003956838955553025 } },
   { name: 'Eris', ko: '에리스', img: 'textures/2k_eris_fictional.jpg', R: 1163, pole: [0, 90], period: 15.8, small: '왜행성',
@@ -684,10 +692,10 @@ const KM_AU = 149597870.7;
 const eclU = { on: { value: 0 }, shadowDir: { value: new THREE.Vector3(0, 0, 1) }, umbR: { value: 0.012 }, penR: { value: 0.022 } };
 const planetMat = (tex, emissive) => new THREE.ShaderMaterial({
   uniforms: { ...eclU, isMoon: { value: 0 }, occ: { value: [0, 1, 2, 3].map(() => new THREE.Vector4()) }, occN: { value: 0 }, sunAng: { value: 0.005 },
-    ringOn: { value: 0 }, ringN: { value: new THREE.Vector3(0, 1, 0) }, ringC: { value: new THREE.Vector3() }, ringR: { value: 1 }, ringMap: { value: null }, map: { value: tex }, ambient: { value: 0.025 }, night: { value: null }, hasNight: { value: 0 }, skyK: { value: 0 }, sunDir: { value: new THREE.Vector3(1, 0, 0) }, emissive: { value: emissive ? 1 : 0 }, bump: { value: null }, hasBump: { value: 0 }, bumpK: { value: 0 } },
+    ringOn: { value: 0 }, ringN: { value: new THREE.Vector3(0, 1, 0) }, ringC: { value: new THREE.Vector3() }, ringR: { value: 1 }, ringMap: { value: null }, map: { value: tex }, ambient: { value: 0.025 }, night: { value: null }, hasNight: { value: 0 }, skyK: { value: 0 }, sunDir: { value: new THREE.Vector3(1, 0, 0) }, emissive: { value: emissive ? 1 : 0 }, bump: { value: null }, hasBump: { value: 0 }, bumpK: { value: 0 }, detail: { value: 0 } },
   vertexShader: `#include <common>
     #include <logdepthbuf_pars_vertex>
-    varying vec2 vUv; varying vec3 vN; varying vec3 vW; varying vec3 vPole; void main(){ vUv = uv; vN = normalize(mat3(modelMatrix) * normal); vW = (modelMatrix * vec4(position, 1.0)).xyz; vPole = mat3(modelMatrix) * vec3(0.0, 1.0, 0.0);
+    varying vec2 vUv; varying vec3 vN; varying vec3 vW; varying vec3 vPole; varying vec3 vO; void main(){ vUv = uv; vO = position; vN = normalize(mat3(modelMatrix) * normal); vW = (modelMatrix * vec4(position, 1.0)).xyz; vPole = mat3(modelMatrix) * vec3(0.0, 1.0, 0.0);
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
     #include <logdepthbuf_vertex>
     }`,
@@ -695,6 +703,12 @@ const planetMat = (tex, emissive) => new THREE.ShaderMaterial({
     uniform vec4 occ[4]; uniform int occN; uniform float sunAng; uniform float ringOn, ringR; uniform vec3 ringN, ringC; uniform sampler2D ringMap;
     uniform sampler2D map, night; uniform float skyK; uniform float hasNight, ambient, on, umbR, penR, isMoon; uniform vec3 shadowDir; varying vec3 vW; uniform vec3 sunDir; uniform float emissive; varying vec2 vUv; varying vec3 vN;
     uniform sampler2D bump; uniform float hasBump, bumpK; varying vec3 vPole;
+    uniform float detail; varying vec3 vO; uniform mat4 modelMatrix;
+    float h3(vec3 p){ return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
+    float vn3(vec3 p){ vec3 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+      return mix(mix(mix(h3(i), h3(i + vec3(1,0,0)), f.x), mix(h3(i + vec3(0,1,0)), h3(i + vec3(1,1,0)), f.x), f.y),
+                 mix(mix(h3(i + vec3(0,0,1)), h3(i + vec3(1,0,1)), f.x), mix(h3(i + vec3(0,1,1)), h3(i + vec3(1,1,1)), f.x), f.y), f.z); }
+    float rel(vec3 q){ return vn3(q) * 0.5 + vn3(q * 2.7) * 0.3 + vn3(q * 7.3) * 0.2; }
     void main(){
       #include <logdepthbuf_fragment>
       vec3 n = normalize(vN);
@@ -703,8 +717,13 @@ const planetMat = (tex, emissive) => new THREE.ShaderMaterial({
         float hx = texture2D(bump, vUv + vec2(1.0 / 4096.0, 0.0)).r - texture2D(bump, vUv - vec2(1.0 / 4096.0, 0.0)).r;
         float hy = texture2D(bump, vUv + vec2(0.0, 1.0 / 2048.0)).r - texture2D(bump, vUv - vec2(0.0, 1.0 / 2048.0)).r;
         n = normalize(n - bumpK * (hx / (2.0 * 6.2831853 / 4096.0 * cl) * e + hy / (2.0 * 3.1415927 / 2048.0) * no)); }
+      float dh = 0.5;
+      if (detail > 0.0) { // close to the ground: relief and albedo variation finer than the map, fading in with altitude
+        vec3 q = normalize(vO) * 900.0; dh = rel(q); float e = 0.35;
+        vec3 gr = vec3(rel(q + vec3(e, 0, 0)) - dh, rel(q + vec3(0, e, 0)) - dh, rel(q + vec3(0, 0, e)) - dh) / e;
+        vec3 gw = normalize(mat3(modelMatrix) * gr); n = normalize(n - detail * 0.35 * (gw - n * dot(gw, n))); }
       float ndl = dot(n, sunDir);
-      vec3 c = texture2D(map, vUv).rgb; float l = emissive > 0.5 ? 1.2 : max(ndl, 0.0) * 1.15 + ambient;
+      vec3 c = texture2D(map, vUv).rgb * (1.0 + (dh - 0.5) * 0.4 * detail); float l = emissive > 0.5 ? 1.2 : max(ndl, 0.0) * 1.15 + ambient;
       // the Sun map is a filtered (orange) image; to the eye the photosphere is near-white, keep only a hint of granulation
       if (emissive > 0.5) { c = mix(vec3(1.0, 0.97, 0.9), c, 0.18); l = 1.25; }
       vec3 col = c * l;
@@ -816,6 +835,14 @@ for (const p of PLANETS) {
       g.addColorStop(0, 'rgba(255,252,240,1)'); g.addColorStop(.2, 'rgba(255,244,220,.45)'); g.addColorStop(1, 'rgba(255,236,200,0)'); c.fillStyle = g; c.fillRect(0, 0, w, h); }),
       blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
     glow.scale.setScalar(8); p.mesh.add(glow); p.glow = glow;
+    // the corona, seen only in totality: a pearly glow with streamers, longest near the solar equator
+    const corona = new THREE.Sprite(new THREE.SpriteMaterial({ map: noiseTex(512, 512, (c, w, h) => { const x = c.getContext ? c : c, cx = w / 2, R0 = w * 0.085;
+      for (let i = 0; i < 260; i++) { const a = Math.random() * Math.PI * 2, eq = Math.pow(Math.abs(Math.cos(a)), 0.6), L = R0 * (1.4 + Math.random() * (1.5 + 3.2 * eq));
+        const g = c.createLinearGradient(cx + Math.cos(a) * R0, cx + Math.sin(a) * R0, cx + Math.cos(a) * L, cx + Math.sin(a) * L); g.addColorStop(0, 'rgba(255,250,240,.07)'); g.addColorStop(1, 'rgba(255,250,240,0)');
+        c.strokeStyle = g; c.lineWidth = 1 + Math.random() * 3; c.beginPath(); c.moveTo(cx + Math.cos(a) * R0, cx + Math.sin(a) * R0); c.lineTo(cx + Math.cos(a) * L, cx + Math.sin(a) * L); c.stroke(); }
+      const g = c.createRadialGradient(cx, cx, R0 * 0.95, cx, cx, R0 * 3); g.addColorStop(0, 'rgba(255,252,245,.85)'); g.addColorStop(.12, 'rgba(255,250,240,.32)'); g.addColorStop(1, 'rgba(255,250,240,0)'); c.fillStyle = g; c.fillRect(0, 0, w, h); }),
+      blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0 }));
+    corona.scale.setScalar(1 / 0.085); corona.renderOrder = -1; p.mesh.add(corona); p.corona = corona;
   }
   planetGroup.add(p.mesh);
 }
@@ -1018,6 +1045,17 @@ function swapModel(model, obj) {
   ps.forEach((p, i) => { p.mesh.clear(); p.mesh.add(i ? obj.clone(true) : obj); });
 }
 const gltfLoader = new GLTFLoader(); // NASA's .glb files are Draco-compressed
+// a real shape model (NASA 3D Resources) for a small body: scaled so its mean radius matches R, then the sphere is hidden
+function loadShape(p) {
+  p.shapeState = 'loading';
+  gltfLoader.load(p.shape, (g) => {
+    const m = g.scene; let sum = 0, n = 0; const v = new THREE.Vector3(), box = new THREE.Box3().setFromObject(m), c0 = box.getCenter(new THREE.Vector3());
+    m.traverse((o) => { if (o.isMesh) { const a = o.geometry.attributes.position; for (let i = 0; i < a.count; i += 7) { v.fromBufferAttribute(a, i).applyMatrix4(o.matrixWorld).sub(c0); sum += v.length(); n++; }
+      o.material = new THREE.MeshStandardMaterial({ color: 0x9a9286, roughness: 0.95, metalness: 0, map: o.material.map || null }); } });
+    const k = n ? 1 / (sum / n) : 1; m.position.copy(c0).multiplyScalar(-k); const wrap = new THREE.Group(); m.scale.setScalar(k); m.position.multiplyScalar(1); wrap.add(m);
+    p.mesh.add(wrap); p.mesh.material.visible = false; p.shapeState = 'ok';
+  }, undefined, () => { p.shapeState = 'failed'; });
+}
 // detailed models, fetched only when you fly close (NASA 3D Resources, NASA Science, ESA SciFleet; converted by tools/convert-models.html)
 const HD_MODELS = { juno: ['models/juno-hd.glb'] };
 const HD_BY_NAME = { 'Solar Orbiter': 'solar-orbiter', BepiColombo: 'bepicolombo', Juice: 'juice', 'Europa Clipper': 'europa-clipper',
@@ -1150,7 +1188,7 @@ function placeProbe(p, rel, earthRel, sunRel, minScale) { // rel: camera->probe 
 // Absolute magnitudes H (V band). Planets: Mallama & Hilton 2018, simplified to a linear phase term; moons and small bodies: JPL.
 const HMAG = { Mercury: [-0.6, 0.038], Venus: [-4.4, 0.012], Mars: [-1.6, 0.016], Jupiter: [-9.4, 0.005], Saturn: [-8.9, 0.044], Uranus: [-7.1, 0.002], Neptune: [-7.0, 0.0],
   Moon: [0.21, 0.026], Io: [-1.7, 0.02], Europa: [-1.4, 0.02], Ganymede: [-2.1, 0.02], Callisto: [-1.1, 0.02], Titan: [-1.2, 0.02],
-  Ceres: [3.33, 0.03], Vesta: [3.2, 0.03], Pluto: [-0.4, 0.04], Eris: [-1.1, 0.0], Haumea: [0.2, 0.0], Makemake: [-0.2, 0.0] };
+  Ceres: [3.33, 0.03], Vesta: [3.2, 0.03], Pluto: [-0.4, 0.04], Eris: [-1.1, 0.0], Haumea: [0.2, 0.0], Makemake: [-0.2, 0.0], Bennu: [20.2, 0.03], Eros: [10.4, 0.03], Arrokoth: [11.1, 0.0] };
 function apparentMag(p, r, delta, alphaDeg) { // r: Sun distance, delta: observer distance (AU)
   if (p.name === 'Sun') return -26.74 + 5 * Math.log10(delta);
   if (p.name === 'Halley') return 5.5 + 5 * Math.log10(delta) + 10 * Math.log10(r); // total (coma) magnitude, comet law
@@ -1223,7 +1261,7 @@ function updatePlanets() {
     const R = R_PLANET * (p.name === 'Moon' ? 0.9 : p.name === 'Sun' ? 0.95 : 1); // keep Moon in front of Sun for eclipses
     p.world = world;
     p.phase = (1 + sunEq.dot(p.eq.clone().negate())) / 2; // illuminated fraction
-    if (p.name === 'Moon') p.mesh.material.uniforms.ambient.value = 0.02 + 0.09 * (1 - p.phase); // earthshine: strongest at thin crescent
+    if (p.name === 'Moon') p.mesh.material.uniforms.ambient.value = (0.02 + 0.09 * (1 - p.phase)) * Math.min(1, Math.max(0.08, (Math.acos(Math.min(1, sunEq.dot(p.eq.clone().normalize()))) * R2D - 0.6) / 3)); // earthshine: strongest at thin crescent
     p.mag = apparentMag(p, geo.Sun.clone().sub(g).length(), dist, Math.acos(Math.max(-1, Math.min(1, sunEq.dot(p.eq.clone().negate())))) * R2D);
     p.mesh.position.copy(world); if (atmoU.refractOn.value) refractVec(p.mesh.position); p.mesh.position.multiplyScalar(R);
     p.mesh.scale.setScalar(R * Math.tan(Math.max(p.angR, minAng)));
@@ -1481,7 +1519,7 @@ function select(o) {
   let ra, dec;
   if (o.planet && o.p.probe) {
     const p = o.p; ra = p.ra; dec = p.dec;
-    $('info-title').textContent = `${p.ko} (${p.name})`; $('info-sub').textContent = p.orbiter ? `${PLANETS.find(q => q.name === p.center).ko} 궤도선 · JPL 궤도로 계산` : '탐사선 · 위치: JPL Horizons';
+    $('info-title').textContent = EN ? p.name : `${p.ko} (${p.name})`; $('info-sub').textContent = p.orbiter ? `${PLANETS.find(q => q.name === p.center).ko} 궤도선 · JPL 궤도로 계산` : '탐사선 · 위치: JPL Horizons';
     row('발사', `${p.launch}년`); if (p.orbiter && helioPos[p.center] && mode.space) row(`${PLANETS.find(q => q.name === p.center).ko} 표면 위 고도`, fmtDist(helioPos[p.name].distanceTo(helioPos[p.center]) - bodyR(PLANETS.find(q => q.name === p.center)))); row('태양으로부터', `${p.helioAU.toFixed(p.helioAU < 2 ? 4 : 1)} AU`);
     row('지구로부터', p.dist < 0.05 ? fmtDist(p.dist * MKM_AU) : `${p.dist.toFixed(p.dist < 10 ? 3 : 1)} AU`);
     const lt = p.dist * 499.0; row('신호가 닿는 시간', lt > 3600 ? `${(lt / 3600).toFixed(1)}시간` : lt > 60 ? `${(lt / 60).toFixed(1)}분` : `${lt.toFixed(1)}초`);
@@ -1490,7 +1528,7 @@ function select(o) {
     setTimeout(() => { if (selected !== o || !mode.space) return; const b = document.createElement('button'); b.textContent = '이 탐사선 카메라로 보기'; b.onclick = () => probeCamera(p); $('info-exo').hidden = false; $('info-exo').prepend(b); }, 0);
   } else if (o.planet) {
     const p = o.p; ra = p.ra; dec = p.dec;
-    $('info-title').textContent = `${p.ko} (${p.name})`; $('info-sub').textContent = p.small ? `${p.small} · 궤도: JPL SBDB` : p.name === 'Sun' ? '항성' : p.name === 'Moon' ? '위성' : p.parent ? `${PLANETS.find(q => q.name === p.parent).ko}의 위성 · 위치 근사` : '행성';
+    $('info-title').textContent = EN ? p.name : `${p.ko} (${p.name})`; $('info-sub').textContent = p.small ? `${p.small} · 궤도: JPL SBDB` : p.name === 'Sun' ? '항성' : p.name === 'Moon' ? '위성' : p.parent ? `${PLANETS.find(q => q.name === p.parent).ko}의 위성 · 위치 근사` : '행성';
     if (p.name !== 'Earth') row('지구로부터 거리', p.name === 'Moon' ? `${(p.dist * KM_AU).toFixed(0)} km` : `${p.dist.toFixed(3)} AU`);
     if (!mode.space && isFinite(p.mag) && p.mag < 90) row('겉보기 등급', `${p.mag.toFixed(1)}${p.mag > 6.5 ? ' (맨눈으로 안 보임)' : ''}`);
     if (!mode.space && p.magSeen != null && Math.abs(p.magSeen - p.mag) > 0.05) row('대기를 거친 밝기', p.magSeen.toFixed(1));
@@ -1557,8 +1595,8 @@ function select(o) {
     row('별자리', o.con); row('등급', isNaN(o.mag) ? '' : o.mag.toFixed(1)); row('크기', `${o.maj.toFixed(1)}′ × ${o.min.toFixed(1)}′`);
     row('위치각', o.pa ? o.pa + '°' : ''); row('허블 분류', o.hubble); row('적색편이 z', o.z);
   }
-  { const key = o.planet && !o.p.probe ? o.p.name : o.kindName === 'star' ? (starData.proper[o.i] || o.name) : null, B = key && BODY_INFO[key], ab = $('info-about');
-    ab.hidden = !B; ab.innerHTML = B ? `<p>${B.d}</p>${B.n?.length ? `<b>주목할 점</b><ul>${B.n.map(x => `<li>${x}</li>`).join('')}</ul>` : ''}` : ''; }
+  { const key = o.planet && !o.p.probe ? o.p.name : o.kindName === 'star' ? (starData.proper[o.i] || o.name) : null, B = key && ((EN && BODY_INFO_EN[key]) || BODY_INFO[key]), ab = $('info-about');
+    ab.hidden = !B; ab.innerHTML = B ? `<p>${B.d}</p>${B.n?.length ? `<b>${EN ? 'Worth noticing' : '주목할 점'}</b><ul>${B.n.map(x => `<li>${x}</li>`).join('')}</ul>` : ''}` : ''; }
   if (isFinite(ra)) { row('적경 (J2000)', fmtRA(ra)); row('적위 (J2000)', fmtDec(dec)); }
   else if (o.kindName === 'sat') row('지금', '지평선 아래 (아래 표에서 다음 통과 시각을 확인하세요)');
   if (!mode.space && !(o.kindName === 'sat' && !o.world)) { const aa = dirToAzAlt(worldOf(o)); row('방위 / 고도', `${aa.az.toFixed(1)}° / ${aa.alt.toFixed(1)}°`); }
@@ -1649,6 +1687,7 @@ function computeHelio() {
   for (const p of PROBES) { const h = probeHelio(p, jd(state.time)); p.active = !!h; if (h) helioPos[p.name] = h; }
 }
 const bodyR = (p) => p.R / 1e6;
+const NO_DETAIL = new Set(['Sun', 'Earth', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Venus', 'Titan']); // gas, cloud or haze: no rocky surface to see
 function updateSpace() {
   computeHelio();
   const earth = helioPos.Earth;
@@ -1671,6 +1710,8 @@ function updateSpace() {
     }
     nearest = Math.min(nearest, Math.max(d - bodyR(p) * 0.995, 1e-10)); // 0.995: the faceted sphere's flat faces sit slightly inside the true radius
     p.camDist = d; p.world = rel.clone().divideScalar(d);
+    if (p.shape && !p.shapeState && d < bodyR(p) * 200) loadShape(p);
+    const du = p.mesh.material?.uniforms?.detail; if (du) du.value = NO_DETAIL.has(p.name) ? 0 : Math.max(0, Math.min(1, 1 - (d / bodyR(p) - 1) / 0.3)); // fine relief below ~0.3 radii altitude
     const g = hp.clone().sub(earth); // geocentric, for the info panel
     if (p.name !== 'Earth') { p.dist = g.length() / MKM_AU; p.angR = Math.atan(bodyR(p) / g.length()); const rd = vecToRaDec(g); p.ra = rd.ra; p.dec = rd.dec; p.eq = g.normalize(); }
     p.mesh.position.copy(rel);
@@ -3577,7 +3618,7 @@ function label(x, y, text, cls) {
 function drawLabels() {
   used = 0;
   discs = [];
-  for (const p of PLANETS) if (p.world && p.mesh.visible && p.rpx > 4 && p.world.dot(camFwd()) > 0) { const s = toScreen(p.world); if (s) discs.push([s[0], s[1], p.rpx]); }
+  for (const p of PLANETS) if (p.world && p.mesh.visible && p.rpx > 4 && p.world.dot(camFwd()) > 0) { const s = toScreen(p.world); if (s) discs.push([s[0], s[1], p.rpx, mode.space ? p.camDist : p.dist]); }
   const gOn = groundOn();
   if ($('t-labels').checked) {
     const fwd = camFwd(), cosLim = Math.cos(Math.min(85, view.fov * 0.75) * D2R);
@@ -3614,7 +3655,7 @@ function drawLabels() {
         label(s[0] + Math.min(px / 2, 80) * 0.7, s[1], o.messier ? (view.fov < 20 && o.common ? `${o.messier} ${o.common}` : o.messier) : o.name, 'dso'); m++;
       }
     }
-    for (const p of PLANETS) if (p.world && p.mesh.visible && p.world.dot(fwd) > 0 && !(siteUp && p.world.dot(siteUp) < 0)) { const s = toScreen(p.world); if (s) label(s[0] + p.rpx, s[1], p.ko, 'planet'); }
+    for (const p of PLANETS) if (p.world && p.mesh.visible && p.world.dot(fwd) > 0 && !(siteUp && p.world.dot(siteUp) < 0)) { const s = toScreen(p.world), dd = mode.space ? p.camDist : p.dist; if (s && !discs.some(d => d[3] < dd * 0.999 && Math.hypot(d[0] - s[0], d[1] - s[1]) < d[2])) label(s[0] + p.rpx, s[1], p.ko, 'planet'); } // not when a nearer body hides it
   }
   if ($('t-labels').checked && washout < 0.6 && exoPoints?.visible && view.fov < 40) {
     const fwd = camFwd(), cosLim = Math.cos(Math.min(85, view.fov * 0.75) * D2R); let m = 0;
@@ -3683,12 +3724,13 @@ function frame(now) {
   const skyDayK = daySky === 'stars' ? 0 : sunlight * (1 - totality * 0.97);   // paints the sky blue
   const day = daySky === 'real' ? sunlight * (1 - totality * 0.97) : 0;         // washes out stars (only in the realistic setting)
   bg.copy(skyNight); renderer.setClearColor(bg);
-  if (PLANETS[0].glow) PLANETS[0].glow.material.opacity = 1 - 0.9 * Math.pow(obsc, 1.5); // in totality only a faint corona-like ring is left
+  if (PLANETS[0].glow) PLANETS[0].glow.material.opacity = 1 - 0.9 * Math.pow(obsc, 1.5);
+  if (PLANETS[0].corona) PLANETS[0].corona.material.opacity = gOn ? Math.max(0, (obsc - 0.985) / 0.015) : 0; // shows only as the last of the Sun disappears // in totality only a faint corona-like ring is left
   skyDome.visible = gOn && daySky !== 'stars' && PLANETS[0].world && PLANETS[0].world.y > -0.33;
   for (const p of PLANETS) if (p.mesh?.material?.uniforms?.skyK) p.mesh.material.uniforms.skyK.value = skyDome.visible && p.world && PLANETS[0].world && p.world.dot(PLANETS[0].world) < 0.99966 ? skyDayK : 0; // not near the Sun: eclipses and transits keep their black silhouette
   if (skyDome.visible) { skyDomeMat.uniforms.sunDir.value.copy(PLANETS[0].world); skyDomeMat.uniforms.k.value = (daySky === 'both' ? 0.75 : 1) * (1 - totality * 0.97); }
   const dim = 1 - day * 0.97; washout = day;
-  for (const l of linesGroup.children) l.material.opacity = 0.55 * (1 - day * 0.9);
+  for (const l of linesGroup.children) l.material.opacity = 0.6 * (1 - day * 0.9);
   groundMat.uniforms.light.value = daySky === 'stars' ? 0.55 : 0.25 + 0.75 * skyDayK;
   // Bortle class sets the naked-eye limiting magnitude and how much Milky Way survives (ground mode only)
   const bortle = gOn ? +$('bortle').value : 1;
