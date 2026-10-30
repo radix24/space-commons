@@ -272,3 +272,29 @@ body.sandbox #topbar { z-index: 5; }
 .sb-sel[hidden] { display: none; }
 body.sandbox #status { display: none !important; }
 body.sandbox #loader { display: none; }
+
+/* 0.0.3b: concept cards */
+.cc-root { position: fixed; inset: 0; z-index: 30; background: rgba(4,6,12,.72); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.cc-root[hidden] { display: none; }
+.cc-win { width: min(1040px, 100%); max-height: calc(100vh - 32px); overflow: auto; border-radius: 14px; background: #0c1120; border: 1px solid var(--line, #26314d); padding: 14px 16px; }
+.cc-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; } .cc-head b { font: 800 18px var(--display, sans-serif); } .cc-head .cc-x { margin-left: auto; }
+.cc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.cc-grid[hidden], .cc-detail[hidden] { display: none; }
+.cc-card { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; text-align: left; padding: 12px; border-radius: 12px; background: #111830; border: 1px solid var(--line, #26314d); min-height: 140px; }
+.cc-card:hover { border-color: var(--orbit, #4FE3C1); }
+.cc-card b { font: 700 15px var(--display, sans-serif); } .cc-tag { color: var(--mute, #9aa5c0); font-size: 12px; }
+.cc-mini { margin-top: auto; font-size: 11px; color: #c9d1e6; max-width: 100%; overflow: hidden; }
+.cc-level { font: 700 10.5px var(--mono, monospace); padding: 1px 7px; border-radius: 99px; border: 1px solid; }
+.cc-level.기초 { color: #9fe0e6; } .cc-level.교양 { color: #ffb454; } .cc-level.전공 { color: #ff7aa2; }
+.cc-body { display: grid; grid-template-columns: 1fr 360px; gap: 18px; margin-top: 8px; }
+.cc-left h2 { margin: 6px 0 2px; font: 800 20px var(--display, sans-serif); } .cc-left p { line-height: 1.65; font-size: 14px; }
+.cc-eq { margin: 10px 0; padding: 8px; border-radius: 8px; background: rgba(79,227,193,.06); overflow-x: auto; }
+.cc-deep { font-size: 13px; line-height: 1.65; } .cc-deep summary { cursor: pointer; color: var(--orbit, #4FE3C1); margin: 6px 0; }
+.cc-right { display: flex; flex-direction: column; gap: 6px; }
+.cc-canvas { width: 100%; border-radius: 10px; display: block; }
+.cc-slider { display: grid; grid-template-columns: 1fr 120px 60px; gap: 6px; align-items: center; font-size: 12px; color: var(--mute, #9aa5c0); }
+.cc-slider b { font: 12px var(--mono, monospace); color: #e6ebf7; text-align: right; }
+.cc-read { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; font-size: 12px; margin-top: 4px; } .cc-read span { color: var(--mute, #9aa5c0); } .cc-read b { font: 12px var(--mono, monospace); font-weight: 400; }
+.cc-lab { margin-top: 10px; border-color: var(--orbit) !important; color: var(--orbit); } .cc-back { margin-bottom: 4px; }
+@media (max-width: 760px) { .cc-body { grid-template-columns: 1fr; } .cc-slider { grid-template-columns: 1fr 1fr 52px; } }
+.cc-left .cc-level { display: inline-block; }

@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import * as O from './orbits.js';
+import { openCards } from './cards.js';
 
 const { dot, cross, norm, add, scale } = O.vec;
 const PL = ['Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'];
@@ -510,7 +511,7 @@ function buildUI() {
         <button class="sb-reset" title="처음 상태로">처음으로</button><button class="sb-back" title="역재생">역재생</button><button class="sb-play">정지</button>
         <select class="sb-speed"><option value="0.0417">1초에 1시간</option><option value="0.25">1초에 6시간</option><option value="1">1초에 1일</option><option value="10" selected>1초에 10일</option><option value="50">1초에 50일</option><option value="200">1초에 200일</option></select>
       </div>
-      <div class="sb-row"><button class="sb-throw">탐사선 던지기</button><button class="sb-now">지금 태양계로 새로</button><button class="sb-recbtn">기록지</button></div>
+      <div class="sb-row"><button class="sb-throw">탐사선 던지기</button><button class="sb-now">지금 태양계로 새로</button><button class="sb-recbtn">기록지</button><button class="sb-cards">개념 카드</button></div>
       <div class="sb-row small sb-energy"></div>
       <div class="sb-sel" hidden><b class="sb-sel-name"></b><div class="small sb-sel-data"></div>
         <label class="small">질량 바꾸기 <input class="sb-mass" type="range" min="-1" max="2" step="0.05" value="0"></label><span class="small sb-massv"></span>
@@ -538,6 +539,7 @@ function buildUI() {
   q('.sb-throw').onclick = () => setTool(view.tool === 'throw' ? null : 'throw');
   q('.sb-now').onclick = () => { resetSolarSystem(ctx.jdNow()); focus('Sun', 4); };
   q('.sb-recbtn').onclick = showRecords;
+  q('.sb-cards').onclick = () => openCards({ openLab: (n) => openLab(n) });
   q('.sb-follow').onclick = () => selected && focus(selected.name, Math.max(selected.Rkm / O.AU_KM * 40, 0.02));
   q('.sb-del').onclick = () => { if (!selected || selected.name === 'Sun') return; sim.bodies = sim.bodies.filter(b => b !== selected); scene.remove(selected.mesh, selected.line); view.labels.get(selected)?.remove(); select(null); sim.E0 = energy(); };
   q('.sb-mass').oninput = (e) => { if (!selected || selected.test) return; const base = MASS[selected.name] ?? selected.m; const k = Math.pow(10, +e.target.value); selected.m = base * k; q('.sb-massv').textContent = `×${fmt(k, 2)}`; sim.E0 = energy(); };

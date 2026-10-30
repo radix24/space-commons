@@ -1667,6 +1667,10 @@ async function setSandbox(on) {
   if (on) { sandboxMod ||= await import('./sandbox.js'); sandboxMod.openSandbox({ helio, jdNow: () => jd(state.time) }); }
   else sandboxMod?.closeSandbox();
 }
+document.getElementById('cards-btn')?.addEventListener('click', async () => {
+  const { openCards } = await import('./cards.js');
+  openCards({ openLab: async (n) => { await setSandbox(true); sandboxMod.openLab(n); } });
+});
 document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { $('tonight').hidden = true;
   if (b.dataset.mode === 'sandbox') return setSandbox(true);
   if (sandboxOn) setSandbox(false); setMode(b.dataset.mode === 'space'); });
