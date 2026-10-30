@@ -809,10 +809,24 @@ const GENERAL = [
     eq: String.raw`\theta \approx 1.22\,\frac{\lambda}{D}`,
     body: `망원경이 구별할 수 있는 가장 작은 각도는 빛의 파장을 망원경 지름으로 나눈 값에 비례합니다. M87 은하 중심 블랙홀의 그림자는 겨우 40 마이크로초각, 달 위의 도넛 하나 크기입니다. 이를 보려고 전 세계 전파 망원경 8곳을 동시에 관측해 지구 크기(D ≈ 1만 km)의 망원경처럼 쓴 것이 사건지평선 망원경(EHT)이고, 2019년 첫 블랙홀 사진, 2022년 우리 은하 중심 블랙홀 사진을 냈습니다. 한국의 KVN 망원경도 후속 관측에 참여합니다.`,
     deep: String.raw`각 망원경이 받은 전파를 원자시계 시각과 함께 하드디스크에 기록한 뒤 슈퍼컴퓨터로 맞추는 초장기선 간섭계(VLBI)입니다. 그림자의 지름은 슈바르츠실트 반지름의 약 5.2배로, 크기에서 블랙홀 질량(M87*: 태양의 65억 배)을 잴 수 있습니다.`,
-    widget(box) { const K = canvas(box, 340, 150), s = slider(box, '망원경 지름 D (로그, m)', 0, 7.1, 0.05, 1, (x) => fmtLen(10 ** x)), w = slider(box, '파장 (mm)', 0.5, 10, 0.1, 1.3), R = readout(box);
-      return () => { clear(K); const g = K.g, D = 10 ** +s.value, lam = +w.value * 1e-3, th = 1.22 * lam / D * 206265e6, need = 42;
-        g.fillStyle = C.mute; g.fillRect(20, 60, Math.min(K.w - 40, (K.w - 40) * need / th), 18); g.fillStyle = th <= need ? C.teal : C.pink; text(g, th <= need ? 'M87 블랙홀 그림자를 구별할 수 있음' : '그림자가 한 점으로 뭉개짐', 20, 50, th <= need ? C.teal : C.pink, 11);
-        R([['분해능', th > 1e6 ? `${fmt(th / 1e6, 2)}″` : `${fmt(th, 1)} μas`], ['M87* 그림자 크기', '약 42 μas'], ['참고', '사람 눈 약 60″, 허블 약 0.05″']]); }; } },
+    widget(box) { const K = canvas(box, 340, 190), s = slider(box, '망원경 지름 D (로그, m)', -2, 7.1, 0.05, 1, (x) => fmtLen(10 ** x)), w = slider(box, '파장 (mm)', 0.5, 10, 0.1, 1.3), R = readout(box);
+      const pre = el('div', 'cc-opts'); [['큰 전파 접시 (100 m)', 2], ['알마 (16 km)', Math.log10(16000)], ['한국 KVN (480 km)', Math.log10(480000)], ['EHT (지구 지름)', Math.log10(1.07e7)]].forEach(([n, v]) => { const b = el('button', '', n); b.onclick = () => { s.value = v; s.dispatchEvent(new Event('input')); }; pre.append(b); }); box.insertBefore(pre, s.parentNode);
+      // the sky model: M87*'s bright ring (42 μas across) around the dark shadow, brighter on the side where the gas comes toward us
+      const N = 150, FOV = 120, pxu = N / FOV, sky = document.createElement('canvas'); sky.width = sky.height = N; const sg = sky.getContext('2d'), im = sg.createImageData(N, N);
+      for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const dx = (x - N / 2) / pxu, dy = (y - N / 2) / pxu, r = Math.hypot(dx, dy), a = Math.atan2(dy, dx);
+        const v = Math.exp(-(((r - 21) / 3.2) ** 2)) * (1 + 0.75 * Math.sin(a)) * 0.6, k = (y * N + x) * 4; im.data[k] = 255 * Math.min(1, v * 1.3); im.data[k + 1] = 170 * Math.min(1, v); im.data[k + 2] = 60 * v; im.data[k + 3] = 255; }
+      sg.putImageData(im, 0, 0); const obs = document.createElement('canvas'); obs.width = obs.height = N; const og = obs.getContext('2d', { willReadFrequently: true }); let key = '';
+      return () => { const g = K.g, D = 10 ** +s.value, lam = +w.value * 1e-3, th = 1.22 * lam / D * 206265e6, sig = th / 1.22 / 2.355 * pxu;
+        if (key !== `${D}|${lam}`) { key = `${D}|${lam}`; og.fillStyle = '#000'; og.fillRect(0, 0, N, N);
+          if (sig < 300) { og.filter = `blur(${sig.toFixed(2)}px)`; og.drawImage(sky, 0, 0); og.filter = 'none'; const d = og.getImageData(0, 0, N, N); let m = 1; for (let k = 0; k < d.data.length; k += 4) m = Math.max(m, d.data[k]);
+            const f = 255 / m; for (let k = 0; k < d.data.length; k += 4) { d.data[k] *= f; d.data[k + 1] *= f; d.data[k + 2] *= f; } og.putImageData(d, 0, 0); }
+          else { og.fillStyle = 'rgb(120,80,30)'; og.fillRect(0, 0, N, N); } }
+        clear(K); g.drawImage(sky, 12, 22); g.drawImage(obs, K.w - N - 12, 22);
+        text(g, '실제 모습 (모형)', 12 + N / 2, 14, C.mute, 10, 'center'); text(g, '이 망원경으로 찍은 사진', K.w - 12 - N / 2, 14, C.mute, 10, 'center');
+        const bR = th / 2 * pxu; if (bR < N / 2) { g.strokeStyle = C.teal; g.lineWidth = 1; g.beginPath(); g.arc(K.w - 12 - N + 14 + Math.max(2, bR), 22 + N - 14 - Math.max(2, bR), Math.max(2, bR), 0, 7); g.stroke(); }
+        text(g, th <= 35 ? '고리와 가운데 그림자가 보임' : th <= 80 ? '고리가 뿌옇게 겹쳐 보임' : '한 점으로 뭉개짐', K.w - 12 - N / 2, 22 + N + 14, th <= 35 ? C.teal : th <= 80 ? C.amber : C.pink, 10, 'center');
+        text(g, `가로 ${FOV} μas`, 12 + N / 2, 22 + N + 14, C.mute, 10, 'center');
+        R([['분해능 (초록 원 = 빔 크기)', th > 1e6 ? `${fmt(th / 1e6, 2)}″` : th > 1e3 ? `${fmt(th / 1e3, 1)} mas` : `${fmt(th, 1)} μas`], ['M87* 그림자 지름', '약 42 μas'], ['참고', '사람 눈 약 60″ = 6천만 μas']]); }; } },
 ];
 const fmtLy = (x) => { const d = 10 ** (5 + Math.log10(x) * 15 / 20); return d > 9.46e12 ? `${fmt(d / 9.46e12, 1)}광년` : `${fmt(d, 0)} km`; };
 const fmtTime = (t) => t < 60 ? `${fmt(t, 1)}초` : t < 3600 ? `${fmt(t / 60, 1)}분` : t < 86400 ? `${fmt(t / 3600, 1)}시간` : t < 3.156e7 ? `${fmt(t / 86400, 1)}일` : `${fmt(t / 3.156e7, t < 3.156e9 ? 1 : 0)}년`;
@@ -841,19 +855,19 @@ function markSeen(id) { try { const s2 = seen(); s2.add(id); localStorage.setIte
 const EXPLAIN = {
   scale: { s: [['d', '거리'], ['c', '빛의 속도 (초속 약 30만 km)'], ['t', '빛이 그 거리를 가는 데 걸리는 시간']],
     r: '빛은 1초에 지구를 일곱 바퀴 반 돕니다. 그 빛으로도 몇 년, 몇백만 년이 걸리는 거리가 우주의 거리입니다. 그래서 먼 천체를 볼수록 더 오래된 과거를 보게 됩니다.' },
-  bluesky: { s: [['I', '흩어지는 빛의 세기'], ['\lambda', '빛의 파장 (파랑 약 450 nm, 빨강 약 700 nm)']],
+  bluesky: { s: [['I', '흩어지는 빛의 세기'], ['\\lambda', '빛의 파장 (파랑 약 450 nm, 빨강 약 700 nm)']],
     r: '파장이 절반이면 흩어지는 세기는 2⁴ = 16배입니다. 파란빛(450 nm)은 빨간빛(700 nm)보다 약 5.9배 잘 흩어집니다. 그래서 하늘 전체가 파란빛으로 차고, 공기를 길게 지나온 노을빛에는 빨간빛만 남습니다.' },
-  aurora: { s: [['E', '광자 하나의 에너지'], ['h', '플랑크 상수'], ['\nu', '빛의 진동수'], ['c', '빛의 속도'], ['\lambda', '빛의 파장']],
+  aurora: { s: [['E', '광자 하나의 에너지'], ['h', '플랑크 상수'], ['\\nu', '빛의 진동수'], ['c', '빛의 속도'], ['\\lambda', '빛의 파장']],
     r: '원자는 정해진 에너지 계단만 오르내릴 수 있어서, 내놓는 빛의 에너지와 색도 원소마다 정해져 있습니다. 에너지가 클수록 파장이 짧은(파란) 빛입니다. 오로라의 색을 보면 어느 높이의 어떤 원자가 빛나는지 알 수 있습니다.' },
-  meteor: { s: [['v_\text{유성}', '대기에 들어오는 속도'], ['v_\infty', '지구 중력에 끌리기 전 지구에 대한 속도'], ['v_\text{esc}', '지구 탈출 속도 11.2 km/s']],
+  meteor: { s: [['v_\\text{유성}', '대기에 들어오는 속도'], ['v_\\infty', '지구 중력에 끌리기 전 지구에 대한 속도'], ['v_\\text{esc}', '지구 탈출 속도 11.2 km/s']],
     r: '지구 중력이 알갱이를 끌어당겨 그만큼 더 빨라집니다. 아무리 느리게 다가와도 최소 11.2 km/s로 떨어지며, 에너지는 속도의 제곱이라 빠른 유성일수록 훨씬 밝게 탑니다.' },
-  drake: { s: [['N', '지금 신호를 보낼 수 있는 우리 은하의 문명 수'], ['R_\ast', '1년에 새로 생기는 별의 수'], ['f_p', '행성을 가진 별의 비율'], ['n_e', '그런 별 하나에 생명이 살 만한 행성 수'], ['f_l', '그 행성에 생명이 생길 확률'], ['f_i', '생명이 지적 생명으로 자랄 확률'], ['f_c', '먼 곳까지 신호를 보내는 기술을 가질 확률'], ['L', '그런 문명이 유지되는 시간 (년)']],
+  drake: { s: [['N', '지금 신호를 보낼 수 있는 우리 은하의 문명 수'], ['R_\\ast', '1년에 새로 생기는 별의 수'], ['f_p', '행성을 가진 별의 비율'], ['n_e', '그런 별 하나에 생명이 살 만한 행성 수'], ['f_l', '그 행성에 생명이 생길 확률'], ['f_i', '생명이 지적 생명으로 자랄 확률'], ['f_c', '먼 곳까지 신호를 보내는 기술을 가질 확률'], ['L', '그런 문명이 유지되는 시간 (년)']],
     r: '앞의 여러 항을 곱한 값은 "1년에 통신 문명이 몇 개 생기는가"이고, 여기에 문명이 이어지는 시간 L을 곱하면 지금 동시에 있는 수가 됩니다. 곱셈이라 한 항만 아주 작아도 N이 크게 줄어듭니다.' },
-  calendar: { s: [['t', '빅뱅 이후 흐른 실제 시간'], ['t_\text{달력}', '1년 달력에서의 날짜']],
+  calendar: { s: [['t', '빅뱅 이후 흐른 실제 시간'], ['t_\\text{달력}', '1년 달력에서의 날짜']],
     r: '138억 년을 365일로 줄이는 비례식입니다. 달력의 하루가 약 3,780만 년, 한 시간이 약 160만 년, 1초가 약 440년에 해당합니다.' },
-  microg: { s: [['g(h)', '높이 h에서의 중력 가속도'], ['g_0', '지표면의 중력 가속도 9.8 m/s²'], ['R_\oplus', '지구 반지름 6,371 km'], ['h', '지표면에서의 높이']],
+  microg: { s: [['g(h)', '높이 h에서의 중력 가속도'], ['g_0', '지표면의 중력 가속도 9.8 m/s²'], ['R_\\oplus', '지구 반지름 6,371 km'], ['h', '지표면에서의 높이']],
     r: '중력은 지구 중심에서 거리의 제곱에 반비례합니다. 420 km는 지구 반지름에 비해 작아서 중력이 11%만 줄어듭니다. 떠 있는 이유는 중력이 없어서가 아니라 함께 떨어지기 때문입니다.' },
-  eht: { s: [['\theta', '구별할 수 있는 가장 작은 각도 (분해능)'], ['\lambda', '관측하는 빛의 파장 (EHT는 1.3 mm)'], ['D', '망원경 지름 (간섭계는 가장 먼 두 망원경 사이 거리)']],
+  eht: { s: [['\\theta', '구별할 수 있는 가장 작은 각도 (분해능)'], ['\\lambda', '관측하는 빛의 파장 (EHT는 1.3 mm)'], ['D', '망원경 지름 (간섭계는 가장 먼 두 망원경 사이 거리)']],
     r: '같은 파장이면 망원경이 클수록, 같은 망원경이면 파장이 짧을수록 더 작은 것을 구별합니다. 전파는 파장이 길어서, 지구만 한 크기가 되어야 블랙홀 그림자를 볼 수 있습니다.' },
   coords: { s: [['h', '고도: 지평선에서 위로 잰 각도'], ['\\varphi', '관측지의 위도'], ['\\delta', '적위: 천구 적도에서 북쪽으로 잰 각도 (지구의 위도에 해당)'], ['H', '시간각: 별이 남중한 뒤 지난 시간을 각도로 (1시간 = 15°)']],
     r: '별이 하늘에서 얼마나 높이 보이는지는 세 가지로 정해집니다. 내가 어디에 있는지(위도), 별이 천구의 어디에 붙어 있는지(적위), 그리고 지금이 그 별이 남쪽 하늘 가장 높은 곳을 지난 지 얼마나 되었는지(시간각)입니다. H = 0일 때 별은 가장 높고(남중), 그때 고도는 90° − |φ − δ|입니다.' },
