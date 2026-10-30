@@ -22,7 +22,7 @@ const URLS = {
   ngc: CDN + 'mattiaverga/OpenNGC@master/database_files/NGC.csv',
 };
 const $ = (id) => document.getElementById(id);
-export const VERSION = 'Alpha 0.0.2d';
+export const VERSION = 'Alpha 0.0.2e';
 const MOBILE = matchMedia('(max-width: 640px), (pointer: coarse)').matches; // phones get lighter versions of heavy features // bump the letter with every feature batch
 for (const el of document.querySelectorAll('[data-version]')) el.textContent = el.dataset.version.replace('{v}', VERSION);
 
@@ -1520,7 +1520,7 @@ function spaceDrag(dx, dy) {
   sp.quat.multiply(qy).multiply(qx).normalize();
 }
 function spaceZoom(f) {
-  if (sp.target) sp.dist = Math.max(sp.target.kindName === 'site' ? 8e-9 : sp.target.probe ? bodyR(sp.target) * 1.6 : bodyR(sp.target) * 1.15, Math.min(2e4, sp.dist * f));
+  if (sp.target) sp.dist = Math.max(sp.target.kindName === 'site' ? 8e-9 : sp.target.probe ? bodyR(sp.target) * 1.6 : bodyR(sp.target) * 1.15, Math.min(sp.target.sys ? 4e9 : 2e4, sp.dist * f));
   else sp.pos.addScaledVector(camFwd(), (1 - f) * Math.max(0.05, sp.nearest) * 2);
 }
 function spaceKeys(dt) {
@@ -1537,6 +1537,8 @@ function spaceKeys(dt) {
 }
 function spaceFlyTo(o) {
   sp.replay = null;
+  if (o.kindName === 'exo' && o.dist) return visitSystem(exoSystem(o));
+  if (o.kindName === 'star') { const s = s3dByName.get(starData.proper?.[o.i] || starData.name[o.i]); if (s) return visitSystem(s); }
   if (!o.planet && o.kindName !== 'site') { // a star or deep-sky object: just turn to face it
     sp.flight = { turnOnly: true, t0: performance.now(), dur: 1200, q0: sp.quat.clone(), q1: lookQuat(o.v.clone().normalize(), new THREE.Vector3(0, 1, 0).applyQuaternion(sp.quat)) };
     return;
@@ -2281,6 +2283,111 @@ async function showWeather() {
 $('wx-btn').onclick = () => { $('gear').hidden = true; $('wx').hidden ? showWeather() : ($('wx').hidden = true); };
 $('wx-close').onclick = () => $('wx').hidden = true;
 
+// ---------- 21. among the nearby stars (S11) and exoplanet systems (S12) ----------
+const PC = 3.0856776e7; // parsec in 10^6 km
+const s3d = { rows: [], pos: null, absmag: null, far: false }, s3dByName = new Map();
+const s3dMat = new THREE.ShaderMaterial({
+  uniforms: { pr: { value: 1 } },
+  vertexShader: `attribute float mag; attribute vec3 color; varying vec3 vC; varying float vA; uniform float pr;
+    void main(){ gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); float d = 6.8 - mag;
+      vA = d < 0.0 ? 0.0 : clamp(d * 0.6 + 0.25, 0.0, 1.0); gl_PointSize = clamp(2.0 + d * 1.25, 1.5, 22.0) * pr; vC = color; }`,
+  fragmentShader: `varying vec3 vC; varying float vA;
+    void main(){ vec2 p = gl_PointCoord * 2.0 - 1.0; float r2 = dot(p,p); if (r2 > 1.0 || vA <= 0.0) discard;
+      float core = exp(-r2 * 9.0), halo = exp(-r2 * 2.5) * 0.35; gl_FragColor = vec4(mix(vC, vec3(1.0), core*0.6) * (core + halo), 1.0) * vA; }`,
+  transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending,
+});
+let s3dPts = null;
+const ciRGB = (ci) => { const t = 4600 * (1 / (0.92 * ci + 1.7) + 1 / (0.92 * ci + 0.62)); return [Math.min(1, t / 6500 + 0.15), Math.min(1, 0.55 + t / 22000), Math.min(1, t / 9000)]; };
+const teffOf = (ci) => 4600 * (1 / (0.92 * ci + 1.7) + 1 / (0.92 * ci + 0.62));
+fetch('data/stars3d.json').then(r => r.json()).then(js => {
+  const rows = [['태양', 0, 0, 0, 4.83, 0.65, ''], ...js.rows], N = rows.length;
+  s3d.rows = rows; s3d.pos = new Float64Array(N * 3); s3d.absmag = new Float32Array(N);
+  const col = new Float32Array(N * 3);
+  rows.forEach((r, i) => { s3d.pos.set([r[1] * PC, r[2] * PC, r[3] * PC], i * 3); s3d.absmag[i] = r[4]; col.set(ciRGB(r[5]), i * 3);
+    if (i) s3dByName.set(r[0], { name: r[0], pos: new THREE.Vector3(r[1] * PC, r[2] * PC, r[3] * PC), M: r[4], ci: r[5], con: r[6], planets: [] }); });
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(N * 3), 3));
+  g.setAttribute('mag', new THREE.Float32BufferAttribute(new Float32Array(N), 1)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  s3dPts = new THREE.Points(g, s3dMat); s3dPts.frustumCulled = false; s3dPts.renderOrder = -1; s3dPts.visible = false; planetScene.add(s3dPts);
+}).catch(() => {});
+function updateStars3d() {
+  // beyond ~0.03 light-years the sky backdrop (stars fixed at infinity) is replaced by stars at their real 3D places
+  const far = mode.space && sp.pos.length() > 2.8e5 && !!s3dPts;
+  if (far !== s3d.far) { s3d.far = far;
+    if (starPoints) starPoints.visible = !far; if (exoPoints) exoPoints.visible = !far && $('t-exo').checked; if (dsoPoints) dsoPoints.visible = !far && $('t-dso').checked;
+    boundsGroup.visible = !far && $('t-bounds').checked; if (far) { linesGroup.visible = false; koreanGroup.visible = false; } else applySkyCulture(); }
+  if (s3dPts) s3dPts.visible = far;
+  updateSystem();
+  if (!far) return;
+  const P = s3dPts.geometry.attributes.position, Mg = s3dPts.geometry.attributes.mag, k = 1 / Math.max(1e-12, sp.nearestAll || 1), R = 1e5 / k;
+  const cx = sp.pos.x, cy = sp.pos.y, cz = sp.pos.z, a = P.array, m = Mg.array, sp3 = s3d.pos;
+  for (let i = 0, n = s3d.absmag.length; i < n; i++) { const x = sp3[3 * i] - cx, y = sp3[3 * i + 1] - cy, z = sp3[3 * i + 2] - cz, d = Math.hypot(x, y, z) || 1e-9;
+    a[3 * i] = x / d * R; a[3 * i + 1] = y / d * R; a[3 * i + 2] = z / d * R; m[i] = s3d.absmag[i] + 5 * Math.log10(d / PC) - 5;
+    if (sysNow && Math.abs(x + cx - sysNow.pos.x) < 1 && Math.abs(y + cy - sysNow.pos.y) < 1) m[i] = 99; } // the visited star is drawn as a sphere
+  P.needsUpdate = true; Mg.needsUpdate = true; s3dMat.uniforms.pr.value = renderer.getPixelRatio();
+}
+function starLabels() {
+  if (!s3d.far || !$('t-labels').checked) return;
+  const m = s3dPts.geometry.attributes.mag.array, fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(sp.quat), cosLim = Math.cos(Math.min(85, view.fov * 0.75) * D2R), v = new THREE.Vector3();
+  const lim = view.fov < 20 ? 3.5 : 1.6; let n = 0;
+  for (let i = 0; i < m.length && n < 40; i++) { if (i && (m[i] > lim || !/^[A-Z\u3131-\uD79D]/.test(s3d.rows[i][0]) || /^(HIP|HYG|Gl|GJ|Wo|NN)/.test(s3d.rows[i][0]))) continue;
+    v.set(s3d.pos[3 * i] - sp.pos.x, s3d.pos[3 * i + 1] - sp.pos.y, s3d.pos[3 * i + 2] - sp.pos.z).normalize(); if (v.dot(fwd) < cosLim) continue;
+    const p = toScreen(v); if (p) { label(p[0], p[1], i ? s3d.rows[i][0] : '태양', i ? 'star' : 'planet'); n++; } }
+}
+// --- visiting a system: the star as a sphere, planets on circular orbits, the habitable zone ---
+let sysNow = null; const sysGroup = new THREE.Group(); sysGroup.visible = false; planetGroup.add(sysGroup);
+function exoSystem(o) {
+  return { name: o.name, pos: eqVec(o.ra, o.dec, o.dist * PC), teff: o.teff, Rsun: o.srad, L: o.slum != null ? Math.pow(10, o.slum) : null, planets: o.planets, exo: o };
+}
+function visitSystem(s) {
+  const teff = s.teff || teffOf(s.ci ?? 0.65), L = s.L ?? (s.M != null ? Math.pow(10, (4.83 - s.M) / 2.5) : 1);
+  const Rsun = s.Rsun || Math.sqrt(L) * Math.pow(5772 / teff, 2);
+  sysGroup.clear(); const col = new THREE.Color(...ciRGB(s.ci ?? (teff > 9000 ? -0.1 : teff > 6000 ? 0.4 : teff > 5000 ? 0.75 : teff > 3800 ? 1.2 : 1.6)));
+  const starR = Rsun * 695700 / 1e6;
+  const star = new THREE.Mesh(new THREE.SphereGeometry(starR, 48, 32), new THREE.MeshBasicMaterial({ color: col })); sysGroup.add(star);
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex(), color: col, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })); glow.scale.setScalar(starR * 6); glow.userData.R = starR; sysGroup.add(glow);
+  // orbit plane: edge-on as seen from the Sun, the way transiting planets were found
+  const los = s.pos.clone().normalize(), n = los.clone().cross(ECL_N).normalize(), u = los.clone().negate(), w = n.clone().cross(u).normalize();
+  const ring = (rAU, color, op) => { const pts = []; for (let i = 0; i <= 128; i++) { const a = i / 128 * Math.PI * 2; pts.push(u.clone().multiplyScalar(Math.cos(a) * rAU * MKM_AU).addScaledVector(w, Math.sin(a) * rAU * MKM_AU)); }
+    const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color, transparent: true, opacity: op })); l.frustumCulled = false; sysGroup.add(l); };
+  const hz = [Math.sqrt(L / 1.1), Math.sqrt(L / 0.53)];
+  for (let r = hz[0]; r <= hz[1]; r += (hz[1] - hz[0]) / 10) ring(r, 0x4fe3c1, 0.12);
+  const planets = [];
+  for (const p of s.planets) {
+    const a = p[1] || (p[2] ? Math.cbrt(Math.pow(p[2] / 365.25, 2) * (L > 0 ? Math.pow(L, 0.25) : 1)) : null); if (!a) continue;
+    const rE = p[3] || (p[4] ? Math.min(13, Math.pow(p[4], p[4] < 2 ? 0.27 : 0.55)) : 1), Teq = p[5] || 278 * Math.pow(L, 0.25) / Math.sqrt(a);
+    const c = Teq > 1000 ? 0xff8a5c : Teq > 400 ? 0xd9b38c : Teq > 200 ? 0x6fa8dc : 0xb8d4e6;
+    const m = new THREE.Mesh(new THREE.SphereGeometry(rE * 6371 / 1e6, 32, 20), new THREE.MeshStandardMaterial({ color: c, roughness: 0.8, emissive: c, emissiveIntensity: 0.25 }));
+    sysGroup.add(m); ring(a, 0x9aa5c0, 0.35); planets.push({ r: rE * 6371 / 1e6, m, a, P: p[2] || 365.25 * Math.sqrt(a ** 3), ph: (p[0].charCodeAt(0) * 2.39) % (Math.PI * 2), name: p[0] });
+  }
+  const amax = Math.max(hz[1], ...planets.map(p => p.a));
+  const key = 'sys:' + s.name, body = { name: key, key, ko: s.name, R: Rsun * 695700, sys: true };
+  sysNow = { ...s, pos: s.pos.clone(), key, body, planets, u, w, L, teff, hz };
+  helioPos[key] = sysNow.pos; sysGroup.visible = true;
+  const from = sp.pos.clone(), q0 = sp.quat.clone(), d1 = Math.max(starR * 8, amax * MKM_AU * 2.6);
+  sp.flight = { p: body, from, q0, d1, t0: performance.now(), dur: 6000 }; sp.replay = null;
+  // where is the Sun from there?
+  const toSun = s.pos.clone().negate(), dpc = s.pos.length() / PC; let best = null, bd = -2;
+  for (const r of s3d.rows) { if (!r[6] || Math.hypot(r[1], r[2], r[3]) < 40) continue; const d = (r[1] * toSun.x + r[2] * toSun.y + r[3] * toSun.z) / (Math.hypot(r[1], r[2], r[3]) * toSun.length()); if (d > bd) { bd = d; best = r[6]; } }
+  const con = constById[best], sunMag = 4.83 + 5 * Math.log10(dpc) - 5;
+  $('tour-pick').hidden = true; $('tour-body').hidden = false; $('tour-prev').hidden = $('tour-next').hidden = true;
+  $('tour-step').textContent = `${s.name} · ${(dpc * 3.2616).toFixed(dpc < 3 ? 2 : 1)} 광년`;
+  $('tour-text').textContent = `표면 온도 약 ${Math.round(teff).toLocaleString()} K, 반지름은 태양의 ${Rsun.toFixed(2)}배, 밝기는 태양의 ${L < 0.01 ? L.toExponential(1) : L.toFixed(L < 1 ? 3 : 1)}배입니다. `
+    + (planets.length ? `행성 ${planets.length}개를 실제 궤도 반지름으로 그렸고 (궤도 기울기는 지구에서 볼 때 옆으로 누운 것으로 가정), ` : '')
+    + `초록 띠는 액체 물이 있을 수 있는 생명 가능 지대(${hz[0].toFixed(2)}~${hz[1].toFixed(2)} AU)입니다. 이 별에서 태양은 ${con ? con.name : '알 수 없는 별자리'} 방향에 ${sunMag.toFixed(1)}등급 별로 보입니다${sunMag > 6.5 ? ' (맨눈으로 안 보임)' : ''}.`;
+  $('tour').hidden = false; $('sp-target').textContent = `${s.name} 계`;
+}
+let _glow = null; function glowTex() { if (_glow) return _glow; const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'), g = x.createRadialGradient(64, 64, 0, 64, 64, 64);
+  g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.2, 'rgba(255,255,255,.5)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 128); return (_glow = new THREE.CanvasTexture(c)); }
+function updateSystem() {
+  if (!sysNow || !mode.space) { sysGroup.visible = false; return; }
+  helioPos[sysNow.key] = sysNow.pos; sysGroup.visible = true; sysGroup.position.copy(sysNow.pos).sub(sp.pos);
+  const days = jd(state.time) - 2451545.0;
+  for (const p of sysNow.planets) { const a = p.ph + days / p.P * Math.PI * 2; p.m.position.copy(sysNow.u).multiplyScalar(Math.cos(a) * p.a * MKM_AU).addScaledVector(sysNow.w, Math.sin(a) * p.a * MKM_AU);
+    p.m.scale.setScalar(Math.max(1, sysNow.pos.clone().add(p.m.position).distanceTo(sp.pos) * Math.tan(view.fov * D2R) * 0.004 / p.r)); }
+  const d = sysNow.pos.distanceTo(sp.pos), gl = sysGroup.children[1]; gl.scale.setScalar(Math.max(gl.userData.R * 6, d * Math.tan(view.fov * D2R) * 0.06));
+  sp.nearestAll = Math.min(sp.nearestAll || 1e12, Math.max(1e-6, d - sysNow.body.R / 1e6) * 0.5);
+}
+
 // ---------- 11. observing list (kept in this browser) ----------
 const OBS_KEY = 'space-commons-obslist';
 const loadObs = () => { try { return JSON.parse(localStorage.getItem(OBS_KEY)) || []; } catch { return []; } };
@@ -2354,7 +2461,7 @@ function drawLabels() {
     const vis = (w) => w.dot(fwd) > cosLim && !(gOn && w.y < 0) && !(siteUp && w.dot(siteUp) < 0); // also hide what is under a landing site's horizon
     const lim = starMat.uniforms.limit.value; const starLim = Math.min(lim - 1.2, 1.2 + 2.5 * Math.log10(70 / view.fov) + 1.2);
     let n = 0;
-    const dark = washout < 0.6; // in realistic daylight only the Sun, Moon and bright planets keep labels
+    const dark = washout < 0.6 && !s3d.far; // in realistic daylight only the Sun, Moon and bright planets keep labels; among the stars, 3D labels instead
     for (let i = 0; dark && i < starData.pos.length && n < 70; i++) {
       if (starData.mag[i] > starLim || !starData.name[i]) continue;
       if (!starData.proper[i] && starData.mag[i] > starLim - 1.5) continue;
@@ -2408,6 +2515,7 @@ function drawLabels() {
         if (boxes.some(o => b[0] < o[2] && b[2] > o[0] && b[1] < o[3] && b[3] > o[1])) name = ''; else boxes.push(b); }
       label(p[0], p[1], name, 'sat' + (s.visible ? ' lit' : '') + (s.iss ? ' iss' : '') + (s.korea ? ' kr' : '')); }
   }
+  if (mode.space) starLabels();
   if (gOn) for (const c of cardinals) { const s = toScreen(c.w); if (s && c.w.dot(camFwd()) > 0) label(s[0], s[1], c.name, 'card'); }
   for (let i = used; i < pool.length; i++) pool[i].style.display = 'none';
   const ring = $('sel-ring');
@@ -2422,7 +2530,7 @@ function frame(now) {
   updateSkyMatrix();
   if (mode.space) { computeHelio(); stepSpaceFlight(now); spaceKeys(dt); }
   updatePlanets();   // positions for this frame first...
-  updateAsteroids(); updateLight(); updateStations(); updateNeo(); updateSkyPhoto();
+  updateAsteroids(); updateLight(); updateStations(); updateNeo(); updateStars3d(); updateSkyPhoto();
   updateSats();
   stepFlight(now);   // ...then aim the camera at them (aiming at last frame's position made zoomed views shake)
   updateCamera();

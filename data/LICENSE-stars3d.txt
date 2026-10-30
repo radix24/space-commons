@@ -1,0 +1,3 @@
+data/stars3d.json is derived from the HYG database v4.1 by David Nash (https://github.com/astronexus/HYG-Database),
+licensed under Creative Commons Attribution-ShareAlike 4.0 (https://creativecommons.org/licenses/by-sa/4.0/).
+Changes: filtered to stars within 100 light-years and naked-eye stars, reduced to name, position, absolute magnitude, colour index and constellation.
