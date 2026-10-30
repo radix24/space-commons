@@ -1,3 +1,4 @@
+import { QUIZ2 } from './quiz2.js';
 // Space Commons concept cards: astrodynamics from the two-body problem to relative motion, each with a live widget.
 // Level: 기초 (high school), 교양 (university general education), 전공 (astrodynamics course). Formulas in KaTeX.
 import * as O from './orbits.js';
@@ -973,14 +974,25 @@ const chip = (id) => { const c = BYID[id]; const b = el('button', 'cc-chip', `${
 const SEEN_KEY = 'space-commons-cards-seen', OK_KEY = 'space-commons-cards-correct';
 const solved = () => { try { return new Set(JSON.parse(localStorage.getItem(OK_KEY)) || []); } catch { return new Set(); } };
 function markSolved(id) { try { const s2 = solved(); s2.add(id); localStorage.setItem(OK_KEY, JSON.stringify([...s2])); } catch {} }
-function quizBox(id) {
-  const Q = QUIZ[id], box = el('div', 'cc-quiz'), fb = el('div', 'cc-fb'); box.append(el('b', '', '확인 문제'), el('p', '', Q.q));
-  const done = (ok, extra = '') => { fb.className = 'cc-fb ' + (ok ? 'ok' : 'no'); fb.innerHTML = `${ok ? '정답입니다.' : '다시 생각해 보세요.' + extra} ${ok ? Q.why : ''}`; if (ok) markSolved(id); };
-  if (Q.opts) { const row = el('div', 'cc-opts'); Q.opts.forEach((o, k) => { const b = el('button', '', o); b.onclick = () => done(k === Q.a); row.append(b); }); box.append(row); }
-  else { const row = el('div', 'cc-opts'), inp = el('input'); inp.type = 'number'; inp.step = 'any'; const go = el('button', '', '확인'); go.onclick = () => { const v = parseFloat(inp.value); done(Math.abs(v - Q.a) <= (Q.tol || Math.abs(Q.a) * 0.03)); };
+// E2: four check questions per card (the original one plus three from quiz2.js), stepped through one at a time;
+// each answer is remembered as "id#k", and the card counts as solved once all of its questions are right
+const QS = (id) => [QUIZ[id], ...(QUIZ2[id] || [])].filter(Boolean);
+const OKQ_KEY = 'space-commons-cards-qok';
+const okq = () => { try { return new Set(JSON.parse(localStorage.getItem(OKQ_KEY)) || []); } catch { return new Set(); } };
+function markQ(id, k) { try { const s2 = okq(); s2.add(`${id}#${k}`); localStorage.setItem(OKQ_KEY, JSON.stringify([...s2])); if (QS(id).every((_, i) => s2.has(`${id}#${i}`)) || k === 0) markSolved(id); } catch {} }
+function quizBox(id, k = 0) {
+  const list = QS(id), Q = list[k], box = el('div', 'cc-quiz'), fb = el('div', 'cc-fb'), done0 = okq();
+  box.append(el('b', '', `확인 문제 ${k + 1}/${list.length}`), el('p', '', Q.q));
+  const done = (ok, extra = '') => { fb.className = 'cc-fb ' + (ok ? 'ok' : 'no'); fb.innerHTML = `${ok ? '정답입니다.' : '다시 생각해 보세요.' + extra} ${ok ? Q.why : ''}`; if (ok) markQ(id, k); };
+  if (Q.opts) { const row = el('div', 'cc-opts'); Q.opts.forEach((o, j) => { const b = el('button', '', o); b.onclick = () => done(j === Q.a); row.append(b); }); box.append(row); }
+  else { const row = el('div', 'cc-opts'), inp = el('input'); inp.type = 'number'; inp.step = 'any'; const go = el('button', '', '확인'); go.onclick = () => { const v = parseFloat(inp.value); done(Math.abs(v - Q.a) <= (Q.tol ?? Math.abs(Q.a) * 0.03)); };
     inp.onkeydown = (e) => { if (e.key === 'Enter') go.click(); }; row.append(inp, el('span', '', Q.unit || ''), go); box.append(row); }
-  const show = el('button', 'cc-show', '풀이 보기'); show.onclick = () => { fb.className = 'cc-fb'; fb.innerHTML = `답: ${Q.opts ? Q.opts[Q.a] : Q.a + ' ' + (Q.unit || '')}. ${Q.why}`; }; box.append(fb, show);
-  if (solved().has(id)) { fb.className = 'cc-fb ok'; fb.textContent = '이미 맞힌 문제입니다.'; } return box;
+  const show = el('button', 'cc-show', '풀이 보기'); show.onclick = () => { fb.className = 'cc-fb'; fb.innerHTML = `답: ${Q.opts ? Q.opts[Q.a] : Q.a + ' ' + (Q.unit || '')}. ${Q.why}`; };
+  const nav = el('div', 'cc-qnav'); list.forEach((_, j) => { const d = el('button', 'cc-qdot' + (j === k ? ' on' : '') + (done0.has(`${id}#${j}`) ? ' ok' : ''), String(j + 1)); d.onclick = () => box.replaceWith(quizBox(id, j)); nav.append(d); });
+  if (k < list.length - 1) nav.append(Object.assign(el('button', '', '다음 문제 →'), { onclick: () => box.replaceWith(quizBox(id, k + 1)) }));
+  box.append(fb, show, nav);
+  if (done0.has(`${id}#${k}`) || (k === 0 && solved().has(id))) { fb.className = 'cc-fb ok'; fb.textContent = '이미 맞힌 문제입니다.'; }
+  return box;
 }
 const seen = () => { try { return new Set(JSON.parse(localStorage.getItem(SEEN_KEY)) || []); } catch { return new Set(); } };
 function markSeen(id) { try { const s2 = seen(); s2.add(id); localStorage.setItem(SEEN_KEY, JSON.stringify([...s2])); } catch {} }
@@ -1149,9 +1161,19 @@ function openCard(card) {
   cancelAnimationFrame(anim); const loop = () => { if (box.hidden || root.hidden) return; draw(); anim = requestAnimationFrame(loop); }; loop();
 }
 let anim = 0;
+// E2: what to read next - unfinished quizzes on cards already read first, then unread cards whose prerequisites are all read, in textbook order
+function recommend(sn, ok) {
+  const order = CHAPTERS.flatMap(ch => ch.ids), out = [];
+  for (const id of order) if (sn.has(id) && !ok.has(id) && out.length < 1) out.push([id, '읽었지만 확인 문제가 남았습니다']);
+  for (const id of order) { if (out.length >= 3) break; if (sn.has(id)) continue; const pre = PRE[id] || [];
+    if (pre.every(q => sn.has(q))) out.push([id, pre.length ? `먼저 볼 것(${pre.map(q => NUM[q]).join(', ')})을 다 읽었습니다` : '바로 시작할 수 있습니다']); }
+  return out;
+}
 function renderToc() {
   const grid = root.querySelector('.cc-grid'), sn = seen(); grid.innerHTML = '';
-  const ok = solved(); grid.append(el('div', 'cc-progress', `읽은 개념 ${ALL.filter(c => sn.has(c.id)).length}/${ALL.length} · 맞힌 확인 문제 ${ALL.filter(c => ok.has(c.id)).length}/${Object.keys(QUIZ).length}`));
+  const ok = solved(), rec = recommend(sn, ok);
+  if (rec.length) { const r = el('div', 'cc-rec'); r.append(el('b', '', '다음에 볼 개념'), ...rec.map(([id, why]) => { const b = el('button', 'cc-chip', `${NUM[id]} ${BYID[id].title}`); b.title = why; b.onclick = () => openCard(BYID[id]); const w = el('span', 'cc-why', why); const s = el('span', ''); s.append(b, w); return s; })); grid.append(r); }
+  grid.append(el('div', 'cc-progress', `읽은 개념 ${ALL.filter(c => sn.has(c.id)).length}/${ALL.length} · 맞힌 확인 문제 ${ALL.filter(c => ok.has(c.id)).length}/${Object.keys(QUIZ).length}`));
   for (const ch of CHAPTERS) { grid.append(el('h3', 'cc-ch', `${ch.title} <span>${ch.ids.filter(id => sn.has(id)).length}/${ch.ids.length} 읽음 · ${ch.ids.filter(id => ok.has(id)).length} 맞힘</span>`), el('div', 'cc-intro', ch.intro || '')); const row = el('div', 'cc-row');
     for (const id of ch.ids) { const c = BYID[id], b = el('button', 'cc-card' + (sn.has(id) ? ' seen' : ''));
       b.append(el('span', 'cc-num', NUM[id]), el('b', '', c.title), el('span', 'cc-tag', c.tag), el('span', 'cc-level ' + c.level, c.level));

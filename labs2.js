@@ -178,3 +178,52 @@ export function labImpact(h) {
     set([['궤도를 도는 파편 (원반)', `${disk}개 (${h.fmt(disk / n * 100, 1)}%)`], ['날아가 버린 파편', `${esc}개`], ['색', '파랑: 원시 지구 · 노랑: 테이아 · 붉은 기: 철 핵']]); });
   h.deeper(box, '실제 연구는 수백만 개의 입자로 압력과 온도까지 계산하는 SPH(매끄러운 입자 유체 역학)를 씁니다(Canup 2004, 2012). 여기서는 입자 사이 중력과 맞닿았을 때의 반발·마찰만 넣은 간이 모형이라, 모양과 경향(비스듬한 충돌이 원반을 만든다)만 비슷합니다. 달에 철이 적은 이유도 이 그림으로 설명됩니다: 무거운 철 핵은 지구 쪽으로 합쳐지고 가벼운 맨틀 물질이 원반에 남습니다.');
 }
+
+// ---- E1: real observations ----
+const getJSON = (u) => fetch(u).then(r => r.json());
+export async function labTess(h) {
+  const box = h.labBox('실제 자료: TESS로 외계 행성 찾기', 'NASA TESS 망원경이 2018년 WASP-18 별을 27일 동안 2분마다 잰 밝기입니다. 주기적으로 어두워지는 순간이 행성이 별 앞을 지나는 때입니다.');
+  h.steps(box, ['위 그래프에서 규칙적으로 움푹 꺼지는 곳을 찾으세요.', '"접기 주기"를 바꿔 가며 모든 식 현상이 한 곳에 겹치는 주기를 찾으세요. 맞으면 아래 그래프에 깊은 골 하나가 또렷해집니다.', '골의 깊이로 행성 크기를 구합니다: 깊이 = (행성 반지름 ÷ 별 반지름)².']);
+  const P = h.el('input'); P.type = 'range'; P.min = 0.5; P.max = 3; P.step = 0.0005; P.value = 1.3; h.field(box, '접기 주기 (일)', P);
+  const c1 = canvas(h, box, 340, 120), c2 = canvas(h, box, 340, 140), set = h.results(box);
+  const d = await getJSON('data/real-tess-wasp18.json'), rows = d.rows;
+  const plot = (cv, xs, ys, x0, x1, y0, y1, col) => { const { g, w, h: H } = cv; g.fillStyle = '#0f0f10'; g.fillRect(0, 0, w, H); g.fillStyle = col;
+    for (let i = 0; i < xs.length; i++) g.fillRect(8 + (xs[i] - x0) / (x1 - x0) * (w - 16), 6 + (y1 - ys[i]) / (y1 - y0) * (H - 18), 1.4, 1.4); };
+  const draw = () => { const per = +P.value; plot(c1, rows.map(r => r[0]), rows.map(r => r[1]), 0, rows[rows.length - 1][0], -12, 3, '#8fb8c9'); txt(c1.g, '시간 (일) →', c1.w - 10, c1.h - 2, '#8e887d', 9, 'right');
+    const ph = rows.map(r => (((r[0] / per) % 1) + 1) % 1); plot(c2, ph, rows.map(r => r[1]), 0, 1, -12, 3, '#d9a650'); txt(c2.g, '주기로 접은 위상 →', c2.w - 10, c2.h - 2, '#8e887d', 9, 'right');
+    const bins = new Array(50).fill(0).map(() => []); ph.forEach((p, i) => bins[Math.floor(p * 50) % 50].push(rows[i][1])); const means = bins.map(b => b.length ? b.reduce((s, v) => s + v, 0) / b.length : 0), depth = -Math.min(...means);
+    set([['접기 주기', `${h.fmt(per, 4)}일`], ['가장 깊은 골', `${h.fmt(depth, 2)} ppt (천분율)`], ['행성 반지름 / 별 반지름', `${h.fmt(Math.sqrt(depth / 1000), 3)}`], ['정답과 비교', Math.abs(per - d.period_days) < 0.003 ? `맞습니다: WASP-18b, 주기 ${d.period_days}일, 목성보다 약 1.2배 큰 뜨거운 목성` : '아직 골이 흩어져 있습니다']]); };
+  P.oninput = draw; draw();
+  h.deeper(box, '자료: NASA TESS 2섹터, 탐지 검증(DV) 보고서의 추세 제거 광도 곡선(exo.MAST)을 10분 단위로 묶었습니다. 별 반지름(태양의 약 1.23배)을 곱하면 행성 반지름이 나오고, 같은 별을 시선 속도로 재면 질량(목성의 약 10배)도 알 수 있어 밀도를 구할 수 있습니다.');
+}
+export async function labSdss(h) {
+  const box = h.labBox('실제 자료: 은하의 적색편이 재기', 'SDSS(슬론 디지털 전천 탐사)가 찍은 실제 은하의 스펙트럼입니다. 수소와 산소, 나트륨 같은 원소의 선이 실험실보다 긴 파장 쪽으로 밀려 있습니다.');
+  h.steps(box, ['점선은 실험실에서 잰 선의 위치에 적색편이 z를 곱해 옮긴 것입니다.', 'z를 바꿔 점선이 스펙트럼의 뾰족한 봉우리(방출선)와 골(흡수선)에 겹치게 맞추세요.', '찾은 z로 은하가 멀어지는 속도와 거리를 구합니다.']);
+  const Z = h.el('input'); Z.type = 'range'; Z.min = 0; Z.max = 0.2; Z.step = 0.0005; Z.value = 0.05; h.field(box, '적색편이 z', Z);
+  const cv = canvas(h, box, 340, 200), set = h.results(box), d = await getJSON('data/real-sdss-galaxy.json'), rows = d.rows;
+  const LINES = [[3727, '[O II]'], [3934, 'Ca K'], [3969, 'Ca H'], [4861, 'Hβ'], [5007, '[O III]'], [5175, 'Mg'], [5894, 'Na D'], [6563, 'Hα'], [6583, '[N II]'], [6717, '[S II]']];
+  const fmax = Math.max(...rows.map(r => r[1])) * 1.05, x0 = rows[0][0], x1 = rows[rows.length - 1][0];
+  const draw = () => { const z = +Z.value, { g, w, h: H } = cv, X = (l) => 10 + (l - x0) / (x1 - x0) * (w - 20), Y = (f) => H - 18 - Math.max(0, f) / fmax * (H - 30);
+    g.fillStyle = '#0f0f10'; g.fillRect(0, 0, w, H); g.strokeStyle = '#d8d2c6'; g.lineWidth = 1; g.beginPath(); rows.forEach(([l, f], i) => i ? g.lineTo(X(l), Y(f)) : g.moveTo(X(l), Y(f))); g.stroke();
+    g.setLineDash([3, 3]); for (const [l, n] of LINES) { const lo = l * (1 + z); if (lo < x0 || lo > x1) continue; g.strokeStyle = 'rgba(226,87,63,.7)'; g.beginPath(); g.moveTo(X(lo), 10); g.lineTo(X(lo), H - 18); g.stroke(); txt(g, n, X(lo) + 2, 10 + (n.length % 3) * 9, '#e2573f', 8); } g.setLineDash([]);
+    txt(g, `${Math.round(x0)} Å`, 10, H - 4, '#8e887d', 9); txt(g, `${Math.round(x1)} Å`, w - 10, H - 4, '#8e887d', 9, 'right');
+    const v = 299792 * ((1 + z) ** 2 - 1) / ((1 + z) ** 2 + 1), D = v / 70;
+    set([['적색편이 z', h.fmt(z, 4)], ['멀어지는 속도', `${h.fmt(v, 0)} km/s`], ['허블 법칙 거리 (H₀ = 70)', `약 ${h.fmt(D, 0)} Mpc (${h.fmt(D * 3.2616 / 100, 1)}억 광년)`], ['SDSS 파이프라인 값과 비교', Math.abs(z - d.z_pipeline) < 0.002 ? `맞습니다 (z = ${d.z_pipeline})` : '선이 아직 어긋나 있습니다']]); };
+  Z.oninput = draw; draw();
+  h.deeper(box, '자료: SDSS DR17, 판 1198 · 관측일 MJD 52669 · 광섬유 61번 스펙트럼을 4 Å 단위로 묶었습니다. Hα(6563 Å)와 [N II], [O III] 같은 방출선은 별이 태어나는 가스 구름에서, Ca H·K와 Na D 흡수선은 늙은 별들의 대기에서 나옵니다. 속도는 상대론적 도플러 식으로 구했고, 이 거리에서는 허블 법칙이 잘 맞습니다.');
+}
+export async function labGaiaHR(h) {
+  const box = h.labBox('실제 자료: 가이아로 그린 H-R도', '유럽우주국 가이아 위성이 거리를 정밀하게 잰, 100 pc(326광년) 안의 별 6천 개입니다. 색(BP−RP)과 절대 등급으로 찍으면 H-R도가 저절로 나타납니다.');
+  h.steps(box, ['왼쪽 위에서 오른쪽 아래로 이어지는 굵은 띠가 주계열입니다.', '왼쪽 아래의 따로 떨어진 무리가 백색왜성입니다.', '거리를 줄여 가며 어떤 별이 사라지는지 보세요: 가까운 곳에는 어두운 적색왜성이 대부분입니다.']);
+  const dist = h.el('input'); dist.type = 'range'; dist.min = 10; dist.max = 100; dist.step = 5; dist.value = 100; h.field(box, '이 거리 안의 별만 (pc, 가까운 별이 먼저)', dist);
+  const cv = canvas(h, box, 340, 260), set = h.results(box), d = await getJSON('data/real-gaia-hr.json'), rows = d.rows;
+  const draw = () => { const { g, w, h: H } = cv, X = (c) => 30 + (c + 0.5) / 5 * (w - 40), Y = (m) => 10 + (m + 2) / 19 * (H - 30), n = Math.round(rows.length * (+dist.value / 100) ** 3);
+    g.fillStyle = '#0f0f10'; g.fillRect(0, 0, w, H); let wd = 0, ms = 0, gi = 0;
+    for (let i = 0; i < n; i++) { const [c, m] = rows[i]; const col = c < 0.3 ? '#a9c6ff' : c < 0.8 ? '#f4f1e6' : c < 1.5 ? '#ffd27a' : '#ff9a6a'; g.fillStyle = col; g.fillRect(X(c), Y(m), 1.5, 1.5);
+      if (m > 10 && c < 1.0) wd++; else if (m < 4 && c > 0.9) gi++; else ms++; }
+    txt(g, '← 파랗고 뜨거움   색 (BP−RP)   붉고 차가움 →', w / 2, H - 4, '#8e887d', 9, 'center'); txt(g, '밝음', 4, 16, '#8e887d', 9); txt(g, '어두움', 4, H - 22, '#8e887d', 9);
+    txt(g, '주계열', X(1.4), Y(7) - 6, '#d9a650', 10); txt(g, '백색왜성', X(0), Y(13) + 4, '#a9c6ff', 10); txt(g, '거성', X(1.2), Y(0.5), '#ff9a6a', 10);
+    set([['그린 별', `${n}개 (무작위 표본에서 거리 비율로 고름)`], ['주계열 / 백색왜성 / 거성 (대략)', `${ms} / ${wd} / ${gi}`]]); };
+  dist.oninput = draw; draw();
+  h.deeper(box, '자료: Gaia DR3, 연주시차 10 mas 이상(100 pc 안), 시차 정밀도 5% 이내인 별을 무작위로 6천 개 뽑았습니다. 절대 등급은 <span class="tex">M_G = G + 5\log_{10}(\varpi/100)</span>(ϖ는 mas 단위 시차)로 구했습니다. 거리 슬라이더는 부피에 비례해 표본 수를 줄인 근사입니다.');
+}

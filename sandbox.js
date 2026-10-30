@@ -442,7 +442,8 @@ const LABS = [['1단계 · 관찰'], ['행성들의 빠르기 비교', () => lab
   ['3단계 · 계산'], ['원 궤도와 탈출 속도', () => labCircular(), 'twobody'], ['활력 방정식 (vis-viva)', () => labVisViva(), 'visviva'], ['호만 전이 (지구→화성)', () => labHohmann(), 'hohmann'],
   ['4단계 · 설계'], ['발사 시기와 포크찹', () => labPorkchop(), 'lambert'], ['플라이바이 설계', () => labFlyby(), 'flyby'], ['임무 설계 (여러 행성 경유)', () => labMission(), 'flyby'], ['라그랑주점과 트로이', () => labLagrange(), 'cr3bp'],
   ['5단계 · 더 큰 실험'], ['지구 둘레 궤도 설계', () => L2.labOrbitDesign(H2()), 'j2'], ['로켓 발사부터 궤도까지', () => L2.labLaunch(H2()), 'rocket'], ['태양의 일생', () => L2.labSunLife(H2()), 'stellar'],
-  ['블랙홀의 빛 휘어짐', () => L2.labLensing(H2()), 'remnants'], ['은하 충돌', () => L2.labGalaxies(H2()), 'galaxy'], ['충돌 파편의 물리', () => L2.labImpact(H2()), 'moon']];
+  ['블랙홀의 빛 휘어짐', () => L2.labLensing(H2()), 'remnants'], ['은하 충돌', () => L2.labGalaxies(H2()), 'galaxy'], ['충돌 파편의 물리', () => L2.labImpact(H2()), 'moon'],
+  ['6단계 · 실제 관측 자료'], ['TESS로 외계 행성 찾기', () => L2.labTess(H2()), 'transit'], ['은하의 적색편이 재기', () => L2.labSdss(H2()), 'hubble'], ['가이아로 그린 H-R도', () => L2.labGaiaHR(H2()), 'hrdiagram']];
 const H2 = () => ({ labBox, steps, field, num, btn, results, deeper, el, fmt }); // helpers for labs2.js
 const SCENS = [['nosun', '태양이 사라진다면', '행성들은 그 순간의 속도로 곧게 날아갑니다'], ['sunbh', '태양이 블랙홀이라면', '같은 질량이면 궤도는 그대로, 빛과 열만 사라집니다'], ['sun2', '태양 질량 2배', '더 빨리, 더 좁게 돕니다'], ['sunhalf', '태양 질량 절반', '바깥 행성은 풀려납니다'],
   ['jupstar', '목성이 별이었다면', '0.3 태양질량 적색왜성과 쌍성계'], ['jupx10', '목성 질량 10배', '이웃 행성 궤도가 흔들립니다'], ['rogue', '떠돌이 별이 지나간다면', '태양계 바깥이 흐트러집니다'], ['roguebh', '블랙홀이 지나간다면', '10 태양질량, 30 km/s'],
