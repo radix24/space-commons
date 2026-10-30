@@ -619,7 +619,7 @@ const PLANETS = [
 const KM_AU = 149597870.7;
 const eclU = { on: { value: 0 }, shadowDir: { value: new THREE.Vector3(0, 0, 1) }, umbR: { value: 0.012 }, penR: { value: 0.022 } };
 const planetMat = (tex, emissive) => new THREE.ShaderMaterial({
-  uniforms: { ...eclU, isMoon: { value: 0 }, occ: { value: [0, 1, 2, 3].map(() => new THREE.Vector4()) }, occN: { value: 0 },
+  uniforms: { ...eclU, isMoon: { value: 0 }, occ: { value: [0, 1, 2, 3].map(() => new THREE.Vector4()) }, occN: { value: 0 }, sunAng: { value: 0.005 },
     ringOn: { value: 0 }, ringN: { value: new THREE.Vector3(0, 1, 0) }, ringC: { value: new THREE.Vector3() }, ringR: { value: 1 }, ringMap: { value: null }, map: { value: tex }, ambient: { value: 0.025 }, night: { value: null }, hasNight: { value: 0 }, sunDir: { value: new THREE.Vector3(1, 0, 0) }, emissive: { value: emissive ? 1 : 0 }, bump: { value: null }, hasBump: { value: 0 }, bumpK: { value: 0 } },
   vertexShader: `#include <common>
     #include <logdepthbuf_pars_vertex>
@@ -628,7 +628,7 @@ const planetMat = (tex, emissive) => new THREE.ShaderMaterial({
     #include <logdepthbuf_vertex>
     }`,
   fragmentShader: `#include <logdepthbuf_pars_fragment>
-    uniform vec4 occ[4]; uniform int occN; uniform float ringOn, ringR; uniform vec3 ringN, ringC; uniform sampler2D ringMap;
+    uniform vec4 occ[4]; uniform int occN; uniform float sunAng; uniform float ringOn, ringR; uniform vec3 ringN, ringC; uniform sampler2D ringMap;
     uniform sampler2D map, night; uniform float hasNight, ambient, on, umbR, penR, isMoon; uniform vec3 shadowDir; varying vec3 vW; uniform vec3 sunDir; uniform float emissive; varying vec2 vUv; varying vec3 vN;
     uniform sampler2D bump; uniform float hasBump, bumpK; varying vec3 vPole;
     void main(){
@@ -653,7 +653,9 @@ const planetMat = (tex, emissive) => new THREE.ShaderMaterial({
       // shadows cast on this body: moons (round, soft-edged) and Saturn's rings (their own transparency)
       for (int i = 0; i < 4; i++) { if (i >= occN) break;
         vec3 toC = occ[i].xyz - vW; float t = dot(toC, sunDir);
-        if (t > 0.0) col *= mix(0.06, 1.0, smoothstep(occ[i].w * 0.8, occ[i].w * 1.25, length(toC - sunDir * t))); }
+        // umbra and penumbra from the Sun's real apparent size: the edge is as wide as the Sun's disc projected over the gap
+        if (t > 0.0) { float w = max(t * sunAng, 1e-4 * occ[i].w), d = length(toC - sunDir * t), cover = min(1.0, (occ[i].w / w) * (occ[i].w / w));
+          col *= 1.0 - 0.97 * cover * (1.0 - smoothstep(abs(occ[i].w - w), occ[i].w + w, d)); } }
       if (ringOn > 0.5) { float dn = dot(sunDir, ringN);
         if (abs(dn) > 1e-4) { float t = dot(ringC - vW, ringN) / dn;
           if (t > 0.0) { float rr = length(vW + sunDir * t - ringC) / ringR;
@@ -866,7 +868,7 @@ function updateAsteroids() {
 }
 
 // ---------- shadows cast between bodies (moons on planets, planets on moons' parents, Saturn's rings) ----------
-const _w = new THREE.Vector3(), _q = new THREE.Quaternion(), _s = new THREE.Vector3();
+const _w = new THREE.Vector3(), _q = new THREE.Quaternion(), _s = new THREE.Vector3(), _s2 = new THREE.Vector3();
 function updateShadows() {
   planetScene.updateMatrixWorld();
   const R = (b) => b.mesh.getWorldScale(_s).x;
@@ -877,6 +879,7 @@ function updateShadows() {
       .sort((a, b) => b.R - a.R).slice(0, 4);
     occl.forEach((m, i) => { m.mesh.getWorldPosition(_w); u.occ.value[i].set(_w.x, _w.y, _w.z, R(m)); });
     u.occN.value = occl.length;
+    { const sun = PLANETS[0].mesh; sun.getWorldPosition(_s2); p.mesh.getWorldPosition(_w); u.sunAng.value = R(PLANETS[0]) / Math.max(1e-9, _w.distanceTo(_s2)); }
     if (p.ringMesh) {
       p.mesh.getWorldPosition(_w); u.ringOn.value = 1; u.ringC.value.copy(_w); u.ringR.value = R(p); u.ringMap.value = p.ringMesh.material.uniforms.map.value;
       u.ringN.value.set(0, 1, 0).applyQuaternion(p.mesh.getWorldQuaternion(_q));
