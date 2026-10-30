@@ -594,15 +594,15 @@ const PLANETS = [
   { name: 'Uranus', img: 'textures/2k_uranus.jpg', ko: '천왕성', R: 25559, pole: [257.31, -15.18], tex: () => banded(['#a6dbe0', '#b5e4e8', '#9ad0d6'], 29, 4), period: -0.72 },
   { name: 'Neptune', img: 'textures/2k_neptune.jpg', ko: '해왕성', R: 24764, pole: [299.36, 43.46], tex: () => banded(['#3f66c8', '#5379d6', '#3456b0', '#6a8fe0'], 31, 6), period: 0.67 },
   // major moons (approximate: Meeus low-accuracy theory for the Galilean moons, circular orbit for Titan)
-  { name: 'Io', ko: '이오', parent: 'Jupiter', R: 1822, pole: [268.06, 64.5], tex: () => rocky('#d8c45a', ['#b0742a', '#f1e7a0', '#7a4a1c'], 41), period: 1.769 },
-  { name: 'Europa', ko: '유로파', parent: 'Jupiter', R: 1561, pole: [268.06, 64.5], tex: () => rocky('#d9cfbf', ['#a0785a', '#f4efe6'], 43), period: 3.551 },
-  { name: 'Ganymede', ko: '가니메데', parent: 'Jupiter', R: 2634, pole: [268.06, 64.5], tex: () => rocky('#8f8578', ['#5d544a', '#c9c2b5'], 47, 120), period: 7.155 },
-  { name: 'Callisto', ko: '칼리스토', parent: 'Jupiter', R: 2410, pole: [268.06, 64.5], tex: () => rocky('#5e554b', ['#3b342d', '#a59c8f'], 53, 400), period: 16.689 },
-  { name: 'Ceres', ko: '세레스', img: 'textures/2k_ceres_fictional.jpg', R: 470, pole: [291.4, 66.8], period: 0.378, small: '왜행성',
+  { name: 'Io', img: 'textures/2k_io.jpg', ko: '이오', parent: 'Jupiter', R: 1822, pole: [268.06, 64.5], tex: () => rocky('#d8c45a', ['#b0742a', '#f1e7a0', '#7a4a1c'], 41), period: 1.769 },
+  { name: 'Europa', img: 'textures/2k_europa.jpg', ko: '유로파', parent: 'Jupiter', R: 1561, pole: [268.06, 64.5], tex: () => rocky('#d9cfbf', ['#a0785a', '#f4efe6'], 43), period: 3.551 },
+  { name: 'Ganymede', img: 'textures/2k_ganymede.jpg', ko: '가니메데', parent: 'Jupiter', R: 2634, pole: [268.06, 64.5], tex: () => rocky('#8f8578', ['#5d544a', '#c9c2b5'], 47, 120), period: 7.155 },
+  { name: 'Callisto', img: 'textures/2k_callisto.jpg', ko: '칼리스토', parent: 'Jupiter', R: 2410, pole: [268.06, 64.5], tex: () => rocky('#5e554b', ['#3b342d', '#a59c8f'], 53, 400), period: 16.689 },
+  { name: 'Ceres', img: 'textures/2k_ceres.jpg', ko: '세레스', img: 'textures/2k_ceres_fictional.jpg', R: 470, pole: [291.4, 66.8], period: 0.378, small: '왜행성',
     sb: { epoch: 2461200.5, a: 2.765552595034094, e: .07969229514816586, i: 10.58802780183462, om: 80.24862682043221, w: 73.29421453021587, ma: 274.4193463761342, n: .21430445064843 } },
-  { name: 'Vesta', ko: '베스타', R: 263, pole: [309, 42], period: 0.223, small: '소행성', tex: () => rocky('#8f8a80', ['#5f5a52', '#b8b2a6'], 61, 200),
+  { name: 'Vesta', img: 'textures/2k_vesta.jpg', ko: '베스타', R: 263, pole: [309, 42], period: 0.223, small: '소행성', tex: () => rocky('#8f8a80', ['#5f5a52', '#b8b2a6'], 61, 200),
     sb: { epoch: 2461200.5, a: 2.361365965127599, e: .09020374382834395, i: 7.143925545058711, om: 103.701293265032, w: 151.4686478221564, ma: 81.19015607686903, n: .2716183613599909 } },
-  { name: 'Pluto', ko: '명왕성', R: 1188, pole: [132.99, -6.16], period: -6.387, small: '왜행성', tex: () => rocky('#c9a982', ['#6b4a35', '#efe2cf', '#8a6a52'], 67),
+  { name: 'Pluto', img: 'textures/2k_pluto.jpg', ko: '명왕성', R: 1188, pole: [132.99, -6.16], period: -6.387, small: '왜행성', tex: () => rocky('#c9a982', ['#6b4a35', '#efe2cf', '#8a6a52'], 67),
     sb: { epoch: 2457588.5, a: 39.58862938517124, e: .2518378778576892, i: 17.14771140999114, om: 110.2923840543057, w: 113.7090015158565, ma: 38.68366347318184, n: .003956838955553025 } },
   { name: 'Eris', ko: '에리스', img: 'textures/2k_eris_fictional.jpg', R: 1163, pole: [0, 90], period: 15.8, small: '왜행성',
     sb: { epoch: 2461200.5, a: 67.93394687853566, e: .4382385347971672, i: 43.9258279471791, om: 36.00477044417249, w: 150.7949235840312, ma: 211.774434275007, n: .001760247770619088 } },
@@ -614,7 +614,7 @@ const PLANETS = [
     sb: { epoch: 2439875.5, a: 17.92863504856923, e: .9679359956953211, i: 162.1905300439129, om: 59.09894720612437, w: 112.2414314637764, ma: 274.3823371366792, n: .01298324443268444 } },
   ...MOON_STATES.map((m, i) => ({ name: m.name, ko: m.ko, parent: m.parent, R: m.R, pole: { Mars: [317.68, 52.89], Saturn: [40.59, 83.54], Uranus: [257.31, -15.18], Neptune: [299.36, 43.46] }[m.parent],
     period: m.P, orb: m, tex: () => rocky(m.name === 'Triton' ? '#c9b4a6' : m.name === 'Enceladus' ? '#f2f2f0' : '#9d9890', ['#6a655e', '#cfcac2'], 80 + i, 150) })),
-  { name: 'Titan', ko: '타이탄', parent: 'Saturn', R: 2575, pole: [40.59, 83.54], tex: () => banded(['#d29a4a', '#c88c3c', '#ddb070'], 59, 3), period: 15.945 },
+  { name: 'Titan', img: 'textures/2k_titan.jpg', ko: '타이탄', parent: 'Saturn', R: 2575, pole: [40.59, 83.54], tex: () => banded(['#d29a4a', '#c88c3c', '#ddb070'], 59, 3), period: 15.945 },
 ];
 const KM_AU = 149597870.7;
 const eclU = { on: { value: 0 }, shadowDir: { value: new THREE.Vector3(0, 0, 1) }, umbR: { value: 0.012 }, penR: { value: 0.022 } };
