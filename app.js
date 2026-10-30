@@ -2721,6 +2721,31 @@ function updateAuroraGround(u) { // strongest aurora within ~1,100 km: how high 
   const elev = Math.max(0.03, Math.atan2(150, Math.max(1, bd)) - bd / (2 * 6371));  // curtain at ~150 km seen from bd km away
   u.aurK.value = Math.min(1, best / 25) * 0.35; u.aurH.value = Math.min(1.2, elev + 0.05); u.aurDir.value.set(Math.sin(baz), 0, -Math.cos(baz));
 }
+// ---------- A4. light pollution from satellite night lights: NASA Black Marble (VIIRS, public domain) via GIBS ----------
+// Sky glow at a point ~ sum of every light within ~110 km weighted by distance^-2.5 (Walker's law); log10 of that sum is calibrated to the Bortle scale
+// on known places (central Seoul 9, Yangpyeong ~6, Bohyeonsan Observatory ~3, Atacama 1).
+const BORTLE_CUT = [1.1, 0.9, 0.7, 0.45, 0.15, -0.3, -1.0, -2.0];
+const bortleOf = (s) => { const L = Math.log10(Math.max(1e-9, s)); let b = 9; for (const t of BORTLE_CUT) { if (L >= t) return b; b--; } return 1; };
+async function autoBortle() {
+  const lat = state.lat, lon = state.lon; $('status').textContent = '위성 야간 사진으로 하늘 밝기를 재는 중 (NASA Black Marble)…';
+  let im; try { im = await createImageBitmap(await (await fetch(`https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&REQUEST=GetMap&VERSION=1.3.0&LAYERS=VIIRS_Black_Marble&CRS=EPSG:4326&BBOX=${lat - 1},${lon - 1},${lat + 1},${lon + 1}&WIDTH=256&HEIGHT=256&FORMAT=image/png&TIME=2016-01-01`)).blob()); }
+  catch { $('status').textContent = '야간 사진을 받지 못했습니다'; return; }
+  const cv = document.createElement('canvas'); cv.width = cv.height = 256; const g = cv.getContext('2d'); g.drawImage(im, 0, 0); const d = g.getImageData(0, 0, 256, 256).data;
+  const r = new Float32Array(256 * 256); for (let i = 0; i < r.length; i++) { const L = (0.3 * d[4 * i] + 0.59 * d[4 * i + 1] + 0.11 * d[4 * i + 2]) / 255; r[i] = Math.max(0, L - 0.16) ** 2.2; }
+  const kx = 222 * Math.cos(lat * D2R) / 256, ky = 222 / 256;
+  const lit = []; for (let i = 0; i < r.length; i++) if (r[i] > 1e-5) lit.push((i % 256) * kx, Math.floor(i / 256) * ky, r[i]); // only lit pixels count
+  const glow = (cx, cy) => { let s = 0; const X = cx * kx, Y = cy * ky; for (let k = 0; k < lit.length; k += 3) { const d2 = Math.max(1, (lit[k] - X) ** 2 + (lit[k + 1] - Y) ** 2); s += lit[k + 2] * d2 ** -1.25; } return s; };
+  const here = bortleOf(glow(127.5, 127.5));
+  // a darker place within ~80 km: sample a coarse grid on land and keep the nearest spot at least two classes darker (or class 3)
+  let best = null;
+  for (let gy = 16; gy <= 240; gy += 16) for (let gx = 16; gx <= 240; gx += 16) { const dk = Math.hypot((gx - 127.5) * kx, (gy - 127.5) * ky); if (dk > 80 || dk < 8) continue;
+    const L = (0.3 * d[4 * (gy * 256 + gx)] + 0.59 * d[4 * (gy * 256 + gx) + 1]) / 255; if (L < 0.09) continue; // skip sea (darker than land in this rendering)
+    const b = bortleOf(glow(gx, gy)); if (b < here && b <= Math.max(3, here - 2) && (!best || dk < best.dk)) best = { b, dk, la: lat + (127.5 - gy) * 2 / 256, lo: lon + (gx - 127.5) * 2 / 256, az: Math.atan2((gx - 127.5) * kx, (127.5 - gy) * ky) * R2D }; }
+  $('bortle').value = String(here); $('bortle').dispatchEvent(new Event('change'));
+  const dir = ['북', '북동', '동', '남동', '남', '남서', '서', '북서'][Math.round(((best?.az ?? 0) + 360) % 360 / 45) % 8];
+  $('status').textContent = `위성 야간 사진으로 판정한 광공해: ${here}단계` + (best ? ` · 가장 가까운 더 어두운 곳(${best.b}단계): ${dir}쪽 약 ${Math.round(best.dk)} km (${best.la.toFixed(2)}°, ${best.lo.toFixed(2)}°)` : ' · 80 km 안에 확실히 더 어두운 곳이 없습니다');
+}
+$('lp-auto').onclick = () => autoBortle();
 // ---------- 22. whole spacecraft journeys (S7) ----------
 function journeyTimeline(p) {
   const box = $('info-exo'), ev = JOURNEYS[p.name], e = probeEph[p.name]; box.innerHTML = ''; box.hidden = false;
