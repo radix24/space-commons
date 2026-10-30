@@ -1460,6 +1460,7 @@ function select(o) {
       for (const v of [`${f(p.rise)} ~ ${new Date(p.set).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit', hour12: false })}`, `${p.max.toFixed(0)}°`, p.lit && p.dark ? '예' : '아니오']) tr.insertCell().textContent = v; }
     if (!ps.length) tb.insertRow().insertCell().textContent = mode.space ? '통과 예보는 지상 모드에서 볼 수 있습니다' : '3일 안에 10° 위로 지나가지 않습니다';
     $('info-exo').innerHTML = ''; $('info-exo').append(tb); $('info-exo').hidden = false;
+    if (ps.length && 'Notification' in window) { const nb = document.createElement('button'); nb.textContent = alerts.has(o.id) ? '통과 알림 끄기' : '다음 통과 5분 전에 알림'; nb.onclick = () => togglePassAlert(o, ps, nb); $('info-exo').append(nb); }
   } else if (o.kindName === 'const') {
     ra = o.ra; dec = o.dec;
     $('info-title').textContent = `${o.name} (${o.la})`; $('info-sub').textContent = `별자리 · IAU 약자 ${o.desig}`;
@@ -1490,6 +1491,7 @@ function select(o) {
     ({ ra, dec } = vecToRaDec(o.v));
     $('info-title').textContent = o.name; $('info-sub').textContent = '항성 · ' + (starData.desig[o.i] || `HIP ${starData.id[o.i]}`);
     row('겉보기 등급', o.mag.toFixed(2)); row('B−V 색지수', isNaN(starData.bv[o.i]) ? '' : starData.bv[o.i].toFixed(2)); row('HIP', starData.id[o.i]);
+    { const vb = varStarBox(o); if (vb) { $('info-exo').innerHTML = ''; $('info-exo').append(vb); $('info-exo').hidden = false; } }
   } else {
     ra = o.ra; dec = o.dec;
     $('info-title').textContent = [o.messier, o.name].filter(Boolean).join(' · ') + (o.common ? ` — ${o.common}` : '');
@@ -1508,7 +1510,7 @@ function select(o) {
     row(`${prevSelected.planet ? prevSelected.p.ko : prevSelected.messier || prevSelected.name}까지 각거리`, fmtAng(a));
   }
   altGraph(o, ra, dec);
-  if (o.kindName !== 'exo' && o.kindName !== 'sat') exoDetail(null);
+  if (o.kindName !== 'exo' && o.kindName !== 'sat' && !(o.kindName === 'star' && VSTARS[starData.proper[o.i]])) exoDetail(null);
   if (o.planet && o.p.probe && JOURNEYS[o.p.name]) journeyTimeline(o.p);
   showPhoto(o.kindName === 'dso' ? o : null);
   showWiki(o); writeHash(); syncObsButton();
@@ -2746,6 +2748,71 @@ async function autoBortle() {
   $('status').textContent = `위성 야간 사진으로 판정한 광공해: ${here}단계` + (best ? ` · 가장 가까운 더 어두운 곳(${best.b}단계): ${dir}쪽 약 ${Math.round(best.dk)} km (${best.la.toFixed(2)}°, ${best.lo.toFixed(2)}°)` : ' · 80 km 안에 확실히 더 어두운 곳이 없습니다');
 }
 $('lp-auto').onclick = () => autoBortle();
+// ---------- B6. pass alerts: a notification a few minutes before a satellite rises (while this page is open) ----------
+const alerts = new Map();
+async function togglePassAlert(o, ps, btn) {
+  if (alerts.has(o.id)) { clearTimeout(alerts.get(o.id)); alerts.delete(o.id); btn.textContent = '다음 통과 5분 전에 알림'; return; }
+  if (Notification.permission !== 'granted' && await Notification.requestPermission() !== 'granted') { $('status').textContent = '브라우저 알림이 허용되지 않았습니다'; return; }
+  const p = ps.find(q => q.rise > Date.now() + 60e3); if (!p) return;
+  const wait = Math.max(0, p.rise - 5 * 60e3 - Date.now()), hm = (t) => new Date(t).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit', hour12: false });
+  alerts.set(o.id, setTimeout(() => { alerts.delete(o.id); new Notification(`${o.name} 곧 지나갑니다`, { body: `${hm(p.rise)}에 떠서 최고 고도 ${p.max.toFixed(0)}°까지 올라갑니다${p.lit && p.dark ? ' (맨눈으로 보일 수 있음)' : ''}`, icon: 'assets/sc-mark.svg?v=2' }); }, wait));
+  btn.textContent = '통과 알림 끄기'; $('status').textContent = `${o.name}: ${hm(p.rise - 5 * 60e3)}에 알림 (이 페이지가 열려 있는 동안)`;
+}
+
+// ---------- B4. observing log: each observation with date, place, equipment, notes and a photo; kept in IndexedDB, exported as JSON or CSV ----------
+const logDB = new Promise((ok, no) => { try { const r = indexedDB.open('space-commons-log', 1); r.onupgradeneeded = () => r.result.createObjectStore('obs', { keyPath: 'id', autoIncrement: true }); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); } catch (e) { no(e); } });
+const logTx = async (mode, fn) => { const db = await logDB; return new Promise((ok, no) => { const t = db.transaction('obs', mode), s = t.objectStore('obs'), r = fn(s); t.oncomplete = () => ok(r?.result); t.onerror = () => no(t.error); }); };
+async function addLog(o) {
+  const es = $('eyepiece'); const rec = { target: objLabel(o), key: objKey(o), time: state.time, saved: Date.now(), lat: state.lat, lon: state.lon, bortle: +$('bortle').value,
+    gear: es.value === 'custom' ? `${$('g-ap').value}mm f/${(+$('g-fl').value / +$('g-ap').value).toFixed(1)}, ${$('g-ep').value}mm 접안` : es.options[es.selectedIndex].text, note: '', photo: null };
+  await logTx('readwrite', s => s.add(rec)); renderLog();
+}
+async function renderLog() {
+  const all = (await logTx('readonly', s => s.getAll()).catch(() => [])) || [], box = $('log-list'); box.innerHTML = '';
+  $('log-sub').textContent = all.length ? `기록 ${all.length}개 · 이 브라우저에만 저장됩니다` : '천체를 고르고 정보창의 "관측 기록 남기기"를 누르세요';
+  for (const r of all.slice().reverse()) {
+    const li = document.createElement('li'), d = new Date(r.time).toLocaleString(LOCALE, { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
+    li.innerHTML = `<b>${r.target}</b> <span class="small">${d} · ${r.lat.toFixed(2)}°, ${r.lon.toFixed(2)}° · 광공해 ${r.bortle}단계 · ${r.gear}</span>`;
+    const note = document.createElement('textarea'); note.placeholder = '본 것, 하늘 상태, 스케치 설명'; note.value = r.note || ''; note.onchange = () => { r.note = note.value; logTx('readwrite', s => s.put(r)); };
+    const ph = document.createElement('input'); ph.type = 'file'; ph.accept = 'image/*'; ph.onchange = async () => { const f = ph.files[0]; if (!f) return; // keep photos small: 1200 px JPEG
+      const bm = await createImageBitmap(f), k = Math.min(1, 1200 / Math.max(bm.width, bm.height)), cv = document.createElement('canvas'); cv.width = bm.width * k; cv.height = bm.height * k; cv.getContext('2d').drawImage(bm, 0, 0, cv.width, cv.height);
+      r.photo = cv.toDataURL('image/jpeg', 0.8); await logTx('readwrite', s => s.put(r)); renderLog(); };
+    const del = document.createElement('button'); del.textContent = '삭제'; del.onclick = async () => { await logTx('readwrite', s => s.delete(r.id)); renderLog(); };
+    li.append(note); if (r.photo) { const im = document.createElement('img'); im.src = r.photo; im.className = 'log-photo'; li.append(im); }
+    const row = document.createElement('div'); row.className = 'row'; row.append(ph, del); li.append(row); box.append(li);
+  }
+  $('log').hidden = false;
+}
+async function exportLog(kind) {
+  const all = (await logTx('readonly', s => s.getAll())) || []; let blob, name;
+  if (kind === 'csv') { const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    blob = new Blob(['\ufeff날짜,천체,위도,경도,광공해,장비,메모\n' + all.map(r => [new Date(r.time).toISOString(), r.target, r.lat, r.lon, r.bortle, r.gear, r.note].map(q).join(',')).join('\n')], { type: 'text/csv' }); name = 'space-commons-log.csv'; }
+  else { blob = new Blob([JSON.stringify(all, null, 1)], { type: 'application/json' }); name = 'space-commons-log.json'; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+$('log-btn').onclick = () => $('log').hidden ? renderLog() : ($('log').hidden = true);
+$('log-close').onclick = () => $('log').hidden = true;
+$('log-json').onclick = () => exportLog('json'); $('log-csv').onclick = () => exportLog('csv');
+$('log-add').onclick = () => { if (selected) addLog(selected).then(() => { $('status').textContent = `${objLabel(selected)} 관측 기록을 남겼습니다`; }); };
+
+// ---------- B5. variable-star estimates, exported in the AAVSO Visual File Format ----------
+const VSTARS = { Algol: 'bet Per', Mira: 'omi Cet', Betelgeuse: 'alf Ori', 'Delta Cephei': 'del Cep', Polaris: 'alf UMi', Antares: 'alf Sco', 'R Leonis': 'R Leo', 'Chi Cygni': 'chi Cyg', 'Eta Aquilae': 'eta Aql', 'Zeta Geminorum': 'zet Gem', 'Mu Cephei': 'mu Cep', 'Rasalgethi': 'alf Her' };
+const VS_KEY = 'space-commons-varstar';
+function varStarBox(o) { // shown in the star panel when the star is a known variable
+  const name = starData.proper[o.i]; const id = VSTARS[name]; if (!id) return null;
+  const box = document.createElement('div'); box.className = 'vs-box';
+  box.innerHTML = `<b>변광성 밝기 기록 (${id})</b><div class="small">비교성 두 개와 견줘 눈으로 어림한 등급을 적습니다. 국제 변광성 관측자 협회(AAVSO) 형식으로 내보낼 수 있습니다.</div>
+    <div class="row"><input type="number" step="0.1" placeholder="어림 등급" class="vs-mag"><input placeholder="비교성1 (예: 21)" class="vs-c1"><input placeholder="비교성2" class="vs-c2"><button class="vs-save">기록</button><button class="vs-exp">AAVSO 파일</button></div><div class="small vs-n"></div>`;
+  const load = () => { try { return JSON.parse(localStorage.getItem(VS_KEY)) || []; } catch { return []; } };
+  const show = () => { const l = load().filter(x => x.id === id); box.querySelector('.vs-n').textContent = l.length ? `이 별 기록 ${l.length}개 · 마지막 ${l[l.length - 1].mag}등급` : ''; };
+  box.querySelector('.vs-save').onclick = () => { const m = parseFloat(box.querySelector('.vs-mag').value); if (!isFinite(m)) return;
+    const l = load(); l.push({ id, jd: jd(state.time), mag: m, c1: box.querySelector('.vs-c1').value, c2: box.querySelector('.vs-c2').value }); try { localStorage.setItem(VS_KEY, JSON.stringify(l)); } catch {} show(); };
+  box.querySelector('.vs-exp').onclick = () => { const l = load(); if (!l.length) return;
+    const txt = ['#TYPE=VISUAL', '#OBSCODE=XXXX', '#SOFTWARE=Space Commons', '#DELIM=,', '#DATE=JD', '#OBSTYPE=Visual', '#NAME,DATE,MAG,COMMENTCODE,COMP1,COMP2,CHART,NOTES',
+      ...l.map(r => [r.id, r.jd.toFixed(4), r.mag.toFixed(1), 'na', r.c1 || 'na', r.c2 || 'na', 'na', 'na'].join(','))].join('\n');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: 'text/plain' })); a.download = 'aavso-visual.txt'; a.click(); };
+  show(); return box;
+}
 // ---------- 22. whole spacecraft journeys (S7) ----------
 function journeyTimeline(p) {
   const box = $('info-exo'), ev = JOURNEYS[p.name], e = probeEph[p.name]; box.innerHTML = ''; box.hidden = false;

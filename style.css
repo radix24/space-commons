@@ -405,3 +405,8 @@ button.on, .on > button { background: var(--orbit); border-color: var(--orbit); 
 /* the wordmark keeps its original geometric face */
 .wordmark, #brand span { font-family: Manrope, "Pretendard Variable", sans-serif; font-weight: 800; letter-spacing: -0.03em; }
 .wordmark span, #brand em { font-weight: 800; }
+
+#log-list { list-style: none; padding: 0; margin: 8px 0; } #log-list li { border-bottom: 1px solid var(--line); padding: 8px 0; }
+#log-list textarea { width: 100%; min-height: 48px; margin: 6px 0; background: #19191a; color: var(--ink); border: 1px solid var(--line); font: inherit; }
+.log-photo { max-width: 100%; display: block; margin: 4px 0; }
+.vs-box { margin-top: 8px; padding: 8px; border: 1px solid var(--line); } .vs-box input { width: 80px; }

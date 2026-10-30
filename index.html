@@ -150,7 +150,7 @@
     <p id="wiki-text"></p>
     <a id="wiki-link" target="_blank" rel="noopener"></a>
   </div>
-  <div class="row"><button id="info-goto">이동 · 확대</button><button id="obs-add">관측 목록에 담기</button></div>
+  <div class="row"><button id="info-goto">이동 · 확대</button><button id="obs-add">관측 목록에 담기</button><button id="log-add">관측 기록 남기기</button></div>
 </div>
 
 <div id="tonight" hidden>
@@ -227,6 +227,14 @@
   <ul id="obs-list"></ul>
   <div class="row"><button id="plan-btn">오늘 밤 관측 계획 짜기</button><button id="plan-print" hidden>인쇄</button></div>
   <div id="plan" hidden></div>
+  <div class="row"><button id="log-btn">관측 일지 열기</button></div>
+</div>
+<div id="log" class="side" hidden>
+  <button class="x" id="log-close">×</button>
+  <h2>관측 일지</h2>
+  <div id="log-sub" class="small"></div>
+  <div class="row"><button id="log-json">JSON 내보내기</button><button id="log-csv">CSV 내보내기</button></div>
+  <ul id="log-list"></ul>
 </div>
 
 <div id="help"><span class="ground-only">드래그: 회전 · 휠/핀치: 확대 · 클릭: 선택 · 더블클릭: 이동·확대</span><span class="space-only">드래그: 공전/시점 · 휠: 거리 · W A S D / Q E: 이동 · Shift: 가속 · 더블클릭: 천체로 비행</span><br>행성 텍스처 © <a href="https://www.solarsystemscope.com/textures/" target="_blank" style="color:inherit">Solar System Scope</a> (CC BY 4.0) · 은하수 사진 <a href="https://www.eso.org/public/images/eso0932a/" target="_blank" rel="noopener">ESO/S. Brunier</a> (CC BY 4.0) · 탐사선 모델 NASA, ESA</div>
