@@ -933,11 +933,12 @@ function updateSpace() {
   const earth = helioPos.Earth;
   if (sp.target && !sp.flight) sp.pos.copy(helioPos[sp.target.name]).addScaledVector(new THREE.Vector3(0, 0, -1).applyQuaternion(sp.quat), -sp.dist);
   const minAng = view.fov * D2R * 0.0035;
-  let nearest = Infinity;
+  let nearest = Infinity, nearestAll = Infinity;
   for (const p of PLANETS) {
     const hp = helioPos[p.name] || new THREE.Vector3(), rel = hp.clone().sub(sp.pos), d = rel.length();
     if (p.probe) {
       if (!p.active) { p.mesh.visible = false; p.world = null; continue; }
+      nearestAll = Math.min(nearestAll, d - bodyR(p));
       const gq = hp.clone().sub(earth); p.dist = gq.length() / MKM_AU; const rd = vecToRaDec(gq); p.ra = rd.ra; p.dec = rd.dec; p.helioAU = hp.length() / MKM_AU;
       placeProbe(p, rel, earth.clone().sub(sp.pos), sp.pos.clone().negate(), 0); p.mesh.visible = true; continue;
     }
@@ -962,7 +963,7 @@ function updateSpace() {
   }
   orbits.position.copy(sp.pos).negate(); trails.position.copy(orbits.position); updateTrails(jd(state.time));
   orbits.visible = $('t-orbits').checked && nearest > 2; trails.visible = orbits.visible; // orbit lines only clutter close-ups
-  sp.nearest = nearest;
+  sp.nearest = nearest; sp.nearestAll = Math.min(nearest, nearestAll);
   updateTail();
 }
 // orbit lines (Kepler ellipses, drawn in absolute coordinates and shifted by the camera position)
@@ -1309,7 +1310,10 @@ function frame(now) {
   renderer.clear();
   renderer.render(scene, camera);
   pcam.quaternion.copy(camera.quaternion); pcam.fov = camera.fov;
-  if (mode.space) { pcam.near = 1e-9; pcam.far = 1e6; } else { pcam.near = camera.near; pcam.far = camera.far; }
+  // log depth spends its precision on distances near 1 unit: rescale the scene so the closest surface sits about 1 unit away,
+  // otherwise a 20 m spacecraft seen from 20 m (2e-8 units) collapses into one depth value and its layers z-fight
+  if (mode.space) { const k = 1 / Math.max(1e-12, sp.nearestAll || 1); planetScene.scale.setScalar(k); pcam.near = 1e-3; pcam.far = 1e14; }
+  else { planetScene.scale.setScalar(1); pcam.near = camera.near; pcam.far = camera.far; }
   pcam.updateProjectionMatrix(); pcam.updateMatrixWorld();
   renderer.clearDepth();
   renderer.render(planetScene, pcam);
