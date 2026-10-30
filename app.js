@@ -13,14 +13,10 @@ import { KR_SATS, ORBITERS, SITES } from './content-missions.js';
 // ---------- constants & helpers ----------
 const D2R = Math.PI / 180, R2D = 180 / Math.PI;
 const R_MW = 1050, R_SKY = 1000, R_DSO = 980, R_PLANET = 900;
-const CDN = 'https://cdn.jsdelivr.net/gh/';
+const CDN = 'data/celestial/'; // d3-celestial (BSD 3-Clause) and OpenNGC (CC BY-SA 4.0), kept here by tools/fetch_vendor.py
 const URLS = {
-  stars: CDN + 'ofrohn/d3-celestial@master/data/stars.8.json',
-  starnames: CDN + 'ofrohn/d3-celestial@master/data/starnames.json',
-  lines: CDN + 'ofrohn/d3-celestial@master/data/constellations.lines.json',
-  consts: CDN + 'ofrohn/d3-celestial@master/data/constellations.json',
-  bounds: CDN + 'ofrohn/d3-celestial@master/data/constellations.bounds.json',
-  ngc: CDN + 'mattiaverga/OpenNGC@master/database_files/NGC.csv',
+  stars: CDN + 'stars.8.json', starnames: CDN + 'starnames.json', lines: CDN + 'constellations.lines.json',
+  consts: CDN + 'constellations.json', bounds: CDN + 'constellations.bounds.json', ngc: CDN + 'NGC.csv',
 };
 const $ = (id) => document.getElementById(id);
 export const VERSION = window.SC_VERSION || ''; // set in version.js
@@ -986,7 +982,7 @@ function loadHD(model) { // swap in NASA's detailed version (1.7-9 MB) only when
   Promise.all(HD_MODELS[model].map(f => gltfLoader.loadAsync(f))).then(gs => { const g = new THREE.Group(); for (const x of gs) g.add(x.scene); swapModel(model, fitUnit(g)); hdState[model] = 'done'; })
     .catch(e => { console.warn('hd model', model, e.message); hdState[model] = 'failed'; });
 }
-gltfLoader.setDRACOLoader(new DRACOLoader().setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/gltf/'));
+gltfLoader.setDRACOLoader(new DRACOLoader().setDecoderPath('vendor/draco/'));
 for (const p of PROBES) if (!p.model) { const c = buildCraft(p.name); if (c) { p.mesh.clear(); p.mesh.add(fitUnit(c)); } }
 for (const m of ['voyager', 'pioneer', 'jwst', 'juno', 'parker', 'lro', 'mro']) gltfLoader.load(`models/${m}.glb`, (g) => swapModel(m, fitUnit(m === 'voyager' ? voyagerBlack(g.scene) : g.scene)), undefined, (e) => console.warn('model', m, e.message));
 (async () => { // New Horizons ships as 3D-printing STL parts; assemble them with flight-like materials

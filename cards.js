@@ -12,8 +12,8 @@ let root = null, opts = {}, katexP = null;
 
 function loadKatex() {
   if (katexP) return katexP;
-  const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css'; document.head.append(css);
-  katexP = window.katex ? Promise.resolve() : new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js'; s.onload = res; s.onerror = rej; document.head.append(s); });
+  const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'vendor/katex/katex.min.css'; document.head.append(css);
+  katexP = window.katex ? Promise.resolve() : new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'vendor/katex/katex.min.js'; s.onload = res; s.onerror = rej; document.head.append(s); });
   return katexP;
 }
 const renderTex = (box) => loadKatex().then(() => { for (const e of box.querySelectorAll('.tex:not([data-done])')) { katex.render(e.textContent, e, { throwOnError: false, displayMode: e.classList.contains('block') }); e.dataset.done = 1; } }).catch(() => {});

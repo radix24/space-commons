@@ -455,8 +455,8 @@ const SCENS = [['nosun', '태양이 사라진다면', '행성들은 그 순간�
 let katexP = null;
 function loadKatex() {
   if (katexP) return katexP;
-  const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css'; document.head.append(css);
-  katexP = new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js'; sc.onload = res; sc.onerror = rej; document.head.append(sc); });
+  const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'vendor/katex/katex.min.css'; document.head.append(css);
+  katexP = new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = 'vendor/katex/katex.min.js'; sc.onload = res; sc.onerror = rej; document.head.append(sc); });
   return katexP;
 }
 function renderTex(box) { loadKatex().then(() => { for (const e of box.querySelectorAll('.tex:not([data-done])')) { katex.render(e.textContent, e, { throwOnError: false }); e.dataset.done = 1; } }).catch(() => {}); }
