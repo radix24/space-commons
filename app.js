@@ -1487,6 +1487,9 @@ function select(o) {
     if (o.comet) { row('근일점 거리', `${o.el[0].toFixed(2)} AU`); row('근일점 통과', new Date((o.el[5] - 2440587.5) * 86400e3).toLocaleDateString(LOCALE)); row('이심률', o.el[1].toFixed(3) + (o.el[1] >= 1 ? ' (다시 돌아오지 않는 궤도)' : ''));
       row('참고', '혜성 밝기는 예측과 크게 다를 수 있습니다'); }
     else { row('절대 등급 H', o.H.toFixed(1)); row('궤도 긴반지름', `${o.el[0].toFixed(3)} AU`); row('공전 주기', `${(o.el[0] ** 1.5).toFixed(2)}년`); }
+  } else if (o.kindName === 'hist') {
+    ra = o.ra; dec = o.dec; $('info-title').textContent = o.name; $('info-sub').textContent = '역사 기록 속의 천체 · 위치는 지금 남은 잔해';
+    row('그때의 밝기 (추정)', `약 ${o.mag}등급`); row('설명', o.note);
   } else if (o.kindName === 'star') {
     ({ ra, dec } = vecToRaDec(o.v));
     $('info-title').textContent = o.name; $('info-sub').textContent = '항성 · ' + (starData.desig[o.i] || `HIP ${starData.id[o.i]}`);
@@ -2874,6 +2877,17 @@ async function eclipseMap(e) {
   $('ecl-go').hidden = !first;
 }
 $('ecl-close').onclick = () => $('ecl').hidden = true;
+// ---------- E4. history of astronomy in Korea: go back to that night's sky ----------
+function goHistory(s) {
+  setMode(false); $('t-ground').checked = true; [state.lat, state.lon] = s.at; $('lat').value = state.lat; $('lon').value = state.lon;
+  state.time = Date.parse(s.date); state.speed = 0; document.querySelectorAll('[data-speed]').forEach(x => x.classList.remove('on'));
+  if (s.culture) { $('skyculture').value = s.culture; applySkyCulture(); }
+  view.az = s.az; view.alt = s.alt; view.fov = s.fov; updateSkyMatrix(); updatePlanets();
+  if (s.target) { const t = s.target; const o = { kindName: 'hist', name: t.name, ra: t.ra, dec: t.dec, v: eqVec(t.ra, t.dec), mag: t.mag, note: t.note }; select(o); }
+  else if (s.planet) { const mk = searchIndex.get(s.planet.toLowerCase()); if (mk) { const o = mk(); select(o); flyTo(o); } }
+  $('status').textContent = `${new Date(state.time).toLocaleString(LOCALE, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })} · ${s.note || s.target?.name || ''} · 시간 멈춤`;
+}
+$('hist-btn').onclick = async () => (await import('./history.js')).openHistory({ goTo: goHistory });
 // ---------- 22. whole spacecraft journeys (S7) ----------
 function journeyTimeline(p) {
   const box = $('info-exo'), ev = JOURNEYS[p.name], e = probeEph[p.name]; box.innerHTML = ''; box.hidden = false;
