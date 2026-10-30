@@ -132,12 +132,24 @@ function encounters(ms) {
 function merge(big, small) {
   const M = big.m + small.m, vrel = Math.hypot(big.v[0] - small.v[0], big.v[1] - small.v[1], big.v[2] - small.v[2]) * O.KMS * 1e3;
   const E = 0.5 * (big.m * small.m / M) * MSUN_KG * vrel * vrel; // J, in the centre-of-mass frame
+  // more impact energy than the gravitational binding energy U = 3GM^2/(5R) of the pair: nothing is left to merge, both shatter
+  const Mkg = M * MSUN_KG, Rm = Math.cbrt((big.Rkm || 0) ** 3 + (small.Rkm || 0) ** 3) * 1e3, U = Rm > 0 ? 0.6 * 6.674e-11 * Mkg * Mkg / Rm : Infinity;
+  if (big.kind === 'planet' && small.kind === 'planet' && E > U) { shatter(big, small, E / U); return; }
+  if (big.kind === 'planet') { big.heat = (big.heat || 0) + Math.min(4000, E / (Mkg * 1200)); big.heatT = sim.t; } // impact heat (cp ~ 1200 J/kg/K), spread over the whole body
   for (let k = 0; k < 3; k++) { big.v[k] = (big.m * big.v[k] + small.m * small.v[k]) / M; big.r[k] = (big.m * big.r[k] + small.m * small.r[k]) / M; }
   big.m = M; if (big.kind === 'bh') big.Rkm = RS_KM(M); else if (big.kind === 'star') { big.Rkm = starRadiusKm(M); } else big.Rkm = Math.cbrt(big.Rkm ** 3 + small.Rkm ** 3);
   if (big.kind === 'planet' && M > 0.08) { big.kind = 'star'; big.Rkm = starRadiusKm(M); big.color = starColor(M); }
   small.dead = true; scene.remove(small.mesh, small.line); view.labels.get(small)?.remove(); view.labels.delete(small); if (selected === small) select(null); rebuild(big);
   if (big.kind === 'planet' && small.kind === 'planet' && small.m > big.m * 0.02) debrisDisk(big, small);
   flash(big.r, 0.08 + 0.05 * Math.log10(1 + E / 1e30)); const mt = E / 4.184e15; toast(`${small.ko}이(가) ${big.ko}와 합쳐졌습니다 · 충돌 에너지 ${E.toExponential(1)} J (TNT ${mt >= 1e6 ? (mt / 1e6).toExponential(1) + '조' : mt.toExponential(1) + '메가'}톤)`);
+}
+function shatter(a, b, k) { // catastrophic collision: both bodies become a cloud of fragments around the common centre of mass, flying apart faster the more E exceeds U
+  const M = a.m + b.m, cm = [0, 1, 2].map(i => (a.m * a.r[i] + b.m * b.r[i]) / M), vm = [0, 1, 2].map(i => (a.m * a.v[i] + b.m * b.v[i]) / M), R = Math.cbrt(a.Rkm ** 3 + b.Rkm ** 3) / O.AU_KM;
+  const vesc = Math.sqrt(2 * O.MU_SUN * M / R) * Math.sqrt(Math.min(4, k)), N = 220;
+  for (let i = 0; i < N; i++) { const u = Math.random() * 2 - 1, t = Math.random() * 2 * Math.PI, s = Math.sqrt(1 - u * u), dir = [s * Math.cos(t), s * Math.sin(t), u * 0.4], sp = vesc * (0.3 + Math.random() * 0.9);
+    const f = makeBody(`${a.name}-x${i}`, add(cm, scale(dir, R * (1 + Math.random() * 2))), add(vm, scale(dir, sp)), { m: 0, ko: '', color: 0xd9a070 }); f.frag = true; sim.bodies.push(f); buildMesh(f); }
+  for (const x of [a, b]) { x.dead = true; scene.remove(x.mesh, x.line); view.labels.get(x)?.remove(); view.labels.delete(x); if (selected === x) select(null); }
+  flash(cm, 0.2, 0xffd0a0); toast(`${a.ko}와 ${b.ko}이(가) 산산이 부서졌습니다: 충돌 에너지가 중력 결합 에너지의 ${fmt(k, 1)}배라 다시 뭉치지 못합니다`);
 }
 function disrupt(small, big) {
   const N = 90, u = scale(add(small.r, big.r, -1), 1 / norm(add(small.r, big.r, -1))), spread = small.Rkm * 4 / O.AU_KM, vesc = Math.sqrt(2 * O.MU_SUN * small.m / (small.Rkm / O.AU_KM));
@@ -180,6 +192,7 @@ function addBody(kind, r, v) {
 function circularAt(r) { const o = dominant(r); if (!o) return [0, 0, 0]; const d = add(r, o.r, -1), dn = norm(d), vc = Math.sqrt(O.MU_SUN * o.m / dn); return add(o.v, [-d[1] / dn, d[0] / dn, 0], vc); }
 
 // temperature map: each planet's label shows its estimated surface temperature (Earth-like greenhouse), coloured from icy blue to scorching red
+const impactHeat = (b) => b.heat ? b.heat * Math.exp(-Math.abs(sim.t - b.heatT) / 365250) : 0;
 const tempCol = (C) => C < -50 ? '#8fb8ff' : C < 0 ? '#bfe0ff' : C < 50 ? '#9fe0a0' : C < 150 ? '#ffd27a' : C < 400 ? '#ff9a5a' : '#ff5a4a';
 const haloTex = (() => { const cv = document.createElement('canvas'); cv.width = cv.height = 64; const g = cv.getContext('2d'), r = g.createRadialGradient(32, 32, 14, 32, 32, 32);
   r.addColorStop(0, 'rgba(255,255,255,0)'); r.addColorStop(0.35, 'rgba(255,255,255,.75)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(cv); })();
@@ -193,7 +206,7 @@ function updateTempMap() {
       const top = Object.entries(a.mix).sort((x, y) => y[1] - x[1])[0]?.[0]; halo.material.color.set(GAS_COL[top] || '#9aa0ae'); halo.scale.setScalar(0.03 + 0.012 * Math.max(0, Math.log10(P) + 3)); halo.visible = true; }
     else if (halo) halo.visible = false;
     if (!on) { if (lb.dataset.t) { lb.textContent = b.ko; lb.style.color = ''; delete lb.dataset.t; if (dot) dot.material.color.set(b.color); } continue; }
-    if (!k) continue; const C = Math.round(k.Ts - 273.15); if (lb.dataset.t === String(C)) continue;
+    if (!k) continue; const C = Math.round(k.Ts + impactHeat(b) - 273.15); if (lb.dataset.t === String(C)) continue;
     lb.dataset.t = C; lb.textContent = `${b.ko} ${C}°C`; lb.style.color = tempCol(C); if (dot) dot.material.color.set(tempCol(C)); } // the planet itself takes its temperature colour
 }
 // habitable zones: Kopparapu-style bounds 0.95 and 1.37 sqrt(L) AU
@@ -217,8 +230,9 @@ const teq = (b) => { let F = 0; for (const s of sim.bodies) if (s.kind === 'star
 // climate at a glance: an Earth-like greenhouse (+33 K) on top of the equilibrium temperature, and what water would do there
 function climateLine(T, b) { // T: equilibrium temperature for albedo 0.3
   const k = ATM.climate(b, T); if (!k) return '';
+  const hot = impactHeat(b);
   const vesc = Math.sqrt(2 * 6.674e-11 * b.m * 1.989e30 / (b.Rkm * 1e3)) / 1000, kept = ATM.retention(vesc, k.Ts).filter(x => x[2]).map(x => x[1]);
-  return `<br>대기 ${k.a.P ? fmt(k.a.P, k.a.P < 0.1 ? 3 : 1) + '기압' : '없음'} · 온실 효과 +${fmt(k.Ts - k.Teq, 0)} K → 표면 약 ${fmt(k.Ts - 273.15, 0)} °C · 물: ${ATM.waterState(k.Ts, k.a.P)}`
+  return (hot > 1 ? `<br>충돌 열: 표면이 +${fmt(hot, 0)} K 더 뜨거움 (천 년 남짓에 걸쳐 식음)` : '') + `<br>대기 ${k.a.P ? fmt(k.a.P, k.a.P < 0.1 ? 3 : 1) + '기압' : '없음'} · 온실 효과 +${fmt(k.Ts - k.Teq, 0)} K → 표면 약 ${fmt(k.Ts - 273.15, 0)} °C · 물: ${ATM.waterState(k.Ts, k.a.P)}`
     + `<br>수십억 년 붙잡아 둘 수 있는 기체: ${kept.length ? kept.join(', ') : '거의 없음 (중력이 약하거나 너무 뜨거움)'} (탈출 속도 ${fmt(vesc, 1)} km/s)`; }
 
 // ---- seeing more: orbit predictions, velocity arrows, the gravity well, flashes ----
@@ -478,6 +492,9 @@ function updateSelected() {
     (b.kind === 'star' ? `<br>밝기 ${fmt(lum(b), 3)} 태양 · 반지름 ${fmt(b.Rkm / 696000, 2)} 태양 · 생명 가능 지대 ${fmt(0.95 * Math.sqrt(lum(b)), 2)}~${fmt(1.37 * Math.sqrt(lum(b)), 2)} AU` : '') +
     (b.kind === 'bh' ? `<br>사건의 지평선 반지름 ${fmt(RS_KM(b.m), 1)} km · 이 안에서는 빛도 탈출 못 함` : '') +
     (!b.test && b.kind !== 'bh' && b.Rkm ? `<br>로슈 한계 (점선): 암석 위성 ${fmt(rocheKm(b, 3000), 0)} km · 얼음 위성 ${fmt(rocheKm(b, 900), 0)} km (평균 밀도 ${fmt(density(b), 0)} kg/m³)` : '') +
+    (b.kind === 'planet' && host && e.e < 1 && e.e > 0.001 && b.Rkm ? (() => { const G = 6.674e-11, Mh = host.m * MSUN_KG, Rb = b.Rkm * 1e3, a = e.a * 1.496e11, n = Math.sqrt(G * (Mh + b.m * MSUN_KG) / a ** 3);
+      const P = 10.5 * 0.01 * G * Mh * Mh * Rb ** 5 * n * e.e * e.e / a ** 6, flux = P / (4 * Math.PI * Rb * Rb);
+      return `<br>조석 가열 약 ${P.toExponential(1)} W (표면 1 m²당 ${flux < 0.01 ? flux.toExponential(1) : fmt(flux, 2)} W${flux > 0.5 ? ', 이오처럼 화산이 생길 만함' : ''})`; })() : '') +
     (b.kind === 'planet' ? `<br>평형 온도 ${fmt(ATM.climate(b, teq(b))?.Teq ?? teq(b), 0)} K` + climateLine(teq(b), b) : '');
   box.querySelector('.sb-bh').hidden = b.test || b.kind === 'bh';
 }
