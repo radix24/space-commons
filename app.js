@@ -2855,7 +2855,7 @@ function buildGalaxy() {
     for (let k = 0; k < n; k++, i++) { const r = rk * Math.min(3, -Math.log(1 - rnd() * 0.95) * 0.6), th = rnd() * 2 * Math.PI, v = cen.clone();
       if (sph) v.addScaledVector(e1, gau() * rk * 0.5 * KPC).addScaledVector(e2, gau() * rk * 0.5 * KPC).addScaledVector(nrm, gau() * rk * 0.5 * KPC);
       else v.addScaledVector(a1, r * Math.cos(th) * KPC).addScaledVector(b2, r * Math.sin(th) * KPC).addScaledVector(nrm, gau() * rk * 0.04 * KPC);
-      pos.set([v.x, v.y, v.z], i * 3); const core = r < rk * 0.3; col.set(core ? [1, 0.88, 0.7] : [0.75, 0.82, 1], i * 3); w[i] = 25 * Math.min(4, kpc / 50) ** 1.2; }
+      pos.set([v.x, v.y, v.z], i * 3); const core = r < rk * 0.3; col.set(core ? [1, 0.88, 0.7] : [0.75, 0.82, 1], i * 3); w[i] = 1.6 * (kpc / 50) ** 1.2 / Math.max(1, n / 1500); } // far galaxies need more weight to show; big clouds share it among more points
     galaxy.labels.push({ name, v: cen }); }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(N * 3), 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setAttribute('a', new THREE.Float32BufferAttribute(new Float32Array(N), 1));
   const m = new THREE.ShaderMaterial({ uniforms: { pr: { value: 1 } },
@@ -2869,6 +2869,23 @@ function buildGalaxy() {
     const cen = eqVec(ra, dec, kpc * KPC), o = { kindName: 'coord', name: EN ? en : ko, ra, dec, note: EN ? den : dko, v: eqVec(ra, dec), galaxy: true };
     galImgs.push({ mesh, cen, size: fov * D2R * kpc * KPC, o });
     if (!LOCAL_GROUP.some(l => Math.abs(l[1] - ra) < 0.5 && Math.abs(l[2] - dec) < 0.5)) galaxy.labels.push({ name: o.name, v: cen }); }
+  // the glow of the disc seen from outside (painted here, no image): bulge and bar, four log-spiral arms with dust lanes on their inner edges, pink star-forming knots
+  { const S = 512, cv = document.createElement('canvas'); cv.width = cv.height = S; const x2 = cv.getContext('2d'), img = x2.createImageData(S, S), d = img.data, KS = 36 / S;
+    for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) { const X = (i - S / 2) * KS, Y = (j - S / 2) * KS, r = Math.hypot(X, Y), th = Math.atan2(Y, X);
+      const xb = X * Math.cos(-barA) - Y * Math.sin(-barA), yb = X * Math.sin(-barA) + Y * Math.cos(-barA), bar = Math.exp(-(xb * xb) / 9 - (yb * yb) / 0.5) * 0.9, bulge = Math.exp(-r / 0.8) * 2.2;
+      let arm = 0, dust = 0; if (r > 1.5) for (let k = 0; k < 4; k++) { let dth = th - (armPhase + k * Math.PI / 2 + pitch * Math.log(r / 4)); dth = Math.atan2(Math.sin(dth), Math.cos(dth)); const w = 0.32 / Math.max(1, r / 6);
+        arm += Math.exp(-dth * dth / (w * w)); dust += Math.exp(-((dth + w * 0.9) ** 2) / (w * w * 0.12)); }
+      const disc = Math.exp(-r / 3.5) * (0.35 + 0.65 * Math.min(1, arm)), knot = arm > 0.7 && ((i * 7919 + j * 104729) % 97) < 2 ? 1 : 0, dk = 1 - Math.min(0.7, dust * 0.55) * Math.min(1, r / 3);
+      const o = (j * S + i) * 4, cw = Math.min(1, bulge + bar);  // warm core, blue-white arms
+      d[o] = Math.min(255, (255 * cw + 190 * disc + 255 * knot * 0.6) * dk); d[o + 1] = Math.min(255, (220 * cw + 205 * disc + 120 * knot * 0.6) * dk); d[o + 2] = Math.min(255, (170 * cw + 255 * disc + 160 * knot * 0.6) * dk);
+      d[o + 3] = Math.min(255, 255 * Math.min(1, bulge + bar + disc * 1.4) * (r < 17 ? 1 : 0)); }
+    x2.putImageData(img, 0, 0); const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+    const e1 = galToEq(1, 0, 0).normalize(), e2 = galToEq(0, 1, 0).normalize(), H = 18 * KPC, gg = new THREE.BufferGeometry();
+    const corner = (a, b) => e1.clone().multiplyScalar(a * H).addScaledVector(e2, b * H);
+    const vs = [corner(-1, -1), corner(1, -1), corner(1, 1), corner(-1, 1)]; gg.setAttribute('position', new THREE.Float32BufferAttribute(vs.flatMap(v => [v.x, v.y, v.z]), 3));
+    gg.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 1, 0, 1, 1, 0, 1], 2)); gg.setIndex([0, 1, 2, 0, 2, 3]);
+    galaxy.glow = new THREE.Mesh(gg, new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, opacity: 0 }));
+    galaxy.glow.renderOrder = -3; galaxy.glow.frustumCulled = false; galaxy.glow.visible = false; planetScene.add(galaxy.glow); }
   galaxy.pts = new THREE.Points(g, m); galaxy.pts.frustumCulled = false; galaxy.pts.renderOrder = -2; galaxy.pts.visible = false; planetScene.add(galaxy.pts); galaxy.pos = pos; galaxy.w = w;
   const L = (name, r, th) => galaxy.labels.push({ name, v: galToEq((r * Math.cos(th) + 8.2) * KPC, r * Math.sin(th) * KPC, -0.02 * KPC) }), A = (k, r) => armPhase + k * Math.PI / 2 + pitch * Math.log(r / 4);
   galaxy.labels.push({ name: '태양 (여기)', v: new THREE.Vector3() }, { name: '은하 중심 (궁수자리 A*)', v: galaxy.center.clone() });
@@ -2876,13 +2893,15 @@ function buildGalaxy() {
 }
 function updateGalaxy() {
   const d = mode.space ? sp.pos.length() : 0, f = Math.max(0, Math.min(1, (d - 0.6 * KPC) / (2.4 * KPC)));
-  if (!f) { sky.visible = true; if (cosmo.pts) cosmo.pts.visible = false; if (galaxy.pts) { galaxy.pts.visible = false; planetGroup.visible = true; for (const gi of galImgs) gi.mesh.visible = false; } return; }
+  if (!f) { sky.visible = true; if (galaxy.glow) galaxy.glow.visible = false; if (cosmo.pts) cosmo.pts.visible = false; if (galaxy.pts) { galaxy.pts.visible = false; planetGroup.visible = true; for (const gi of galImgs) gi.mesh.visible = false; } return; }
   if (!galaxy.pts) buildGalaxy();
   const P = galaxy.pts.geometry.attributes.position, A = galaxy.pts.geometry.attributes.a, k = 1 / Math.max(1e-12, sp.nearestAll || 1), R = 1e5 / k, s = galaxy.pos;
   const cx = sp.pos.x, cy = sp.pos.y, cz = sp.pos.z, ref = 20 * KPC, boost = Math.max(1, (d / (60 * KPC)) ** 1.2); // whole galaxies stay visible from far out
   for (let i = 0, n = galaxy.w.length; i < n; i++) { const x = s[3 * i] - cx, y = s[3 * i + 1] - cy, z = s[3 * i + 2] - cz, dd = Math.hypot(x, y, z) || 1;
     P.array[3 * i] = x / dd * R; P.array[3 * i + 1] = y / dd * R; P.array[3 * i + 2] = z / dd * R; A.array[i] = f * galaxy.w[i] * Math.min(2.5, (ref / dd) ** 1.2 * boost) * 0.55; }
   P.needsUpdate = true; A.needsUpdate = true; galaxy.pts.material.uniforms.pr.value = renderer.getPixelRatio(); galaxy.pts.visible = true;
+  if (galaxy.glow) { const rel = galaxy.center.clone().sub(sp.pos), dd = rel.length() || 1; galaxy.glow.position.copy(rel).multiplyScalar(R / dd); galaxy.glow.scale.setScalar(R / dd);
+    const above = Math.abs(sp.pos.clone().sub(galaxy.center).dot(galaxy.ngp.clone().normalize())); galaxy.glow.material.opacity = f * Math.min(0.85, Math.max(0, (above - 1.5 * KPC) / (8 * KPC))); galaxy.glow.visible = true; }
   updateCosmo(d, R);
   for (const gi of galImgs) { const rel = gi.cen.clone().sub(sp.pos), dd = rel.length() || 1; gi.mesh.position.copy(rel).multiplyScalar(R / dd); gi.mesh.quaternion.copy(sp.quat);
     gi.mesh.scale.setScalar(gi.size / dd * R); gi.mesh.material.opacity = f * Math.min(1, 0.35 + d / (400 * KPC)); gi.mesh.visible = true; }
