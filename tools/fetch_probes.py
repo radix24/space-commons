@@ -1,5 +1,6 @@
 """Fetch heliocentric spacecraft positions from JPL Horizons and write data/probes.json.
 
+Whole journeys: from launch to the end of the predicted trajectory.
 Positions: ICRF/J2000 equatorial, Sun-centred, in 10^6 km, sampled at a fixed step.
 Run: python tools/fetch_probes.py
 """
@@ -8,10 +9,10 @@ import json, re, urllib.parse, urllib.request, time, pathlib
 API = 'https://ssd.jpl.nasa.gov/api/horizons.api'
 # name, Horizons id, start, stop, step
 PROBES = [
-    ('Voyager 1', '-31', '2010-01-01', '2040-01-01', '20d'),
-    ('Voyager 2', '-32', '2010-01-01', '2040-01-01', '20d'),
-    ('Pioneer 10', '-23', '2010-01-01', '2040-01-01', '30d'),
-    ('Pioneer 11', '-24', '2010-01-01', '2040-01-01', '30d'),
+    ('Voyager 1', '-31', '1977-09-06', '2040-01-01', '10d'),
+    ('Voyager 2', '-32', '1977-08-21', '2040-01-01', '10d'),
+    ('Pioneer 10', '-23', '1972-03-04', '2040-01-01', '15d'),
+    ('Pioneer 11', '-24', '1973-04-07', '2040-01-01', '15d'),
     ('New Horizons', '-98', '2006-01-20', '2040-01-01', '5d'),
     ('JWST', '-170', '2021-12-26', '2035-01-01', '1d'),
     ('Juno', '-61', '2011-08-06', '2030-01-01', '12h'),

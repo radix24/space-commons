@@ -6,7 +6,7 @@ import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { buildCraft } from './craft.js';
 import { moonMeeus } from './moon.js';
-import { SHOWERS, TOURS, MOON_STATES, FLYBY_INFO, ECLIPSES } from './content.js';
+import { SHOWERS, TOURS, MOON_STATES, FLYBY_INFO, ECLIPSES, JOURNEYS } from './content.js';
 import { KR_SATS, ORBITERS, SITES } from './content-missions.js';
 
 // ---------- constants & helpers ----------
@@ -22,7 +22,7 @@ const URLS = {
   ngc: CDN + 'mattiaverga/OpenNGC@master/database_files/NGC.csv',
 };
 const $ = (id) => document.getElementById(id);
-export const VERSION = 'Alpha 0.0.2e';
+export const VERSION = 'Alpha 0.0.2f';
 const MOBILE = matchMedia('(max-width: 640px), (pointer: coarse)').matches; // phones get lighter versions of heavy features // bump the letter with every feature batch
 for (const el of document.querySelectorAll('[data-version]')) el.textContent = el.dataset.version.replace('{v}', VERSION);
 
@@ -907,6 +907,9 @@ fetch('data/probes.json').then(r => r.json()).then(js => {
     const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pts, 3)); geo.setDrawRange(0, 0);
     const line = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0x4fe3c1, transparent: true, opacity: 0.45 }));
     line.frustumCulled = false; line.userData.name = n; trails.add(line);
+    // the rest of the journey (predicted / planned), dashed, shown for the selected craft
+    const fut = new THREE.Line(geo, new THREE.LineDashedMaterial({ color: 0xffb454, transparent: true, opacity: 0.4, dashSize: 1, gapSize: 1 }));
+    fut.computeLineDistances(); fut.frustumCulled = false; fut.userData = { name: n, future: true }; fut.visible = false; trails.add(fut);
   }
 }).catch(() => {});
 const flybySegs = {}, flybyData = {};
@@ -949,8 +952,11 @@ function probeSpeed(p, jdNow) { // km/s, heliocentric
 }
 function updateTrails(jdNow) {
   for (const l of trails.children) {
-    const e = probeEph[l.userData.name], n = e.xyz.length / 3;
-    l.geometry.setDrawRange(0, Math.max(0, Math.min(n, Math.floor((jdNow - e.jd0) / e.step) + 1)));
+    const e = probeEph[l.userData.name], n = e.xyz.length / 3, now = Math.max(0, Math.min(n, Math.floor((jdNow - e.jd0) / e.step) + 1));
+    const sel = sp.target?.name === l.userData.name || selected?.p?.name === l.userData.name;
+    if (l.userData.future) { l.visible = sel && now < n; if (l.visible) { l.geometry.setDrawRange(Math.max(0, now - 1), n - now + 1);
+      const m = l.material, d = Math.max(0.05, sp.dist || 1) * 0.6; m.dashSize = m.gapSize = d; } continue; }
+    l.geometry.setDrawRange(0, now);
     // a craft circling a planet (Juno) traces loops along the planet's orbit that look like a crumpled orbit line: show only when selected
     // looping trails (Juno around Jupiter, Parker/Solar Orbiter/BepiColombo around the inner planets) look like crumpled orbits:
     // show a trail when its craft is selected, or all of them with the toggle
@@ -1336,6 +1342,7 @@ function select(o) {
   }
   altGraph(o, ra, dec);
   if (o.kindName !== 'exo' && o.kindName !== 'sat') exoDetail(null);
+  if (o.planet && o.p.probe && JOURNEYS[o.p.name]) journeyTimeline(o.p);
   showPhoto(o.kindName === 'dso' ? o : null);
   showWiki(o); writeHash(); syncObsButton();
   if (o.kindName === 'site') $('info-goto').textContent = mode.space ? '착륙 지점으로 비행' : '우주 모드에서 볼 수 있음';
@@ -2386,6 +2393,35 @@ function updateSystem() {
     p.m.scale.setScalar(Math.max(1, sysNow.pos.clone().add(p.m.position).distanceTo(sp.pos) * Math.tan(view.fov * D2R) * 0.004 / p.r)); }
   const d = sysNow.pos.distanceTo(sp.pos), gl = sysGroup.children[1]; gl.scale.setScalar(Math.max(gl.userData.R * 6, d * Math.tan(view.fov * D2R) * 0.06));
   sp.nearestAll = Math.min(sp.nearestAll || 1e12, Math.max(1e-6, d - sysNow.body.R / 1e6) * 0.5);
+}
+
+// ---------- 22. whole spacecraft journeys (S7) ----------
+function journeyTimeline(p) {
+  const box = $('info-exo'), ev = JOURNEYS[p.name], e = probeEph[p.name]; box.innerHTML = ''; box.hidden = false;
+  const t0 = Date.parse(ev[0][0] + 'T12:00:00Z'), tEnd = e ? (e.jd0 + (e.xyz.length / 3 - 1) * e.step - 2440587.5) * 86400e3 : Date.now();
+  const t1 = Math.max(tEnd, ...ev.map(x => Date.parse(x[0] + 'T12:00:00Z'))), X = (t) => 4 + (t - t0) / (t1 - t0) * 292;
+  let svg = `<svg viewBox="0 0 300 34" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="여정 타임라인"><line x1="4" x2="296" y1="17" y2="17" stroke="#7d8aa8" stroke-opacity=".5"/>`;
+  svg += `<line x1="4" x2="${Math.min(296, X(state.time)).toFixed(1)}" y1="17" y2="17" stroke="#4FE3C1" stroke-width="2"/>`;
+  for (const [d, , f] of ev) { const t = Date.parse(d + 'T12:00:00Z'); svg += `<circle cx="${X(t).toFixed(1)}" cy="17" r="3.2" fill="${t > Date.now() ? '#ffb454' : '#4FE3C1'}"/>`; }
+  const xn = X(state.time); if (xn >= 4 && xn <= 296) svg += `<line x1="${xn}" x2="${xn}" y1="8" y2="26" stroke="#fff" stroke-width="1.2"/>`;
+  svg += `<text x="4" y="32" fill="#9aa5c0" font-size="8">${new Date(t0).getUTCFullYear()}</text><text x="296" y="32" fill="#9aa5c0" font-size="8" text-anchor="end">${new Date(t1).getUTCFullYear()}</text></svg>`;
+  const h = document.createElement('div'); h.className = 'small'; h.textContent = '전체 여정 · 누르면 그 순간으로 이동 (초록: 지나온 길, 주황 점선: 앞으로의 예정 경로)';
+  const wrap = document.createElement('div'); wrap.innerHTML = svg; box.append(h, wrap);
+  const ul = document.createElement('ul'); ul.className = 'journey';
+  for (const [d, title, focus] of ev) { const li = document.createElement('li'), b = document.createElement('button'), k = document.createElement('span'), t = Date.parse(d + 'T12:00:00Z');
+    b.textContent = title; k.textContent = d; b.onclick = () => goJourney(p, t, focus); li.append(k, b); ul.append(li); }
+  box.append(ul);
+}
+function goJourney(p, t, focus) {
+  if (!mode.space) setMode(true);
+  state.time = t; state.speed = 3600; document.querySelectorAll('[data-speed]').forEach(x => x.classList.remove('on'));
+  computeHelio(); const hp = probeHelio(p, jd(t)); if (!hp) { $('status').textContent = '이 시각의 궤도 자료가 없습니다'; return; }
+  const fb = focus && focus !== 'Sun' ? PLANETS.find(q => q.name === focus) : null, fp = fb && helioPos[fb.name];
+  const d = fp ? Math.max(hp.distanceTo(fp) * 2.2, bodyR(fb) * 6) : focus === 'Sun' ? hp.length() * 1.4 : Math.max(bodyR(p) * 5, 2);
+  // look from beside the craft toward it with the focus body in frame
+  const dir = (fp ? fp.clone().sub(hp) : hp.clone().negate()).normalize(), side = dir.clone().cross(ECL_N).normalize(), view3 = dir.clone().multiplyScalar(-0.9).addScaledVector(side, 0.3).addScaledVector(ECL_N, 0.2).normalize();
+  sp.flight = null; sp.target = p; sp.replay = p; sp.dist = d; sp.quat.copy(lookQuat(view3.negate())); view.fov = 50;
+  $('sp-target').textContent = `${p.ko} 여정`; $('status').textContent = `${p.ko} · ${new Date(t).toISOString().slice(0, 10)} · 1시간/초로 재생`;
 }
 
 // ---------- 11. observing list (kept in this browser) ----------
