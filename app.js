@@ -2637,6 +2637,29 @@ function visitGalaxy() {
   $('status').textContent = '우리 은하 밖으로 나가는 중 · 약 13만 7천 광년 위에서 내려다봅니다 (은하 모형: 막대, 팽대부, 나선팔 4개)';
 }
 
+// ---------- C1. today's Earth: yesterday's full-globe VIIRS true-colour mosaic from NASA GIBS (public domain), gaps filled from the base map ----------
+let liveEarthTex = null, liveEarthDate = '';
+async function setLiveEarth(on) {
+  const earth = PLANETS.find(p => p.name === 'Earth'); if (!earth?.mesh) return;
+  const u = earth.mesh.material.uniforms;
+  if (!on) { if (earth.baseMap) u.map.value = earth.baseMap; if (earth.clouds) earth.clouds.visible = true; return; }
+  const day = new Date(Date.now() - 86400e3).toISOString().slice(0, 10);
+  if (!liveEarthTex || liveEarthDate !== day) {
+    $('status').textContent = `${day} 위성 사진을 받는 중 (NASA GIBS)…`;
+    const load = (src) => new Promise((ok, no) => { const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => ok(im); im.onerror = no; im.src = src; });
+    try {
+      const [live, base] = await Promise.all([load(`https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&REQUEST=GetMap&VERSION=1.3.0&LAYERS=VIIRS_SNPP_CorrectedReflectance_TrueColor&CRS=EPSG:4326&BBOX=-90,-180,90,180&WIDTH=2048&HEIGHT=1024&FORMAT=image/jpeg&TIME=${day}`), load('textures/2k_earth_daymap.jpg')]);
+      const cv = document.createElement('canvas'); cv.width = 2048; cv.height = 1024; const g = cv.getContext('2d'); g.drawImage(base, 0, 0, 2048, 1024); const B = g.getImageData(0, 0, 2048, 1024);
+      g.drawImage(live, 0, 0, 2048, 1024); const L = g.getImageData(0, 0, 2048, 1024);
+      for (let i = 0; i < L.data.length; i += 4) if (L.data[i] + L.data[i + 1] + L.data[i + 2] < 18) { L.data[i] = B.data[i]; L.data[i + 1] = B.data[i + 1]; L.data[i + 2] = B.data[i + 2]; } // polar night / swath gaps
+      g.putImageData(L, 0, 0); liveEarthTex = new THREE.CanvasTexture(cv); liveEarthTex.colorSpace = THREE.SRGBColorSpace; liveEarthTex.anisotropy = 8; liveEarthDate = day;
+    } catch { $('status').textContent = '위성 사진을 받지 못했습니다. 기본 지도를 씁니다.'; $('t-live').checked = false; return; }
+  }
+  if (!$('t-live').checked) return;
+  earth.baseMap ||= u.map.value; u.map.value = liveEarthTex; if (earth.clouds) earth.clouds.visible = false;
+  $('status').textContent = `오늘의 지구: ${liveEarthDate} VIIRS 위성 사진 (NASA GIBS) · 구름이 실제 그날의 모습`;
+}
+$('t-live').onchange = () => setLiveEarth($('t-live').checked);
 // ---------- 22. whole spacecraft journeys (S7) ----------
 function journeyTimeline(p) {
   const box = $('info-exo'), ev = JOURNEYS[p.name], e = probeEph[p.name]; box.innerHTML = ''; box.hidden = false;
