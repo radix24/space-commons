@@ -1,7 +1,24 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <circle cx="32" cy="32" r="29" stroke="#ECE6DA" stroke-width="2"/>
-  <path d="M5 40 Q32 30 59 40" stroke="#ECE6DA" stroke-width="2"/>
-  <path d="M14 26 A20 20 0 0 1 50 26" stroke="#8E887D" stroke-width="1.2" stroke-dasharray="2 3"/>
-  <circle cx="44" cy="19" r="3.2" fill="#E2573F"/>
-  <circle cx="22" cy="16" r="1.2" fill="#ECE6DA"/><circle cx="31" cy="11" r="1" fill="#ECE6DA"/><circle cx="17" cy="24" r=".9" fill="#ECE6DA"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Space Commons">
+  <title>Space Commons</title>
+  <defs>
+    <linearGradient id="scw-sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1A1E5C"/>
+      <stop offset=".62" stop-color="#4B3FC4"/>
+      <stop offset="1" stop-color="#8B6CF2"/>
+    </linearGradient>
+    <clipPath id="scw-win"><rect x="0" y="0" width="64" height="64" rx="15"/></clipPath>
+  </defs>
+  <g clip-path="url(#scw-win)">
+    <!-- night sky through the window, glowing toward the horizon -->
+    <rect width="64" height="64" fill="url(#scw-sky)"/>
+    <g fill="#EEF0FA">
+      <circle cx="16" cy="15" r="1"/><circle cx="25" cy="24" r=".8" opacity=".7"/><circle cx="51" cy="29" r=".9" opacity=".8"/><circle cx="12" cy="30" r=".7" opacity=".6"/>
+    </g>
+    <!-- an orbit crossing the sky, and the traveller on it -->
+    <path d="M1 34 Q30 6 63 20" fill="none" stroke="#4FE3C1" stroke-width="2.3" stroke-dasharray=".1 4.6" stroke-linecap="round"/>
+    <circle cx="43.5" cy="15.6" r="3.4" fill="#EEF0FA"/>
+    <!-- shared ground: far ridge, near hill -->
+    <path d="M0 45 Q13 36 27 42 T64 38 V64 H0Z" fill="#121538"/>
+    <path d="M0 52 Q22 43 42 49 T64 48 V64 H0Z" fill="#090B1A"/>
+  </g>
 </svg>

@@ -23,7 +23,7 @@ export function labOrbitDesign(h) {
     const dO = -1.5 * n * J2 * (RE / p) ** 2 * Math.cos(i), dw = 0.75 * n * J2 * (RE / p) ** 2 * (5 * Math.cos(i) ** 2 - 1), w0 = e > 0 ? 270 * D2R : 0;
     const { g, w, h: H } = cv; g.clearRect(0, 0, w, H); if (map.complete) g.drawImage(map, 0, 0, w, H); g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(0, 0, w, H);
     const gs = [36.37 * D2R, 127.36 * D2R], X = (lo) => (lo * R2D + 180) / 360 * w, Y = (la) => (90 - la * R2D) / 180 * H;
-    g.fillStyle = '#e2573f'; g.fillRect(X(gs[1]) - 2, Y(gs[0]) - 2, 4, 4); txt(g, '대전 지상국', X(gs[1]) + 4, Y(gs[0]) - 3, '#e2573f', 9);
+    g.fillStyle = '#4c8df6'; g.fillRect(X(gs[1]) - 2, Y(gs[0]) - 2, 4, 4); txt(g, '대전 지상국', X(gs[1]) + 4, Y(gs[0]) - 3, '#4c8df6', 9);
     let contact = 0, prev = null, lon0 = sel.value === 'geo' && e === 0 && +inc.value < 1 ? 128.2 * D2R : 0; const dt = 30, T = 86400;
     g.strokeStyle = 'rgba(143,184,201,.9)'; g.lineWidth = 1.2; g.beginPath();
     for (let t = 0; t <= T; t += dt) { let M = n * t, E = M; for (let k = 0; k < 12; k++) E -= (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
@@ -71,7 +71,7 @@ export function labLaunch(h) {
       if (S.y < 0 && S.t > 5) S.done = '추락: 옆으로 충분히 빠르지 못했습니다';
       if (S.st >= 3) { const vc = Math.sqrt(MU / (RE + S.y)); S.done = S.vx >= vc * 0.985 && S.y > 150 ? `궤도 진입 성공 · 고도 ${h.fmt(S.y, 0)} km` : S.vx >= vc * 0.9 ? '거의 성공: 조금 모자라 대기로 다시 들어옵니다' : '연료를 다 썼지만 궤도 속도에 못 미칩니다'; }
       if (S.t > 1400) S.done = S.done || '시간 초과'; }
-    g.strokeStyle = '#e2573f'; g.beginPath(); S.path.forEach(([x, y], i) => i ? g.lineTo(X(x), Y(y)) : g.moveTo(X(x), Y(y))); g.stroke();
+    g.strokeStyle = '#4c8df6'; g.beginPath(); S.path.forEach(([x, y], i) => i ? g.lineTo(X(x), Y(y)) : g.moveTo(X(x), Y(y))); g.stroke();
     const vc = Math.sqrt(MU / (RE + Math.max(0, S.y)));
     set([['시간', `${h.fmt(S.t, 0)}초 · ${Math.min(3, S.st + 1)}단`], ['고도', `${h.fmt(S.y, 1)} km`], ['수평 속도 / 그 고도의 궤도 속도', `${h.fmt(S.vx, 2)} / ${h.fmt(vc, 2)} km/s`], ['결과', S.done || '비행 중']]);
   });
@@ -121,7 +121,7 @@ export function labSunLife(h) {
   const draw = () => { const t = +age.value, s = at(t), M = t < 11.8 ? 1 : t < 12.34 ? 1 - 0.3 * (t - 11.8) / 0.54 : 0.54, { g, w, h: H } = cv;
     g.fillStyle = '#0c0c0d'; g.fillRect(0, 0, w, H); const sc = (w / 2 - 10) / 1.7, cx = w / 2, cy = H / 2, Rau = s.R * 0.00465;
     const col = s.R > 5 ? '#ff7a3a' : s.R < 0.05 ? '#dfe7ff' : '#ffd27a'; const gr = g.createRadialGradient(cx, cy, 0, cx, cy, Math.max(2, Rau * sc)); gr.addColorStop(0, '#fff2d0'); gr.addColorStop(1, col); g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, Math.max(2, Rau * sc), 0, 7); g.fill();
-    const eaten = []; PL.forEach(([n, a0]) => { const a = a0 / M; g.strokeStyle = a < Rau ? 'rgba(226,87,63,.6)' : '#3a3936'; g.beginPath(); g.arc(cx, cy, a * sc, 0, 7); g.stroke(); if (a < Rau) eaten.push(n); else txt(g, n, cx + a * sc + 3, cy - 3, '#d8d2c6', 9); });
+    const eaten = []; PL.forEach(([n, a0]) => { const a = a0 / M; g.strokeStyle = a < Rau ? 'rgba(76,141,246,.6)' : '#3a3936'; g.beginPath(); g.arc(cx, cy, a * sc, 0, 7); g.stroke(); if (a < Rau) eaten.push(n); else txt(g, n, cx + a * sc + 3, cy - 3, '#d8d2c6', 9); });
     set([['단계', s.st], ['반지름', `태양 지금의 ${h.fmt(s.R, s.R < 1 ? 3 : 0)}배 (${h.fmt(Rau, Rau < 0.1 ? 4 : 2)} AU)`], ['밝기', `${h.fmt(s.L, s.L < 10 ? 1 : 0)}배`], ['남은 질량', `${h.fmt(M * 100, 0)}%`], ['삼켜진 행성', eaten.join(', ') || '없음']]); };
   age.oninput = draw; draw();
   h.deeper(box, '적색거성 가지 끝에서 태양 반지름은 약 1.2 AU까지 커진다고 계산됩니다(Schröder & Smith 2008). 질량 손실로 지구 궤도도 약 1.5 AU로 넓어지지만, 부푼 태양의 바깥 대기가 일으키는 조석과 끌림 때문에 결국 삼켜질 가능성이 큽니다. 여기의 반지름과 밝기는 대표 진화 경로를 단순화한 값입니다.');
@@ -147,7 +147,7 @@ export function labLensing(h) {
       const f = 1 - tE * tE / Math.max(1e-6, r2), sx = Math.round(lx + dx * f), sy = Math.round(ly + dy * f); // lens equation: beta = theta - thetaE^2 / theta
       if (sx < 0 || sy < 0 || sx >= W || sy >= H) { out[o] = out[o + 1] = out[o + 2] = 0; out[o + 3] = 255; continue; } const i = (sy * W + sx) * 4; out[o] = src[i]; out[o + 1] = src[i + 1]; out[o + 2] = src[i + 2]; out[o + 3] = 255; }
     cv.g.setTransform(1, 0, 0, 1, 0, 0); cv.g.putImageData(img, 0, 0); cv.g.setTransform(k, 0, 0, k, 0, 0);
-    cv.g.strokeStyle = 'rgba(226,87,63,.35)'; cv.g.setLineDash([3, 3]); cv.g.beginPath(); cv.g.arc(lx, ly, tE, 0, 7); cv.g.stroke(); cv.g.setLineDash([]);
+    cv.g.strokeStyle = 'rgba(76,141,246,.35)'; cv.g.setLineDash([3, 3]); cv.g.beginPath(); cv.g.arc(lx, ly, tE, 0, 7); cv.g.stroke(); cv.g.setLineDash([]);
     set([['아인슈타인 반지름 (점선)', `${h.fmt(tE, 0)} 픽셀 · 질량의 제곱근에 비례`], ['검은 원', '빛이 빠져나오지 못하는 그림자 (크기는 과장)']]); }
   mass.oninput = draw; draw();
   h.deeper(box, '점 질량 렌즈의 렌즈 방정식은 <span class="tex">\\beta = \\theta - \\theta_E^2/\\theta</span>이고, 아인슈타인 반지름은 <span class="tex">\\theta_E = \\sqrt{\\frac{4GM}{c^2}\\frac{D_{LS}}{D_L D_S}}</span>입니다. 배경 별이 렌즈 바로 뒤(β = 0)면 고리가 되고, 조금 벗어나면 렌즈 양쪽에 상이 두 개 생깁니다. 미세 중력 렌즈법으로 외계 행성을 찾는 원리도 같습니다.');
@@ -174,7 +174,7 @@ export function labImpact(h) {
     let cx = 0, cy = 0; for (const a of P) { cx += a.x; cy += a.y; } cx /= n; cy /= n;
     const sc = Math.min(w, H) / 8; let disk = 0, esc = 0;
     for (const a of P) { const r = Math.hypot(a.x - cx, a.y - cy); if (r > 1.25) { const v2 = a.vx ** 2 + a.vy ** 2; if (v2 > 2 * 0.6 / r) esc++; else disk++; }
-      g.fillStyle = a.c ? (a.iron ? '#e2573f' : '#d9a650') : (a.iron ? '#8f5a3a' : '#8fb8c9'); g.fillRect(w / 2 + (a.x - cx) * sc - 1, H / 2 - (a.y - cy) * sc - 1, 2.2, 2.2); }
+      g.fillStyle = a.c ? (a.iron ? '#4c8df6' : '#d9a650') : (a.iron ? '#8f5a3a' : '#8fb8c9'); g.fillRect(w / 2 + (a.x - cx) * sc - 1, H / 2 - (a.y - cy) * sc - 1, 2.2, 2.2); }
     set([['궤도를 도는 파편 (원반)', `${disk}개 (${h.fmt(disk / n * 100, 1)}%)`], ['날아가 버린 파편', `${esc}개`], ['색', '파랑: 원시 지구 · 노랑: 테이아 · 붉은 기: 철 핵']]); });
   h.deeper(box, '실제 연구는 수백만 개의 입자로 압력과 온도까지 계산하는 SPH(매끄러운 입자 유체 역학)를 씁니다(Canup 2004, 2012). 여기서는 입자 사이 중력과 맞닿았을 때의 반발·마찰만 넣은 간이 모형이라, 모양과 경향(비스듬한 충돌이 원반을 만든다)만 비슷합니다. 달에 철이 적은 이유도 이 그림으로 설명됩니다: 무거운 철 핵은 지구 쪽으로 합쳐지고 가벼운 맨틀 물질이 원반에 남습니다.');
 }
@@ -205,7 +205,7 @@ export async function labSdss(h) {
   const fmax = Math.max(...rows.map(r => r[1])) * 1.05, x0 = rows[0][0], x1 = rows[rows.length - 1][0];
   const draw = () => { const z = +Z.value, { g, w, h: H } = cv, X = (l) => 10 + (l - x0) / (x1 - x0) * (w - 20), Y = (f) => H - 18 - Math.max(0, f) / fmax * (H - 30);
     g.fillStyle = '#0f0f10'; g.fillRect(0, 0, w, H); g.strokeStyle = '#d8d2c6'; g.lineWidth = 1; g.beginPath(); rows.forEach(([l, f], i) => i ? g.lineTo(X(l), Y(f)) : g.moveTo(X(l), Y(f))); g.stroke();
-    g.setLineDash([3, 3]); for (const [l, n] of LINES) { const lo = l * (1 + z); if (lo < x0 || lo > x1) continue; g.strokeStyle = 'rgba(226,87,63,.7)'; g.beginPath(); g.moveTo(X(lo), 10); g.lineTo(X(lo), H - 18); g.stroke(); txt(g, n, X(lo) + 2, 10 + (n.length % 3) * 9, '#e2573f', 8); } g.setLineDash([]);
+    g.setLineDash([3, 3]); for (const [l, n] of LINES) { const lo = l * (1 + z); if (lo < x0 || lo > x1) continue; g.strokeStyle = 'rgba(76,141,246,.7)'; g.beginPath(); g.moveTo(X(lo), 10); g.lineTo(X(lo), H - 18); g.stroke(); txt(g, n, X(lo) + 2, 10 + (n.length % 3) * 9, '#4c8df6', 8); } g.setLineDash([]);
     txt(g, `${Math.round(x0)} Å`, 10, H - 4, '#8e887d', 9); txt(g, `${Math.round(x1)} Å`, w - 10, H - 4, '#8e887d', 9, 'right');
     const v = 299792 * ((1 + z) ** 2 - 1) / ((1 + z) ** 2 + 1), D = v / 70;
     set([['적색편이 z', h.fmt(z, 4)], ['멀어지는 속도', `${h.fmt(v, 0)} km/s`], ['허블 법칙 거리 (H₀ = 70)', `약 ${h.fmt(D, 0)} Mpc (${h.fmt(D * 3.2616 / 100, 1)}억 광년)`], ['SDSS 파이프라인 값과 비교', Math.abs(z - d.z_pipeline) < 0.002 ? `맞습니다 (z = ${d.z_pipeline})` : '선이 아직 어긋나 있습니다']]); };

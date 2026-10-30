@@ -2788,7 +2788,7 @@ async function togglePassAlert(o, ps, btn) {
   if (Notification.permission !== 'granted' && await Notification.requestPermission() !== 'granted') { $('status').textContent = '브라우저 알림이 허용되지 않았습니다'; return; }
   const p = ps.find(q => q.rise > Date.now() + 60e3); if (!p) return;
   const wait = Math.max(0, p.rise - 5 * 60e3 - Date.now()), hm = (t) => new Date(t).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit', hour12: false });
-  alerts.set(o.id, setTimeout(() => { alerts.delete(o.id); new Notification(`${o.name} 곧 지나갑니다`, { body: `${hm(p.rise)}에 떠서 최고 고도 ${p.max.toFixed(0)}°까지 올라갑니다${p.lit && p.dark ? ' (맨눈으로 보일 수 있음)' : ''}`, icon: 'assets/sc-mark.svg?v=2' }); }, wait));
+  alerts.set(o.id, setTimeout(() => { alerts.delete(o.id); new Notification(`${o.name} 곧 지나갑니다`, { body: `${hm(p.rise)}에 떠서 최고 고도 ${p.max.toFixed(0)}°까지 올라갑니다${p.lit && p.dark ? ' (맨눈으로 보일 수 있음)' : ''}`, icon: 'assets/sc-mark.svg?v=3' }); }, wait));
   btn.textContent = '통과 알림 끄기'; $('status').textContent = `${o.name}: ${hm(p.rise - 5 * 60e3)}에 알림 (이 페이지가 열려 있는 동안)`;
 }
 
@@ -2870,7 +2870,7 @@ async function eclipseMap(e) {
     for (const [t, g] of steps) { const o = obscAt(t, g, lat, lon); if (o > m) m = o; } maxO[j * W / 2 + i] = m; if (m > 0.995) total[j * W / 2 + i] = 1; }
   if (base) g2.drawImage(base, 0, 0, W * 2, H * 2); g2.fillStyle = 'rgba(0,0,0,.12)'; g2.fillRect(0, 0, W * 2, H * 2);
   for (let j = 0; j < H / 2; j++) for (let i = 0; i < W / 2; i++) { const m = maxO[j * W / 2 + i]; if (m <= 0) continue;
-    g2.fillStyle = total[j * W / 2 + i] ? 'rgba(226,87,63,.95)' : `rgba(8,8,30,${0.25 + 0.65 * m})`; g2.fillRect(i * 4, j * 4, 4, 4); }
+    g2.fillStyle = total[j * W / 2 + i] ? 'rgba(76,141,246,.95)' : `rgba(8,8,30,${0.25 + 0.65 * m})`; g2.fillRect(i * 4, j * 4, 4, 4); }
     const ox = (state.lon + 180) * 2, oy = (90 - state.lat) * 2; g2.strokeStyle = '#fff'; g2.beginPath(); g2.arc(ox, oy, 5, 0, 7); g2.stroke();
   // the eclipse from here: contacts, maximum and how much of the Sun is covered
   let first = null, last = null, mx = 0, tmx = 0;
