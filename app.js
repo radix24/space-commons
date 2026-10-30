@@ -282,6 +282,54 @@ async function loadNGC() {
   return dsos.length;
 }
 
+// ---------- exoplanets: NASA Exoplanet Archive (data/exoplanets.json, built by tools/fetch_exoplanets.py) ----------
+const exo = { hosts: [], methods: [] };
+const EXO_FAMOUS = new Set(['TRAPPIST-1', 'Proxima Cen', '51 Peg', 'Kepler-452', 'TOI-700', 'HD 209458', 'Kepler-186', 'K2-18', 'LHS 1140', 'tau Cet', 'eps Eri', 'HR 8799', 'Kepler-90', 'WASP-12', 'Barnard\'s star', '55 Cnc', 'Gliese 581', 'Kepler-22', 'TOI-270', 'beta Pic', 'Fomalhaut', 'PSR B1257+12', 'Kepler-16']);
+const exoMat = new THREE.ShaderMaterial({
+  uniforms: { pr: { value: 1 }, alpha: { value: 1 } },
+  vertexShader: `attribute float n; uniform float pr; varying float vN;
+    void main(){ gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); vN = n; gl_PointSize = (7.0 + min(n, 7.0)) * pr; }`,
+  fragmentShader: `uniform float alpha; varying float vN;
+    void main(){ vec2 p = gl_PointCoord * 2.0 - 1.0; float r = length(p);
+      float ring = smoothstep(0.62, 0.72, r) * (1.0 - smoothstep(0.86, 0.98, r));
+      if (ring <= 0.01) discard; gl_FragColor = vec4(vec3(0.31, 0.89, 0.76) * ring * alpha, 1.0); }`,
+  transparent: true, depthTest: false, depthWrite: false, blending: THREE.AdditiveBlending,
+});
+let exoPoints = null;
+async function loadExo() {
+  const js = await fetch('data/exoplanets.json').then(r => r.json());
+  exo.methods = js.methods;
+  const pos = [], n = [];
+  for (const h of js.hosts) {
+    if (h[1] == null || h[2] == null) continue;
+    const o = { kindName: 'exo', name: h[0], ra: h[1], dec: h[2], dist: h[3], vmag: h[4], teff: h[5], srad: h[6], slum: h[7], planets: h[8], v: eqVec(h[1], h[2]) };
+    exo.hosts.push(o);
+    const p = o.v.clone().multiplyScalar(R_SKY - 3); pos.push(p.x, p.y, p.z); n.push(o.planets.length);
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('n', new THREE.Float32BufferAttribute(n, 1));
+  exoPoints = new THREE.Points(g, exoMat); exoPoints.frustumCulled = false; exoPoints.renderOrder = 3; sky.add(exoPoints);
+  return exo.hosts.reduce((a, h) => a + h.planets.length, 0);
+}
+const lumOf = (h) => h.slum != null ? Math.pow(10, h.slum) : (h.srad && h.teff ? h.srad * h.srad * Math.pow(h.teff / 5772, 4) : null);
+function systemSVG(h) { // orbits on a log AU axis, with the conservative habitable zone (Kopparapu-like flux limits 1.1 .. 0.36 S_earth)
+  const L = lumOf(h), W = 280, H = 120, x0 = 12, x1 = W - 10, lo = -2.3, hi = 2.3;
+  const X = (a) => x0 + (Math.log10(Math.max(1e-3, a)) - lo) / (hi - lo) * (x1 - x0);
+  const ns = 'http://www.w3.org/2000/svg', svg = document.createElementNS(ns, 'svg'); svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.setAttribute('class', 'sysmap');
+  const el = (t, a, txt) => { const e = document.createElementNS(ns, t); for (const k in a) e.setAttribute(k, a[k]); if (txt) e.textContent = txt; svg.appendChild(e); return e; };
+  if (L) { const a = X(Math.sqrt(L / 1.1)), b = X(Math.sqrt(L / 0.36)); el('rect', { x: a, y: 14, width: Math.max(2, b - a), height: H - 40, fill: 'rgba(79,227,193,.16)', rx: 4 }); el('text', { x: (a + b) / 2, y: 26, 'text-anchor': 'middle', class: 'hz' }, '생명 가능 지대'); }
+  el('line', { x1: x0, x2: x1, y1: H - 26, y2: H - 26, stroke: '#3a4070' });
+  for (const t of [0.01, 0.1, 1, 10, 100]) { el('line', { x1: X(t), x2: X(t), y1: H - 29, y2: H - 23, stroke: '#5a6090' }); el('text', { x: X(t), y: H - 10, 'text-anchor': 'middle', class: 'tick' }, `${t} AU`); }
+  el('line', { x1: X(1), x2: X(1), y1: 14, y2: H - 26, stroke: 'rgba(142,162,255,.5)', 'stroke-dasharray': '2 3' }); el('text', { x: X(1) + 3, y: H - 32, class: 'tick' }, '지구');
+  h.planets.forEach((p, i) => {
+    const a = p[1] ?? (p[2] ? Math.pow(p[2] / 365.25, 2 / 3) * Math.pow(L ? Math.pow(L, 0.25) : 1, 1 / 3) : null); if (!a) return;
+    const r = Math.max(2.5, Math.min(9, 2.2 * Math.sqrt(p[3] || (p[4] ? Math.pow(p[4], 0.4) : 1.5))));
+    const y = 46 + (i % 3) * 16;
+    el('circle', { cx: X(a), cy: y, r, fill: p[5] && p[5] < 330 && p[5] > 180 ? '#4FE3C1' : '#F3E2A6' });
+    el('text', { x: X(a), y: y - r - 2, 'text-anchor': 'middle', class: 'pl' }, p[0]);
+  });
+  return svg;
+}
+
 // ---------- real imagery (DSS2 color via CDS hips2fits) for selected DSO ----------
 let photo = null;
 function showPhoto(o) {
@@ -783,6 +831,9 @@ function pick(x, y) {
   for (let i = 0; i < starData.pos.length; i++) { if (starData.mag[i] > lim) continue;
     const w = tmp.copy(starData.pos[i]).applyMatrix4(sky.matrixWorld).normalize().clone(); test(w, i, (lim - starData.mag[i]) * 0.8); }
   if (typeof best === 'number') best = starObj(best);
+  if (exoPoints?.visible) for (const h of exo.hosts) {
+    const w = h.v.clone().applyMatrix4(sky.matrixWorld); if (w.dot(fwd) < cosLim) continue;
+    const s = toScreen(w); if (!s) continue; const d = Math.hypot(s[0] - x, s[1] - y) - 3; if (d < bd) { bd = d; best = h; } }
   if ($('t-dso').checked) {
     const ppd = innerHeight / view.fov;
     for (const o of dsos) { const px = o.maj / 60 * ppd; if (px < 4 && !(o.messier && view.fov < 60)) continue;
@@ -823,6 +874,7 @@ async function showWiki(o) {
   let ko = [], en = [];
   if (o.planet) { ko = [WIKI_KO[o.p.name]]; en = [WIKI_EN[o.p.name] || o.p.name]; }
   else if (o.kindName === 'dso') { const n = o.name.replace(' ', ' '); ko = [o.messier && `메시에 ${o.messier.slice(1)}`, o.messier, n]; en = [o.messier && `Messier ${o.messier.slice(1)}`, o.common, n]; }
+  else if (o.kindName === 'exo') { ko = [o.name, `${o.name} ${o.planets[0][0]}`]; en = [o.name, `${o.name} ${o.planets[0][0]}`, `${o.name} (star)`]; }
   else if (o.kindName === 'star') { const n = starData.proper[o.i]; en = [n && `${n} (star)`, n]; ko = []; }
   const r = (await wikiLookup('ko', ko)) || (await wikiLookup('en', en));
   if (seq !== wikiSeq || !r) return;
@@ -835,7 +887,7 @@ async function showWiki(o) {
 let prevSelected = null;
 function select(o) {
   if (selected && o && selected !== o) prevSelected = selected;
-  selected = o; $('info').hidden = !o; if (!o) { showPhoto(null); writeHash(); return; }
+  selected = o; $('info').hidden = !o; if (!o) { showPhoto(null); exoDetail(null); writeHash(); return; }
   const t = $('info-table'); t.innerHTML = '';
   const row = (k, v) => { if (v === undefined || v === '' || (typeof v === 'number' && isNaN(v))) return; const tr = t.insertRow(); tr.insertCell().textContent = k; tr.insertCell().textContent = v; };
   let ra, dec;
@@ -852,6 +904,13 @@ function select(o) {
     $('info-title').textContent = `${p.ko} (${p.name})`; $('info-sub').textContent = p.small ? `${p.small} · 궤도: JPL SBDB` : p.name === 'Sun' ? '항성' : p.name === 'Moon' ? '위성' : p.parent ? `${PLANETS.find(q => q.name === p.parent).ko}의 위성 · 위치 근사` : '행성';
     if (p.name !== 'Earth') row('지구로부터 거리', p.name === 'Moon' ? `${(p.dist * KM_AU).toFixed(0)} km` : `${p.dist.toFixed(3)} AU`);
     if (p.name !== 'Earth') row('시직경', fmtAng(p.angR * 2 * R2D)); if (p.name !== 'Sun' && p.name !== 'Earth') row('위상 (밝은 면)', (p.phase * 100).toFixed(1) + '%'); row('반지름', `${p.R.toLocaleString()} km`);
+  } else if (o.kindName === 'exo') {
+    ra = o.ra; dec = o.dec;
+    $('info-title').textContent = o.name; $('info-sub').textContent = `외계행성계 · 행성 ${o.planets.length}개 · NASA Exoplanet Archive`;
+    if (o.dist) row('거리', `${(o.dist * 3.2616).toFixed(o.dist < 10 ? 2 : 0)} 광년`);
+    if (o.vmag != null) row('별의 겉보기 등급', o.vmag.toFixed(2) + (o.vmag > 6.5 ? ' (맨눈으로 안 보임)' : ''));
+    if (o.teff) row('별의 표면 온도', `${o.teff.toLocaleString()} K`); const L = lumOf(o); if (L) row('별의 밝기 (태양=1)', L < 0.01 ? L.toExponential(1) : L.toFixed(3));
+    exoDetail(o);
   } else if (o.kindName === 'star') {
     ({ ra, dec } = vecToRaDec(o.v));
     $('info-title').textContent = o.name; $('info-sub').textContent = '항성 · ' + (starData.desig[o.i] || `HIP ${starData.id[o.i]}`);
@@ -870,10 +929,25 @@ function select(o) {
     const a = Math.acos(Math.max(-1, Math.min(1, worldOf(prevSelected).dot(worldOf(o))))) * R2D;
     row(`${prevSelected.planet ? prevSelected.p.ko : prevSelected.messier || prevSelected.name}까지 각거리`, fmtAng(a));
   }
+  if (o.kindName !== 'exo') exoDetail(null);
   showPhoto(o.kindName === 'dso' ? o : null);
   showWiki(o); writeHash();
   if (o.planet && o.p.probe) $('info-goto').textContent = mode.space ? '탐사선으로 비행' : '이동 · 확대'; else $('info-goto').textContent = '이동 · 확대';
 }
+function exoDetail(o) { // system map + planet table, appended under the info table
+  const box = $('info-exo'); box.innerHTML = ''; box.hidden = !o;
+  if (!o) return;
+  box.appendChild(systemSVG(o));
+  const tb = document.createElement('table'); tb.className = 'pltable';
+  tb.innerHTML = '<tr><th>행성</th><th>반지름</th><th>공전 주기</th><th>온도</th><th>발견</th></tr>';
+  for (const p of o.planets) {
+    const tr = tb.insertRow();
+    for (const v of [p[0], p[3] ? `${p[3]} R⊕` : p[4] ? `${p[4]} M⊕` : '', p[2] ? (p[2] < 2 ? `${(p[2] * 24).toFixed(1)}시간` : p[2] < 1000 ? `${p[2].toFixed(1)}일` : `${(p[2] / 365.25).toFixed(1)}년`) : '',
+      p[5] ? `${p[5]} K` : '', `${p[6] ?? ''} ${p[7] >= 0 ? EXO_METHOD_KO[p[7]] : ''}`]) tr.insertCell().textContent = v;
+  }
+  box.appendChild(tb);
+}
+const EXO_METHOD_KO = ['횡단', '시선속도', '미세중력렌즈', '직접 촬영', '횡단 시각 변화', '식 시각 변화', '밝기 변조', '펄서 시각', '위치 측정', '맥동 시각', '원반 운동'];
 $('info-close').onclick = () => select(null);
 $('info-goto').onclick = () => selected && flyTo(selected);
 
@@ -881,6 +955,7 @@ function targetFov(o) {
   if (o.planet && o.p.probe) return 1;
   if (o.planet) return Math.max(0.0015, o.p.angR * R2D * 2 * 5);
   if (o.kindName === 'dso') return Math.min(30, Math.max(0.08, o.maj / 60 * 3));
+  if (o.kindName === 'exo') return 4;
   return 2;
 }
 function flyTo(o) {
@@ -1101,6 +1176,7 @@ function buildSearch() {
   for (const p of PLANETS) { add(p.name, () => planetObj(p), p.name); add(p.ko, () => planetObj(p), p.ko); }
   for (const o of dsos) { if (o.messier) add(o.messier, () => dsoObj(o), `${o.messier}${o.common ? ' ' + o.common : ''}`);
     add(o.name, () => dsoObj(o), o.messier || o.common ? `${o.name}` : null); if (o.common) add(o.common, () => dsoObj(o), o.common); }
+  for (const h of exo.hosts) { add(h.name, () => h, EXO_FAMOUS.has(h.name) ? h.name : null); for (const p of h.planets) add(`${h.name} ${p[0]}`, () => h); }
   for (let i = 0; i < starData.pos.length; i++) { const n = starData.proper[i]; if (n) add(n, () => starObj(i), n); add('HIP' + starData.id[i], () => starObj(i)); }
   dl.innerHTML = opts.map(s => `<option value="${s.replace(/"/g, '&quot;')}">`).join('');
 }
@@ -1166,6 +1242,7 @@ $('lon').onchange = (e) => state.lon = +e.target.value || 0;
 $('t-lines').onchange = (e) => linesGroup.visible = e.target.checked;
 $('t-mw').onchange = (e) => milkyWay.visible = e.target.checked && !!mwMat.uniforms.map.value;
 $('t-grid').onchange = (e) => gridGroup.visible = e.target.checked;
+$('t-exo').onchange = (e) => { if (exoPoints) exoPoints.visible = e.target.checked; };
 $('t-dso').onchange = (e) => { if (dsoPoints) dsoPoints.visible = e.target.checked; };
 document.querySelector('[data-speed="1"]').classList.add('on');
 
@@ -1177,6 +1254,15 @@ $('dt').onfocus = (e) => { e.target.value = toLocalInput(state.time); };
 const PLACES = { seoul: [37.57, 126.98], busan: [35.18, 129.08], jeju: [33.36, 126.53], tokyo: [35.68, 139.69], newyork: [40.71, -74.01],
   london: [51.51, -0.13], sydney: [-33.87, 151.21], atacama: [-24.63, -70.40], maunakea: [19.82, -155.47], northpole: [89.9, 0] };
 $('place').onchange = (e) => { const v = PLACES[e.target.value]; if (!v) return; [state.lat, state.lon] = v; $('lat').value = v[0]; $('lon').value = v[1]; };
+$('night').onclick = () => { document.body.classList.toggle('red'); $('night').classList.toggle('on'); };
+// eyepiece: true field of view of common setups, drawn as a circle; picking one also zooms to fit it
+$('eyepiece').onchange = (e) => { const f = +e.target.value; eyeFov = f || 0; if (f) { view.fov = Math.max(view.fov > f * 1.4 ? f * 1.25 : view.fov, f * 1.1); } };
+let eyeFov = 0;
+function drawEyepiece() {
+  const el = $('eye-ring'); if (!eyeFov || mode.space) { el.hidden = true; return; }
+  const d = Math.tan(eyeFov / 2 * D2R) / Math.tan(view.fov / 2 * D2R) * innerHeight; el.hidden = false; el.style.width = el.style.height = d + 'px';
+  $('eye-label').textContent = `${$('eyepiece').selectedOptions[0].text} · 실시야 ${fmtAng(eyeFov)}`;
+}
 $('shot').onclick = () => {
   const a = document.createElement('a'); a.download = `space-commons-${toLocalInput(state.time).replace(/[:T]/g, '-')}.png`;
   a.href = canvas.toDataURL('image/png'); a.click();
@@ -1203,7 +1289,7 @@ function tonight() { // what is up right now: planets, the Moon and bright Messi
 $('tonight-btn').onclick = () => $('tonight').hidden ? tonight() : ($('tonight').hidden = true);
 $('tonight-close').onclick = () => $('tonight').hidden = true;
 addEventListener('keydown', (e) => { if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-  if (e.code === 'KeyF') $('full').click(); if (e.code === 'KeyP') $('shot').click(); if (e.code === 'KeyT' && !mode.space) $('tonight-btn').click(); });
+  if (e.code === 'KeyF') $('full').click(); if (e.code === 'KeyN') $('night').click(); if (e.code === 'KeyP') $('shot').click(); if (e.code === 'KeyT' && !mode.space) $('tonight-btn').click(); });
 
 // ---------- guided tour ----------
 const TOUR = [
@@ -1274,6 +1360,14 @@ function drawLabels() {
     }
     for (const p of PLANETS) if (p.world && p.mesh.visible && p.world.dot(fwd) > 0) { const s = toScreen(p.world); if (s) label(s[0] + p.rpx, s[1], p.ko, 'planet'); }
   }
+  if ($('t-labels').checked && exoPoints?.visible && view.fov < 40) {
+    const fwd = camFwd(), cosLim = Math.cos(Math.min(85, view.fov * 0.75) * D2R); let m = 0;
+    for (const h of exo.hosts) {
+      if (m > 40) break; if (!(EXO_FAMOUS.has(h.name) || view.fov < 4)) continue;
+      const w = h.v.clone().applyMatrix4(sky.matrixWorld); if (w.dot(fwd) < cosLim || (gOn && w.y < 0)) continue;
+      const s = toScreen(w); if (s) { label(s[0] + 6, s[1], `${h.name} (${h.planets.length})`, 'exo'); m++; }
+    }
+  }
   if (gOn) for (const c of cardinals) { const s = toScreen(c.w); if (s && c.w.dot(camFwd()) > 0) label(s[0], s[1], c.name, 'card'); }
   for (let i = used; i < pool.length; i++) pool[i].style.display = 'none';
   const ring = $('sel-ring');
@@ -1304,6 +1398,7 @@ function frame(now) {
   starMat.uniforms.limit.value = Math.min(8.5, 6.2 + 2.2 * zoom) - day * 5;
   mwMat.uniforms.gain.value = 3.5 * dim / Math.max(1, Math.sqrt(70 / view.fov) * 0.6);
   starMat.uniforms.pr.value = renderer.getPixelRatio(); starMat.uniforms.dim.value = dim;
+  exoMat.uniforms.pr.value = renderer.getPixelRatio(); exoMat.uniforms.alpha.value = Math.min(1, Math.max(0, (60 - view.fov) / 40)) * (1 - day * 0.8);
   dsoMat.uniforms.pxPerDeg.value = innerHeight / view.fov; dsoMat.uniforms.pr.value = renderer.getPixelRatio();
   dsoMat.uniforms.limit.value = 7 + 3.2 * zoom; dsoMat.uniforms.dim.value = Math.max(0.05, dim);
 
@@ -1317,7 +1412,7 @@ function frame(now) {
   pcam.updateProjectionMatrix(); pcam.updateMatrixWorld();
   renderer.clearDepth();
   renderer.render(planetScene, pcam);
-  drawLabels();
+  drawLabels(); drawEyepiece();
   $('clock').textContent = new Date(state.time).toLocaleString('ko-KR', { hour12: false }) + (state.speed !== 1 ? `  (×${state.speed})` : '');
   const fw = camFwd(), rd = vecToRaDec(fw.clone().applyMatrix4(new THREE.Matrix4().copy(sky.matrixWorld).invert()));
   if (mode.space) {
@@ -1334,9 +1429,10 @@ function frame(now) {
 updateSkyMatrix(); requestAnimationFrame(frame);
 (async () => {
   const st = $('status'); const parts = [];
-  const r = await Promise.allSettled([loadStars(), loadNGC(), loadLines()]);
+  const r = await Promise.allSettled([loadStars(), loadNGC(), loadLines(), loadExo()]);
   if (r[0].status === 'fulfilled') parts.push(`별 ${r[0].value.toLocaleString()}개`); else parts.push('별 카탈로그 실패');
   if (r[1].status === 'fulfilled') parts.push(`NGC/IC 천체 ${r[1].value.toLocaleString()}개`); else parts.push('OpenNGC 실패');
+  if (r[3].status === 'fulfilled') parts.push(`외계행성 ${r[3].value.toLocaleString()}개`);
   st.textContent = parts.join(' · ');
   document.body.classList.add('ready');
   buildSearch();

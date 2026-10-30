@@ -114,3 +114,21 @@ select, input[type=datetime-local] { background: var(--panel-solid); color: inhe
 #tour .tour-head { display: flex; justify-content: space-between; align-items: center; }
 #tour .row { display: flex; gap: 6px; justify-content: flex-end; }
 #tour-next { background: var(--orbit); color: var(--night); border-color: var(--orbit); font-weight: 700; }
+
+/* exoplanets */
+.lbl.exo { color: #4FE3C1; font-size: 10.5px; }
+#info-exo { margin-top: 10px; }
+.sysmap { width: 100%; height: auto; background: rgba(10,13,28,.6); border-radius: 8px; border: 1px solid var(--line); }
+.sysmap text { font: 9px var(--mono); fill: #8D93B3; }
+.sysmap text.pl { fill: #EEF0FA; font-size: 9px; }
+.sysmap text.hz { fill: #4FE3C1; }
+.pltable { width: 100%; margin-top: 8px; border-collapse: collapse; font-size: 11px; }
+.pltable th { color: var(--mute); font-weight: 500; text-align: left; padding: 3px 4px 3px 0; border-bottom: 1px solid var(--line); }
+.pltable td { padding: 3px 4px 3px 0; font-family: var(--mono); border-top: 1px solid rgba(38,43,77,.5) !important; width: auto !important; color: var(--ink) !important; }
+/* eyepiece circle */
+#eye-ring { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none;
+  border: 1.5px solid rgba(79,227,193,.8); box-shadow: 0 0 0 9999px rgba(0,0,0,.55); }
+#eye-label { position: absolute; left: 50%; top: 100%; transform: translate(-50%, 6px); white-space: nowrap; font: 11px var(--mono); color: var(--orbit); }
+/* night vision: everything in deep red so dark-adapted eyes stay adapted */
+body.red { filter: grayscale(1) sepia(1) saturate(9) hue-rotate(-45deg) brightness(.7); }
+body { position: fixed; inset: 0; } /* never let focus/scrollIntoView shift the whole page */
