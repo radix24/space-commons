@@ -759,10 +759,10 @@ function orientBody(p) {
 function moonToEarthEq() { const T = (jd(state.time) - 2451545.0) / 36525; return ecl2eq(moonGeo(T)).negate().normalize(); }
 // ---------- asteroid belt and Kuiper belt: Kepler orbits solved per vertex on the GPU ----------
 const asteroidMat = new THREE.ShaderMaterial({
-  uniforms: { tDays: { value: 0 }, camPos: { value: new THREE.Vector3() }, pr: { value: 1 } },
+  uniforms: { tDays: { value: 0 }, camPos: { value: new THREE.Vector3() }, pr: { value: 1 }, beltK: { value: 1 } },
   vertexShader: `#include <common>
     #include <logdepthbuf_pars_vertex>
-    attribute vec4 el1; attribute vec3 el2; uniform float tDays, pr; uniform vec3 camPos; varying float vT;
+    attribute vec4 el1; attribute vec3 el2; uniform float tDays, pr, beltK; uniform vec3 camPos; varying float vT;
     void main() {
       float a = el1.x, e = el1.y, I = el1.z, O = el1.w, w = el2.x;
       float n = 0.9856076686 / (a * sqrt(a)), M = radians(mod(el2.y + n * (tDays - el2.z), 360.0));
@@ -773,7 +773,7 @@ const asteroidMat = new THREE.ShaderMaterial({
       const float OB = 0.4090928;
       vec3 p = vec3(ecl.x, ecl.y * cos(OB) - ecl.z * sin(OB), ecl.y * sin(OB) + ecl.z * cos(OB)) * 149.5978707 - camPos;
       vT = a > 30.0 ? 1.0 : 0.0;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0); gl_PointSize = (vT > 0.5 ? 2.2 : 1.5) * pr;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0); gl_PointSize = (vT > 0.5 ? 2.2 : 1.5 * beltK) * pr;
       #include <logdepthbuf_vertex>
     }`,
   fragmentShader: `#include <logdepthbuf_pars_fragment>
@@ -794,7 +794,9 @@ fetch('data/asteroids.json').then(r => r.json()).then(js => {
 function updateAsteroids() {
   if (!asteroidPts) return;
   asteroidPts.visible = mode.space && $('t-asteroids').checked;
-  asteroidMat.uniforms.tDays.value = jd(state.time) - 2451545.0; asteroidMat.uniforms.camPos.value.copy(sp.pos); asteroidMat.uniforms.pr.value = renderer.getPixelRatio();
+  asteroidMat.uniforms.tDays.value = jd(state.time) - 2451545.0; asteroidMat.uniforms.camPos.value.copy(sp.pos);
+  // from the outer solar system the whole main belt shrinks to a white smudge over the Sun: fade it out beyond 30 AU
+  asteroidMat.uniforms.beltK.value = Math.max(0, Math.min(1, (50 - sp.pos.length() / MKM_AU) / 20)); asteroidMat.uniforms.pr.value = renderer.getPixelRatio();
 }
 
 // ---------- shadows cast between bodies (moons on planets, planets on moons' parents, Saturn's rings) ----------
@@ -1465,7 +1467,9 @@ function updateSpace() {
       if (!p.active) { p.mesh.visible = false; p.world = null; continue; }
       nearestAll = Math.min(nearestAll, d - bodyR(p));
       const gq = hp.clone().sub(earth); p.dist = gq.length() / MKM_AU; const rd = vecToRaDec(gq); p.ra = rd.ra; p.dec = rd.dec; p.helioAU = hp.length() / MKM_AU;
-      placeProbe(p, rel, earth.clone().sub(sp.pos), sp.pos.clone().negate(), sp.replay === p ? d * Math.tan(view.fov * D2R * 0.03) : 0); p.mesh.visible = true; continue;
+      placeProbe(p, rel, earth.clone().sub(sp.pos), sp.pos.clone().negate(), sp.replay === p ? d * Math.tan(view.fov * D2R * 0.03) : 0); p.mesh.visible = true;
+      if (p !== sp.target && PLANETS[0].world && Math.acos(Math.min(1, p.world.dot(PLANETS[0].world))) / (view.fov * D2R) * innerHeight < Math.max(10, PLANETS[0].rpx * 3)) p.mesh.visible = false; // don't blot the Sun
+      continue;
     }
     nearest = Math.min(nearest, Math.max(d - bodyR(p) * 0.995, 1e-10)); // 0.995: the faceted sphere's flat faces sit slightly inside the true radius
     p.camDist = d; p.world = rel.clone().divideScalar(d);
@@ -1483,6 +1487,9 @@ function updateSpace() {
       const sepPx = Math.atan(hp.distanceTo(helioPos[p.parent]) / d) / (view.fov * D2R) * innerHeight;
       p.mesh.visible = sepPx > 8 && (p.mesh.scale.x < par.mesh.scale.x * 0.5 || d < par.camDist);
     }
+    if (p.name !== 'Sun' && p.mesh.scale.x > bodyR(p) * 1.01 && PLANETS[0].world) { // an enlarged marker disc over the Sun's glow bites a dark notch out of it
+      const sepPx = Math.acos(Math.min(1, p.world.dot(PLANETS[0].world))) / (view.fov * D2R) * innerHeight;
+      if (sepPx < Math.max(10, PLANETS[0].rpx * 3)) p.mesh.visible = false; }
     if (p.glow) p.glow.scale.setScalar(Math.max(8, 0.15 * view.fov * D2R * d / p.mesh.scale.x));
     p.rpx = Math.atan(p.mesh.scale.x / d) / (view.fov / 2 * D2R) * innerHeight / 2;
   }
@@ -2668,8 +2675,16 @@ function frame(now) {
   else { planetScene.scale.setScalar(1); pcam.near = camera.near; pcam.far = camera.far; }
   pcam.updateProjectionMatrix(); pcam.updateMatrixWorld();
   renderer.clearDepth();
+  // Far objects at the near-camera scale (e.g. the Sun 172 AU away while 5 m from Voyager) sit ~1e12 units out, where
+  // float32 vertices break up and shake. Pull each one in along its line of sight and shrink it by the same factor:
+  // it looks identical from the camera. Log compression keeps far objects in the right depth order.
+  const squeezed = [];
+  if (mode.space) { const lim = 1e5 * Math.max(1e-12, sp.nearestAll || 1);
+    for (const o of [...planetGroup.children, halleyTail]) { if (!o.visible) continue; const d = o.position.length(); if (d <= lim) continue;
+      const f = lim * (1 + Math.log(d / lim)) / d; squeezed.push([o, o.position.clone(), o.scale.clone()]); o.position.multiplyScalar(f); o.scale.multiplyScalar(f); } }
   updateShadows();
   renderer.render(planetScene, pcam);
+  for (const [o, p0, s0] of squeezed) { o.position.copy(p0); o.scale.copy(s0); }
   drawLabels(); drawEyepiece();
   $('clock').textContent = new Date(state.time).toLocaleString(LOCALE, { hour12: false }) + (state.speed !== 1 ? `  (×${state.speed})` : '');
   const fw = camFwd(), rd = vecToRaDec(fw.clone().applyMatrix4(new THREE.Matrix4().copy(sky.matrixWorld).invert()));
