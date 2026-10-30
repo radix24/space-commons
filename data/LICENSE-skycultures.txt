@@ -1,0 +1,3 @@
+data/culture-chinese.json is derived from the Stellarium "chinese" sky culture, licensed CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/).
+data/culture-egyptian.json is derived from the Stellarium "egyptian" sky culture, licensed GNU GPL v2.0.
+Source: https://github.com/Stellarium/stellarium/tree/master/skycultures . Both remain under their licences and are loaded by the app as separate data.

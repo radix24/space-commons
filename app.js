@@ -280,7 +280,25 @@ async function loadKorean() { // 천상열차분야지도 (Stellarium "korean" s
   l.frustumCulled = false; l.renderOrder = 1; koreanGroup.add(l);
   return koreanLabels.length;
 }
-function applySkyCulture() { const k = $('skyculture').value === 'korean'; koreanGroup.visible = k && $('t-lines').checked; linesGroup.visible = !k && $('t-lines').checked; }
+// other sky cultures (Stellarium data, separate files with their licences: data/LICENSE-skycultures.txt), loaded on first use
+const CULTURES = { chinese: { color: 0xd4a35a, group: new THREE.Group(), labels: [], state: 0 }, egyptian: { color: 0xc8b27a, group: new THREE.Group(), labels: [], state: 0 } };
+for (const k in CULTURES) { CULTURES[k].group.visible = false; sky.add(CULTURES[k].group); }
+async function loadCulture(key) {
+  const C = CULTURES[key]; if (C.state) return; C.state = 1;
+  const js = await fetch(`data/culture-${key}.json`).then(r => r.json()), byHip = new Map(); starData.id.forEach((id, i) => byHip.set(+id, starData.pos[i]));
+  const pts = [];
+  for (const cn of js.constellations) { const used = [];
+    for (const line of cn.lines) for (let i = 0; i < line.length - 1; i++) { const a = byHip.get(line[i]), b = byHip.get(line[i + 1]); if (!a || !b) continue;
+      pts.push(a.x * R_SKY, a.y * R_SKY, a.z * R_SKY, b.x * R_SKY, b.y * R_SKY, b.z * R_SKY); used.push(a, b); }
+    if (!used.length) continue;
+    // Chinese names are shown in their characters (with the English gloss when zoomed in); Egyptian names in English
+    C.labels.push({ v: used.reduce((s, x) => s.add(x), new THREE.Vector3()).normalize(), name: key === 'chinese' && !EN ? cn.native : cn.en || cn.native, gloss: key === 'chinese' ? cn.en : '', n: used.length }); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  const l = new THREE.LineSegments(g, skyLineMat(C.color, 0.6)); l.frustumCulled = false; l.renderOrder = 1; C.group.add(l); C.state = 2; applySkyCulture();
+}
+function applySkyCulture() { const v = $('skyculture').value, on = $('t-lines').checked, k = v === 'korean';
+  koreanGroup.visible = k && on; linesGroup.visible = v === 'western' && on;
+  for (const key in CULTURES) { CULTURES[key].group.visible = v === key && on; if (v === key && !CULTURES[key].state) loadCulture(key).catch(() => {}); } }
 const gridGroup = new THREE.Group(); gridGroup.visible = false; sky.add(gridGroup);
 (function buildGrid() {
   const pts = [];
@@ -2919,6 +2937,9 @@ function drawLabels() {
     if (dark && $('t-lines').checked && $('skyculture').value === 'korean') { let kn = 0; // Korean names; small asterisms only when zoomed in
       for (const c of koreanLabels) { if (kn > 90 || (c.n < 3 && view.fov > 35 && !c.mansion)) continue; const w = c.v.clone().applyMatrix4(sky.matrixWorld); if (!vis(w)) continue;
         const s = toScreen(w); if (s) { label(s[0], s[1], view.fov < 30 && c.hanja && !EN ? `${c.name} ${c.hanja}` : c.name, c.mansion ? 'const kr mansion' : 'const kr'); kn++; } } }
+    else if (dark && $('t-lines').checked && CULTURES[$('skyculture').value]) { let cn = 0;
+      for (const c of CULTURES[$('skyculture').value].labels) { if (cn > 80 || (c.n < 4 && view.fov > 40)) continue; const w = c.v.clone().applyMatrix4(sky.matrixWorld); if (!vis(w)) continue;
+        const s = toScreen(w); if (s) { label(s[0], s[1], view.fov < 25 && c.gloss ? `${c.name} · ${c.gloss}` : c.name, 'const kr'); cn++; } } }
     else if (dark && $('t-lines').checked && view.fov > 15) for (const c of constLabels) {
       const w = c.v.clone().applyMatrix4(sky.matrixWorld); if (!vis(w)) continue; const s = toScreen(w); if (s) label(s[0], s[1], c.name, 'const'); }
     if (dark && $('t-dso').checked) {
