@@ -1852,6 +1852,7 @@ $('scrub').addEventListener('change', (e) => { e.target.value = 0; scrubBase = n
 
 // shareable link: mode, time, place, view and selection live in the URL hash
 let hashTimer = 0;
+let lessonParam = new URLSearchParams(location.hash.slice(1)).get('lesson') || '';
 function writeHash() {
   clearTimeout(hashTimer);
   hashTimer = setTimeout(() => {
@@ -1860,6 +1861,7 @@ function writeHash() {
     if (!mode.space) { q.set('lat', state.lat.toFixed(2)); q.set('lon', state.lon.toFixed(2)); q.set('az', view.az.toFixed(1)); q.set('alt', view.alt.toFixed(1)); q.set('fov', view.fov.toPrecision(3)); }
     else if (sp.target) { q.set('at', sp.target.name); q.set('d', sp.dist.toPrecision(3)); }
     if (selected) q.set('o', selected.planet ? selected.p.name : selected.kindName === 'dso' ? (selected.messier || selected.name) : selected.name);
+    if (lessonParam) q.set('lesson', lessonParam); // a lesson link keeps its lesson while the student looks around
     history.replaceState(null, '', '#' + q.toString());
   }, 300);
 }
@@ -2888,6 +2890,26 @@ function goHistory(s) {
   $('status').textContent = `${new Date(state.time).toLocaleString(LOCALE, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })} · ${s.note || s.target?.name || ''} · 시간 멈춤`;
 }
 $('hist-btn').onclick = async () => (await import('./history.js')).openHistory({ goTo: goHistory });
+// ---------- E3. lesson links: a teacher packs the current scene with a goal and questions into one link; students answer and save a file ----------
+const b64u = { enc: (s) => btoa(String.fromCharCode(...new TextEncoder().encode(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''),
+  dec: (s) => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), ch => ch.charCodeAt(0))) };
+function makeLesson() {
+  const L = { title: $('ls-title').value.trim() || '오늘의 관측 수업', goal: $('ls-goal').value.trim(), qs: $('ls-qs').value.split('\n').map(s => s.trim()).filter(Boolean) };
+  lessonParam = b64u.enc(JSON.stringify(L)); writeHash();
+  setTimeout(() => { const url = location.href; $('ls-url').value = url; navigator.clipboard?.writeText(url).then(() => { $('status').textContent = '수업 링크를 복사했습니다'; }).catch(() => {}); }, 350);
+}
+function showLesson() {
+  let L; try { L = JSON.parse(b64u.dec(lessonParam)); } catch { return; }
+  const box = $('lesson'); box.hidden = false; $('lesson-title').textContent = L.title; $('lesson-goal').textContent = L.goal || '';
+  const ol = $('lesson-qs'); ol.innerHTML = '';
+  L.qs.forEach((q, i) => { const li = document.createElement('li'), ta = document.createElement('textarea'); li.append(Object.assign(document.createElement('div'), { textContent: q }), ta); ta.dataset.i = i; ol.append(li); });
+  $('lesson-save').onclick = () => { const ans = [...ol.querySelectorAll('textarea')].map(t => t.value);
+    const out = { lesson: L.title, student: $('lesson-name').value.trim(), saved: new Date().toISOString(), scene: location.hash, answers: L.qs.map((q, i) => ({ q, a: ans[i] })) };
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' })); a.download = `수업-${out.student || '이름없음'}.json`; a.click(); };
+}
+$('ls-btn').onclick = () => { $('ls').hidden = !$('ls').hidden; };
+$('ls-close').onclick = () => $('ls').hidden = true; $('ls-make').onclick = makeLesson; $('lesson-close').onclick = () => $('lesson').hidden = true;
+if (lessonParam) setTimeout(showLesson, 1500);
 // ---------- 22. whole spacecraft journeys (S7) ----------
 function journeyTimeline(p) {
   const box = $('info-exo'), ev = JOURNEYS[p.name], e = probeEph[p.name]; box.innerHTML = ''; box.hidden = false;

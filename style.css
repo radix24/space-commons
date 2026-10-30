@@ -420,3 +420,5 @@ body.ar { background: #000; } body.ar #c { background: transparent; }
 .cc-rec > b { font-size: 13px; color: var(--brass); } .cc-rec .cc-why { margin-left: 8px; font-size: 12px; color: var(--mute); }
 .hist { list-style: none; padding: 0; margin: 10px 0; } .hist li { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
 .hist-y { color: var(--brass); font-weight: 700; } .hist p { margin: 4px 0 8px; line-height: 1.6; font-size: 13.5px; }
+#ls label, #lesson label { display: block; margin: 6px 0; font-size: 12.5px; } #ls input, #ls textarea, #lesson input, #lesson textarea { display: block; width: 100%; margin-top: 3px; background: #19191a; color: var(--ink); border: 1px solid var(--line); font: inherit; padding: 4px; }
+#lesson-qs { padding-left: 18px; } #lesson-qs li { margin: 8px 0; } #lesson-qs textarea { min-height: 44px; }

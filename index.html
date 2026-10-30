@@ -46,7 +46,7 @@
   </div>
   <div id="tools">
     <button id="tonight-btn" class="ground-only" title="지금 볼 수 있는 천체 (T)">지금 하늘</button>
-    <button id="hist-btn" title="첨성대부터 조선왕조실록의 초신성 기록까지, 그날의 하늘과 함께">한국 천문학</button><button id="sizes-btn" title="행성, 위성, 별의 실제 크기를 나란히 비교">크기 비교</button>
+    <button id="ls-btn" title="지금 보고 있는 장면에 수업 목표와 질문을 담아 링크로 나눠 줍니다">수업 링크</button><button id="hist-btn" title="첨성대부터 조선왕조실록의 초신성 기록까지, 그날의 하늘과 함께">한국 천문학</button><button id="sizes-btn" title="행성, 위성, 별의 실제 크기를 나란히 비교">크기 비교</button>
     <button id="cards-btn" title="우주 알아보기: 하늘의 좌표부터 은하 진화까지 46개 개념을 직접 조작하고 확인 문제로 점검하기">우주 알아보기</button>
     <button id="today-btn" class="ground-only" title="일출·일몰, 박명, 달, 관측하기 좋은 시간 (Y)">오늘 천문</button>
     <button id="cal-btn" title="앞으로 90일의 천문 현상">천문 달력</button>
@@ -245,6 +245,24 @@
   <div class="row"><label>노출 <select id="exp-sec"><option value="10">10초</option><option value="30">30초</option><option value="300">5분</option><option value="1800" selected>30분</option><option value="3600">1시간</option><option value="10800">3시간</option></select></label>
   <label>감도 <select id="exp-iso"><option>400</option><option selected>1600</option><option>6400</option></select></label><button id="exp-go">찍기</button></div>
   <div id="exp-out" hidden><img id="exp-img" alt="장노출 사진" style="width:100%;display:block;margin-top:8px"><button id="exp-save">이미지 저장</button></div>
+</div>
+<div id="ls" class="side" hidden>
+  <button class="x" id="ls-close">×</button>
+  <h2>수업 링크 만들기</h2>
+  <div class="small">지금 화면(시각, 장소, 방향, 고른 천체)이 그대로 링크에 담깁니다. 학생은 링크를 열어 질문에 답하고 파일로 저장해 제출합니다.</div>
+  <label>수업 제목 <input id="ls-title" placeholder="예: 겨울 대삼각형 찾기"></label>
+  <label>목표 <input id="ls-goal" placeholder="예: 별의 색과 온도의 관계를 설명할 수 있다"></label>
+  <label>질문 (한 줄에 하나) <textarea id="ls-qs" rows="4" placeholder="세 별 가운데 가장 붉은 별은?&#10;그 별의 표면 온도는 태양보다 높을까요?"></textarea></label>
+  <button id="ls-make">링크 만들기 (복사)</button>
+  <input id="ls-url" readonly placeholder="여기에 링크가 나옵니다">
+</div>
+<div id="lesson" class="side" hidden>
+  <button class="x" id="lesson-close">×</button>
+  <h2 id="lesson-title"></h2>
+  <p id="lesson-goal" class="small"></p>
+  <label>이름 <input id="lesson-name"></label>
+  <ol id="lesson-qs"></ol>
+  <button id="lesson-save">답안 파일 저장</button>
 </div>
 <div id="log" class="side" hidden>
   <button class="x" id="log-close">×</button>
