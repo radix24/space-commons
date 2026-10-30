@@ -1917,6 +1917,7 @@ $('cal-btn').onclick = () => $('cal').hidden ? renderCalendar() : ($('cal').hidd
 $('cal-close').onclick = () => $('cal').hidden = true;
 
 // ---------- 10. ISS and bright satellites (CelesTrak TLE + SGP4 via satellite.js) ----------
+const MAJOR_SAT = /천리안|아리랑|무궁화|차세대중형|다누리|COMS|GK-?2|KOMPSAT|KOREASAT|CAS500/i;
 const SAT_KO = { 25544: '국제우주정거장 (ISS)', 48274: '톈궁 (중국 우주정거장)', 20580: '허블 우주망원경' };
 const sats = [];
 async function loadSats() {
@@ -2396,8 +2397,16 @@ function drawLabels() {
   if (mode.space && $('t-labels').checked) for (const st of sites) { if (!st.world) continue; const sc = toScreen(st.world); if (sc) label(sc[0], sc[1], st.ko, 'site'); }
   if (sats.length && $('t-sats').checked && (!mode.space || true)) {
     const fwd = camFwd(), cosLim = Math.cos(Math.min(85, view.fov * 0.75) * D2R);
+    // names: stations and major Korean satellites first, the rest only when zoomed in, and never on top of another name
+    const E = helioPos.Earth, close = view.fov < 25 || (mode.space && E && E.distanceTo(sp.pos) < 0.05), boxes = [], cand = [];
     for (const s of sats) { if (!s.world || s.world.dot(fwd) < cosLim) continue; const p = toScreen(s.world); if (!p) continue;
-      label(p[0], p[1], s.star || s.korea || view.fov < 25 ? s.name : '', 'sat' + (s.visible ? ' lit' : '') + (s.iss ? ' iss' : '') + (s.korea ? ' kr' : '')); }
+      const pr = s === selected ? 1e3 : s.star ? 100 : s.korea && MAJOR_SAT.test(s.name) ? 50 : s.korea ? 10 : 0; cand.push({ s, p, pr }); }
+    cand.sort((a, b) => b.pr - a.pr);
+    for (const { s, p, pr } of cand) {
+      let name = pr >= 50 || ((s.korea || !mode.space) && close) ? s.name : '';
+      if (name) { const w = name.length * 7 + 12, b = [p[0] - 4, p[1] - 9, p[0] + w, p[1] + 9];
+        if (boxes.some(o => b[0] < o[2] && b[2] > o[0] && b[1] < o[3] && b[3] > o[1])) name = ''; else boxes.push(b); }
+      label(p[0], p[1], name, 'sat' + (s.visible ? ' lit' : '') + (s.iss ? ' iss' : '') + (s.korea ? ' kr' : '')); }
   }
   if (gOn) for (const c of cardinals) { const s = toScreen(c.w); if (s && c.w.dot(camFwd()) > 0) label(s[0], s[1], c.name, 'card'); }
   for (let i = used; i < pool.length; i++) pool[i].style.display = 'none';
