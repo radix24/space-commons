@@ -1669,7 +1669,7 @@ function spaceDrag(dx, dy) {
   sp.quat.multiply(qy).multiply(qx).normalize();
 }
 function spaceZoom(f) {
-  if (sp.target) sp.dist = Math.max(sp.target.kindName === 'site' ? 8e-9 : sp.target.probe ? bodyR(sp.target) * 1.6 : bodyR(sp.target) * 1.15, Math.min(sp.target.sys ? 4e9 : 2e4, sp.dist * f));
+  if (sp.target) sp.dist = Math.max(sp.target.kindName === 'site' ? 8e-9 : sp.target.probe ? bodyR(sp.target) * 1.6 : bodyR(sp.target) * 1.15, Math.min(sp.target.gal ? 3e12 : sp.target.sys ? 4e9 : 2e4, sp.dist * f));
   else sp.pos.addScaledVector(camFwd(), (1 - f) * Math.max(0.05, sp.nearest) * 2);
 }
 function spaceKeys(dt) {
@@ -1707,6 +1707,7 @@ function stepSpaceFlight(now) {
   const sunward = tp.lengthSq() ? tp.clone().negate().normalize() : new THREE.Vector3(1, 0, 0);
   const side = sunward.clone().cross(ECL_N).normalize();
   let dir = sunward.multiplyScalar(0.8).addScaledVector(side, 0.5).addScaledVector(ECL_N, 0.3).normalize();
+  if (f.gal) dir = galaxy.ngp.clone().multiplyScalar(0.85).addScaledVector(tp.clone().negate().normalize(), 0.5).normalize();
   if (f.site) { const n = f.p.normal, t = side.clone().addScaledVector(n, -side.dot(n)).normalize(); dir = n.clone().multiplyScalar(0.45).addScaledVector(t, 0.9).normalize(); } // low, oblique view of the lander
   const end = tp.clone().addScaledVector(dir, f.d1);
   const turn = Math.min(1, k * 2.5), te = 1 - Math.pow(1 - turn, 3);
@@ -1715,7 +1716,7 @@ function stepSpaceFlight(now) {
   const startDir = f.from.clone().sub(tp).normalize();
   const curDir = startDir.lerp(dir, e).normalize();
   sp.pos.copy(tp).addScaledVector(curDir, dd);
-  sp.quat.slerpQuaternions(f.q0, lookQuat(tp.clone().sub(sp.pos).normalize(), f.site ? f.p.normal : ECL_N), te);
+  sp.quat.slerpQuaternions(f.q0, lookQuat(tp.clone().sub(sp.pos).normalize(), f.site ? f.p.normal : f.gal ? tp.clone().negate().normalize() : ECL_N), te);
   if (k >= 1) { sp.flight = null; sp.target = f.p; sp.dist = f.d1; $('sp-target').textContent = `${f.p.ko} 주위`; writeHash(); }
 }
 function fmtDist(mkm) {
@@ -1764,6 +1765,7 @@ document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { $('ton
   if (sandboxOn) setSandbox(false); setMode(b.dataset.mode === 'space'); });
 $('t-orbits').onchange = (e) => orbits.visible = mode.space && e.target.checked;
 $('light-btn').onclick = startLight;
+$('galaxy-btn').onclick = () => visitGalaxy();
 $('sp-free').onclick = () => { sp.target = null; sp.flight = null; $('sp-target').textContent = '자유 비행'; };
 
 // ---------- search ----------
@@ -2498,6 +2500,7 @@ function updateStars3d() {
   P.needsUpdate = true; Mg.needsUpdate = true; s3dMat.uniforms.pr.value = renderer.getPixelRatio();
 }
 function starLabels() {
+  galaxyLabels();
   if (!s3d.far || !$('t-labels').checked) return;
   const m = s3dPts.geometry.attributes.mag.array, fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(sp.quat), cosLim = Math.cos(Math.min(85, view.fov * 0.75) * D2R), v = new THREE.Vector3();
   const lim = view.fov < 20 ? 3.5 : 1.6; let n = 0;
@@ -2558,6 +2561,62 @@ function updateSystem() {
     p.m.scale.setScalar(Math.max(1, sysNow.pos.clone().add(p.m.position).distanceTo(sp.pos) * Math.tan(view.fov * D2R) * 0.004 / p.r)); }
   const d = sysNow.pos.distanceTo(sp.pos), gl = sysGroup.children[1]; gl.scale.setScalar(Math.max(gl.userData.R * 6, d * Math.tan(view.fov * D2R) * 0.06));
   sp.nearestAll = Math.min(sp.nearestAll || 1e12, Math.max(1e-6, d - sysNow.body.R / 1e6) * 0.5);
+}
+
+// ---------- 21b. the Milky Way from outside (C3): a model galaxy built around the Sun's real place ----------
+// Bar, bulge and four logarithmic arms (pitch 12 deg) in galactic coordinates; the Sun 8.2 kpc from the centre, 20 pc above the plane,
+// between the Sagittarius and Perseus arms on the Orion spur. Drawn only once the camera is beyond ~1 kpc, where the sky photo stops making sense.
+const KPC = 1000 * PC;
+const GAL2EQ = new THREE.Matrix3().set(-0.0548755604, 0.4941094279, -0.8676661490, -0.8734370902, -0.4448296300, -0.1980763734, -0.4838350155, 0.7469822445, 0.4559837762);
+const galToEq = (x, y, z) => new THREE.Vector3(x, y, z).applyMatrix3(GAL2EQ);
+const galaxy = { pts: null, pos: null, w: null, center: galToEq(8.2 * KPC, 0, -0.02 * KPC), ngp: galToEq(0, 0, 1), labels: [] };
+function buildGalaxy() {
+  let s = 20260830; const rnd = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296), gau = () => Math.sqrt(-2 * Math.log(rnd() + 1e-9)) * Math.cos(2 * Math.PI * rnd());
+  const N = MOBILE ? 14000 : 40000, pos = new Float64Array(N * 3), col = new Float32Array(N * 3), w = new Float32Array(N);
+  const pitch = 1 / Math.tan(12 * D2R), barA = Math.PI - 27 * D2R, armPhase = Math.PI - pitch * Math.log(6.9 / 4);
+  for (let i = 0; i < N; i++) { const u = rnd(); let X, Y, Z, cr, cg, cb, wt;
+    if (u < 0.1) { X = gau() * 0.7; Y = gau() * 0.7; Z = gau() * 0.45; [cr, cg, cb] = [1, 0.84, 0.6]; wt = 1.6; } // bulge
+    else if (u < 0.2) { const t = (rnd() * 2 - 1) * 4.2, q = gau() * 0.45; X = t * Math.cos(barA) - q * Math.sin(barA); Y = t * Math.sin(barA) + q * Math.cos(barA); Z = gau() * 0.25; [cr, cg, cb] = [1, 0.86, 0.64]; wt = 1.2; } // bar
+    else { let r = Math.min(16, 1.6 - 3 * Math.log(1 - rnd() * 0.97)), th, arm = rnd() < 0.72;
+      if (arm) { const k = Math.floor(rnd() * 4); th = armPhase + k * Math.PI / 2 + pitch * Math.log(r / 4); const off = gau() * 0.32; r += off; th += gau() * 0.04; }
+      else th = rnd() * Math.PI * 2;
+      if (rnd() < 0.015) { r = 8.3 + gau() * 0.25; th = Math.PI + (rnd() - 0.5) * 0.7; arm = true; } // the Orion spur, where the Sun is
+      X = r * Math.cos(th); Y = r * Math.sin(th); Z = gau() * (arm ? 0.1 : 0.22);
+      const hii = arm && rnd() < 0.04; [cr, cg, cb] = hii ? [1, 0.45, 0.55] : arm ? [0.66, 0.76, 1] : [0.96, 0.88, 0.74]; wt = hii ? 1.4 : arm ? 1 : 0.6; }
+    const e = galToEq((X + 8.2) * KPC, Y * KPC, (Z - 0.02) * KPC); pos.set([e.x, e.y, e.z], i * 3); col.set([cr, cg, cb], i * 3); w[i] = wt; }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(N * 3), 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setAttribute('a', new THREE.Float32BufferAttribute(new Float32Array(N), 1));
+  const m = new THREE.ShaderMaterial({ uniforms: { pr: { value: 1 } },
+    vertexShader: `attribute vec3 color; attribute float a; varying vec3 vC; varying float vA; uniform float pr; void main(){ gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); vC = color; vA = a; gl_PointSize = clamp(1.6 + a * 2.5, 1.2, 5.0) * pr; }`,
+    fragmentShader: `varying vec3 vC; varying float vA; void main(){ vec2 p = gl_PointCoord * 2.0 - 1.0; float r2 = dot(p, p); if (r2 > 1.0 || vA <= 0.0) discard; gl_FragColor = vec4(vC * exp(-r2 * 3.0) * min(vA, 1.0), 1.0); }`,
+    transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending });
+  galaxy.pts = new THREE.Points(g, m); galaxy.pts.frustumCulled = false; galaxy.pts.renderOrder = -2; galaxy.pts.visible = false; planetScene.add(galaxy.pts); galaxy.pos = pos; galaxy.w = w;
+  const L = (name, r, th) => galaxy.labels.push({ name, v: galToEq((r * Math.cos(th) + 8.2) * KPC, r * Math.sin(th) * KPC, -0.02 * KPC) }), A = (k, r) => armPhase + k * Math.PI / 2 + pitch * Math.log(r / 4);
+  galaxy.labels.push({ name: '태양 (여기)', v: new THREE.Vector3() }, { name: '은하 중심 (궁수자리 A*)', v: galaxy.center.clone() });
+  L('궁수자리 팔', 6.4, A(0, 6.4)); L('페르세우스 팔', 11, A(1, 11)); L('방패-센타우루스 팔', 6, A(3, 6)); L('바깥 팔', 14, A(2, 14)); L('오리온 지선', 8.6, Math.PI - 0.35);
+}
+function updateGalaxy() {
+  const d = mode.space ? sp.pos.length() : 0, f = Math.max(0, Math.min(1, (d - 0.6 * KPC) / (2.4 * KPC)));
+  if (!f) { if (galaxy.pts) { galaxy.pts.visible = false; planetGroup.visible = true; } return; }
+  if (!galaxy.pts) buildGalaxy();
+  const P = galaxy.pts.geometry.attributes.position, A = galaxy.pts.geometry.attributes.a, k = 1 / Math.max(1e-12, sp.nearestAll || 1), R = 1e5 / k, s = galaxy.pos;
+  const cx = sp.pos.x, cy = sp.pos.y, cz = sp.pos.z, ref = 20 * KPC;
+  for (let i = 0, n = galaxy.w.length; i < n; i++) { const x = s[3 * i] - cx, y = s[3 * i + 1] - cy, z = s[3 * i + 2] - cz, dd = Math.hypot(x, y, z) || 1;
+    P.array[3 * i] = x / dd * R; P.array[3 * i + 1] = y / dd * R; P.array[3 * i + 2] = z / dd * R; A.array[i] = f * galaxy.w[i] * Math.min(2.5, (ref / dd) ** 1.2) * 0.55; }
+  P.needsUpdate = true; A.needsUpdate = true; galaxy.pts.material.uniforms.pr.value = renderer.getPixelRatio(); galaxy.pts.visible = true;
+  planetGroup.visible = f < 0.5; // the Sun's glow and the planets shrink to nothing at galactic scale
+  if (s3dPts && f > 0.5) s3dPts.visible = false; // the nearby-star catalogue collapses into one bright dot from out here
+  sp.nearestAll = Math.min(sp.nearestAll || 1e12, d * 0.01);
+}
+function galaxyLabels() {
+  if (!galaxy.pts?.visible || !$('t-labels').checked) return;
+  const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(sp.quat), v = new THREE.Vector3();
+  for (const l of galaxy.labels) { v.copy(l.v).sub(sp.pos).normalize(); if (v.dot(fwd) < 0.2) continue; const p = toScreen(v); if (p) label(p[0], p[1], l.name, l.name.startsWith('태양') ? 'planet' : 'const'); }
+}
+function visitGalaxy() {
+  const body = { name: 'galaxy', key: 'galaxy', ko: '우리 은하', R: 1, sys: true, gal: true };
+  helioPos.galaxy = galaxy.center; sp.target = null;
+  sp.flight = { p: body, from: sp.pos.clone(), q0: sp.quat.clone(), d1: 42 * KPC, t0: performance.now(), dur: 9000, gal: true }; sp.replay = null;
+  $('status').textContent = '우리 은하 밖으로 나가는 중 · 약 13만 7천 광년 위에서 내려다봅니다 (은하 모형: 막대, 팽대부, 나선팔 4개)';
 }
 
 // ---------- 22. whole spacecraft journeys (S7) ----------
@@ -2927,7 +2986,7 @@ function frame(now) {
   updateSkyMatrix();
   if (mode.space) { computeHelio(); stepSpaceFlight(now); spaceKeys(dt); }
   updatePlanets();   // positions for this frame first...
-  updateAsteroids(); updateSmallBodies(); updateLight(); updateStations(); updateNeo(); updateStars3d(); updateGaia(); updateHorizon(); updateArt(); updateAnalemma(); updateSkyPhoto();
+  updateAsteroids(); updateSmallBodies(); updateLight(); updateStations(); updateNeo(); updateStars3d(); updateGalaxy(); updateGaia(); updateHorizon(); updateArt(); updateAnalemma(); updateSkyPhoto();
   updateSats();
   stepFlight(now);   // ...then aim the camera at them (aiming at last frame's position made zoomed views shake)
   updateCamera();
