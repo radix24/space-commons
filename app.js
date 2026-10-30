@@ -3453,6 +3453,26 @@ async function offlinePack() {
 $('offline-btn').onclick = () => offlinePack();
 const NEEDS_NET = '인터넷 없음: 위성 목록, 오로라, 오늘의 지구, 날씨, 확대 사진은 마지막으로 받은 것만 보입니다';
 addEventListener('offline', () => { $('status').textContent = NEEDS_NET; }); if (!navigator.onLine) setTimeout(() => { $('status').textContent = NEEDS_NET; }, 3000);
+// ---------- NASA-Eyes-style mission timeline (space mode): 1950-2050 with every mission event; drag to move time, click an event to go there ----------
+const MT = { el: null, t0: Date.UTC(1950, 0, 1), t1: Date.UTC(2050, 11, 31), drag: false, events: [] };
+function buildMissionTimeline() {
+  for (const [name, ev] of Object.entries(JOURNEYS)) { const p = PLANETS.find(q => q.name === name); if (!p) continue; for (const [d, title, focus] of ev) MT.events.push({ t: Date.parse(d + 'T12:00:00Z'), title, focus, p, name: p.ko || name }); }
+  const el = document.createElement('div'); el.id = 'mtl'; el.innerHTML = '<div class="mtl-track"><div class="mtl-past"></div><div class="mtl-now"></div></div><div class="mtl-years"></div><div class="mtl-tip" hidden></div>'; document.body.append(el); MT.el = el;
+  const X = (t) => (t - MT.t0) / (MT.t1 - MT.t0) * 100, track = el.querySelector('.mtl-track');
+  el.querySelector('.mtl-years').innerHTML = [1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020, 2030, 2040, 2050].map(y => `<span style="left:${X(Date.UTC(y, 0, 1))}%">${y}</span>`).join('');
+  for (const e of MT.events) { const m = document.createElement('button'); m.className = 'mtl-ev' + (e.t > Date.now() ? ' future' : ''); m.style.left = X(e.t) + '%'; m.setAttribute('aria-label', `${e.name}: ${e.title}`);
+    m.onmouseenter = () => { const tip = el.querySelector('.mtl-tip'); tip.hidden = false; tip.textContent = `${new Date(e.t).toISOString().slice(0, 10)} · ${e.name} · ${tr(e.title)}`; tip.style.left = X(e.t) + '%'; };
+    m.onmouseleave = () => { el.querySelector('.mtl-tip').hidden = true; };
+    m.onclick = (ev) => { ev.stopPropagation(); goJourney(e.p, e.t, e.focus); }; track.append(m); }
+  const seek = (ev) => { const r = track.getBoundingClientRect(), u = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)); state.time = MT.t0 + u * (MT.t1 - MT.t0); state.speed = 0; writeHash(); };
+  track.addEventListener('pointerdown', (ev) => { if (ev.target.classList.contains('mtl-ev')) return; MT.drag = true; track.setPointerCapture(ev.pointerId); seek(ev); });
+  track.addEventListener('pointermove', (ev) => { if (MT.drag) seek(ev); }); track.addEventListener('pointerup', () => { MT.drag = false; });
+}
+function updateMissionTimeline() {
+  if (!MT.el) { if (mode.space && PLANETS.length) buildMissionTimeline(); else return; }
+  MT.el.hidden = !mode.space || document.body.classList.contains('sandbox'); if (MT.el.hidden) return;
+  const u = Math.max(0, Math.min(100, (state.time - MT.t0) / (MT.t1 - MT.t0) * 100)); MT.el.querySelector('.mtl-now').style.left = u + '%'; MT.el.querySelector('.mtl-past').style.width = u + '%';
+}
 // ---------- 22. whole spacecraft journeys (S7) ----------
 function journeyTimeline(p) {
   const box = $('info-exo'), ev = JOURNEYS[p.name], e = probeEph[p.name]; box.innerHTML = ''; box.hidden = false;
@@ -3746,6 +3766,7 @@ function label(x, y, text, cls) {
   el.style.left = x + 'px'; el.style.top = y + 'px'; el.style.display = '';
 }
 function drawLabels() {
+  updateMissionTimeline();
   used = 0;
   discs = [];
   for (const p of PLANETS) if (p.world && p.mesh.visible && p.rpx > 4 && p.world.dot(camFwd()) > 0) { const s = toScreen(p.world); if (s) discs.push([s[0], s[1], p.rpx, mode.space ? p.camDist : p.dist]); }
@@ -3936,4 +3957,6 @@ updateSkyMatrix(); requestAnimationFrame(frame);
   if (/[#&]sb=/.test(location.hash)) setSandbox(true).then(() => sandboxMod.sceneFromHash()); // a shared sandbox scene
   loadKorean().then(applySkyCulture).catch(() => {});
 })();
+if (new URLSearchParams(location.search).get('embed') === '1') { document.body.classList.add('embed'); // Eyes-style embed: just the view, for lesson pages
+  const a = document.createElement('a'); a.id = 'embed-link'; a.href = location.href.replace(/([?&])embed=1&?/, '$1'); a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Space Commons에서 크게 보기'; document.body.append(a); }
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
