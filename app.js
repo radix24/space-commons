@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 
 // ---------- constants & helpers ----------
 const D2R = Math.PI / 180, R2D = 180 / Math.PI;
@@ -509,11 +511,33 @@ function probeModel(kind) {
   }
   return g;
 }
-const probeSun = new THREE.DirectionalLight(0xffffff, 2.6); planetScene.add(probeSun, probeSun.target, new THREE.AmbientLight(0x8890b0, 0.35));
+const probeSun = new THREE.DirectionalLight(0xffffff, 3.2); planetScene.add(probeSun, probeSun.target, new THREE.AmbientLight(0xaab2d0, 1.1));
 for (const d of PROBES) {
   const p = Object.assign(d, { probe: true, R: 0.005, pole: [0, 90], period: 1 });
   p.mesh = probeModel(p.kind); planetGroup.add(p.mesh); PLANETS.push(p);
 }
+// NASA 3D Resources models (public domain, github.com/nasa/NASA-3D-Resources) replace the placeholder shapes once loaded
+function fitUnit(obj) { // center the model and scale it to a unit bounding sphere
+  const box = new THREE.Box3().setFromObject(obj), c = box.getCenter(new THREE.Vector3()), r = box.getSize(new THREE.Vector3()).length() / 2;
+  const g = new THREE.Group(); obj.position.sub(c); g.add(obj); g.scale.setScalar(1 / r); return g;
+}
+function swapModel(names, obj) {
+  for (const p of PROBES) if (names.includes(p.name)) { p.mesh.clear(); p.mesh.add(names.length > 1 ? obj.clone(true) : obj); }
+}
+const MODEL_FILES = { 'models/voyager.glb': ['Voyager 1', 'Voyager 2'], 'models/pioneer.glb': ['Pioneer 10', 'Pioneer 11'], 'models/jwst.glb': ['JWST'], 'models/juno.glb': ['Juno'] };
+const gltfLoader = new GLTFLoader();
+for (const [file, names] of Object.entries(MODEL_FILES)) gltfLoader.load(file, (g) => swapModel(names, fitUnit(g.scene)), undefined, () => {});
+(async () => { // New Horizons ships as 3D-printing STL parts; assemble them with flight-like materials
+  const stl = new STLLoader(), parts = { antenna: 0xe8e6e0, body: 0xd8b25a, body_l: 0xd8b25a, body_r: 0xd8b25a, rtg: 0x4c4f57 };
+  const g = new THREE.Group();
+  try {
+    await Promise.all(Object.entries(parts).map(async ([n, c]) => {
+      const geo = await stl.loadAsync(`models/nh_${n}.stl`); geo.computeVertexNormals();
+      g.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: c, metalness: n === 'antenna' ? 0.1 : 0.6, roughness: 0.45 })));
+    }));
+    swapModel(['New Horizons'], fitUnit(g));
+  } catch (e) { /* keep placeholder */ }
+})();
 function probeHelio(p, T, helioMkm) { // equatorial, 10^6 km
   const year = 2000 + T * 100;
   if (p.name === 'JWST') return helioMkm.Earth.clone().multiplyScalar(1 + 1.5 / helioMkm.Earth.length());
