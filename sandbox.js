@@ -6,6 +6,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import * as O from './orbits.js';
 import { openCards } from './cards.js';
 import * as L2 from './labs2.js';
+import * as ATM from './atmos.js';
 
 const { dot, cross, norm, add, scale } = O.vec;
 const PL = ['Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'];
@@ -170,7 +171,7 @@ function updateTempMap() {
   const on = root.querySelector('.sb-temp')?.checked;
   for (const [b, lb] of view.labels) { if (b.kind !== 'planet') continue;
     if (!on) { if (lb.dataset.t) { lb.textContent = b.ko; lb.style.color = ''; delete lb.dataset.t; } continue; }
-    const T = teq(b), Ts = T + (b.Rkm && b.Rkm < 12000 ? 33 : 0), C = Math.round(Ts - 273.15); if (lb.dataset.t === String(C)) continue;
+    const k = ATM.climate(b, teq(b)); if (!k) continue; const C = Math.round(k.Ts - 273.15); if (lb.dataset.t === String(C)) continue;
     lb.dataset.t = C; lb.textContent = `${b.ko} ${C}°C`; lb.style.color = tempCol(C); }
 }
 // habitable zones: Kopparapu-style bounds 0.95 and 1.37 sqrt(L) AU
@@ -192,8 +193,11 @@ function updateRoche() {
 }
 const teq = (b) => { let F = 0; for (const s of sim.bodies) if (s.kind === 'star') { const d2 = (s.r[0] - b.r[0]) ** 2 + (s.r[1] - b.r[1]) ** 2 + (s.r[2] - b.r[2]) ** 2; F += lum(s) / d2; } return 255 * Math.pow(F, 0.25); }; // K, albedo 0.3
 // climate at a glance: an Earth-like greenhouse (+33 K) on top of the equilibrium temperature, and what water would do there
-function climateLine(T, b) { const Ts = T + (b.Rkm && b.Rkm < 12000 ? 33 : 0), w = Ts < 273 ? '얼음 (눈덩이 행성)' : Ts < 373 ? '액체 물 가능 (생명 가능)' : Ts < 647 ? '물이 끓어 수증기 대기 (폭주 온실 위험)' : '물이 남지 못함';
-  return `<br>표면 온도 (지구 정도의 온실 효과 가정) 약 ${fmt(Ts - 273.15, 0)} °C · 물: ${w}`; }
+function climateLine(T, b) { // T: equilibrium temperature for albedo 0.3
+  const k = ATM.climate(b, T); if (!k) return '';
+  const vesc = Math.sqrt(2 * 6.674e-11 * b.m * 1.989e30 / (b.Rkm * 1e3)) / 1000, kept = ATM.retention(vesc, k.Ts).filter(x => x[2]).map(x => x[1]);
+  return `<br>대기 ${k.a.P ? fmt(k.a.P, k.a.P < 0.1 ? 3 : 1) + '기압' : '없음'} · 온실 효과 +${fmt(k.Ts - k.Teq, 0)} K → 표면 약 ${fmt(k.Ts - 273.15, 0)} °C · 물: ${ATM.waterState(k.Ts, k.a.P)}`
+    + `<br>수십억 년 붙잡아 둘 수 있는 기체: ${kept.length ? kept.join(', ') : '거의 없음 (중력이 약하거나 너무 뜨거움)'} (탈출 속도 ${fmt(vesc, 1)} km/s)`; }
 
 // ---- seeing more: orbit predictions, velocity arrows, the gravity well, flashes ----
 const predGroup = new THREE.Group(), velGroup = new THREE.Group(), flashGroup = new THREE.Group();
@@ -372,7 +376,18 @@ function planePoint(ev) {
   const p = new THREE.Vector3(); return ray.ray.intersectPlane(plane, p) ? [p.x, p.y, 0] : null;
 }
 let selected = null, drag = null;
-function select(b) { selected = b; root.querySelector('.sb-sel').hidden = !b; if (b) { b.base = b.m; root.querySelector('.sb-mass').value = 0; root.querySelector('.sb-massv').textContent = ''; } }
+function select(b) { selected = b; root.querySelector('.sb-sel').hidden = !b; if (b) { b.base = b.m; root.querySelector('.sb-mass').value = 0; root.querySelector('.sb-massv').textContent = ''; } atmEditor(b); }
+function atmEditor(b) { // pressure, cloud albedo and the gas mix of the selected rocky planet
+  const box = root.querySelector('.sb-atm'); box.innerHTML = ''; const a = b && b.kind === 'planet' ? ATM.atmOf(b) : null; box.hidden = !a; if (!a) return;
+  box.append(el('b', '', '대기 바꾸기'));
+  const pre = el('div', 'sb-row'); for (const [k, n] of [['Earth', '지구'], ['Venus', '금성'], ['Mars', '화성'], ['Titan', '타이탄'], ['none', '대기 없음']]) pre.append(btn(n + '처럼', () => { b.atm = JSON.parse(JSON.stringify(ATM.PRESETS[k])); atmEditor(b); }));
+  box.append(pre);
+  const range = (label, min, max, step, val, show, on) => { const l = el('label', 'sb-field'), i = el('input'), o = el('span', 'small'); i.type = 'range'; i.min = min; i.max = max; i.step = step; i.value = val; o.textContent = show(+val); i.oninput = () => { o.textContent = show(+i.value); on(+i.value); }; l.append(el('span', '', label), i, o); box.append(l); };
+  range('지표 기압 (로그)', -3, 2.2, 0.01, Math.log10(Math.max(a.P, 0.001)), (v) => `${fmt(10 ** v, 10 ** v < 0.1 ? 3 : 1)}기압`, (v) => { a.P = 10 ** v; });
+  range('구름·표면 반사율', 0, 0.9, 0.01, a.albedo, (v) => fmt(v, 2), (v) => { a.albedo = v; });
+  for (const [g, ko] of ATM.GASES) range(`${ko} (${g})`, -4, 0, 0.01, Math.log10(Math.max(a.mix[g] || 0, 1e-4)), (v) => v <= -3.99 ? '0' : fmt(10 ** v * 100, 10 ** v < 0.01 ? 2 : 0) + '%', (v) => { a.mix[g] = v <= -3.99 ? 0 : 10 ** v; });
+  box.append(el('div', 'small', '비율은 상대값입니다. 이산화탄소·수증기·메테인이 많고 기압이 높을수록 온실 효과가 커지고, 반사율이 높으면 햇빛을 덜 받아 식습니다.'));
+}
 // the reference body: camera centre, distances, speeds, and (optionally) trails are measured from it
 function setCenter(b) {
   view.ref = b; select(b); const d = camera.position.distanceTo(controls.target), want = b.Rkm ? Math.max(b.Rkm / O.AU_KM * 30, Math.min(d, 3)) : Math.min(d, 3);
@@ -392,7 +407,7 @@ function updateSelected() {
     (b.kind === 'star' ? `<br>밝기 ${fmt(lum(b), 3)} 태양 · 반지름 ${fmt(b.Rkm / 696000, 2)} 태양 · 생명 가능 지대 ${fmt(0.95 * Math.sqrt(lum(b)), 2)}~${fmt(1.37 * Math.sqrt(lum(b)), 2)} AU` : '') +
     (b.kind === 'bh' ? `<br>사건의 지평선 반지름 ${fmt(RS_KM(b.m), 1)} km · 이 안에서는 빛도 탈출 못 함` : '') +
     (!b.test && b.kind !== 'bh' && b.Rkm ? `<br>로슈 한계 (점선): 암석 위성 ${fmt(rocheKm(b, 3000), 0)} km · 얼음 위성 ${fmt(rocheKm(b, 900), 0)} km (평균 밀도 ${fmt(density(b), 0)} kg/m³)` : '') +
-    (b.kind === 'planet' ? `<br>평형 온도 ${fmt(teq(b), 0)} K (${fmt(teq(b) - 273.15, 0)} °C, 반사율 0.3)` + climateLine(teq(b), b) : '');
+    (b.kind === 'planet' ? `<br>평형 온도 ${fmt(ATM.climate(b, teq(b))?.Teq ?? teq(b), 0)} K` + climateLine(teq(b), b) : '');
   box.querySelector('.sb-bh').hidden = b.test || b.kind === 'bh';
 }
 function bindEditing() {
@@ -901,7 +916,7 @@ function buildUI() {
       <div class="sb-sel" hidden><b class="sb-sel-name"></b><div class="small sb-sel-data"></div>
         <label class="small">질량 바꾸기 <input class="sb-mass" type="range" min="-3" max="3" step="0.05" value="0"></label><span class="small sb-massv"></span>
         <canvas class="sb-graph" width="560" height="120"></canvas>
-        <div class="sb-row"><button class="sb-follow">따라가기</button><button class="sb-del">지우기</button><button class="sb-bh">블랙홀로 바꾸기</button></div></div>
+        <div class="sb-row"><button class="sb-follow">따라가기</button><button class="sb-del">지우기</button><button class="sb-bh">블랙홀로 바꾸기</button></div><div class="sb-atm" hidden></div></div>
       <div class="sb-tabs"><button data-tab="learn" class="on">우주 더 알아보기</button><button data-tab="make">만들기</button><button data-tab="scen">시나리오</button><button data-tab="view">보기</button></div>
       <div class="sb-tab" data-tab="learn">
         <button class="sb-bigcard"><b>개념으로 배우기</b><span>하늘의 좌표부터 은하 진화까지 46개 개념 · 직접 조작하는 그림과 확인 문제</span></button>

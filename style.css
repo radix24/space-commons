@@ -441,3 +441,4 @@ body.space .menu-pop .ground-only, body:not(.space) .menu-pop .space-only { disp
 .guide-box { pointer-events: auto; position: fixed; left: 50%; top: 40%; transform: none; width: min(300px, 92vw); padding: 12px 14px; background: var(--panel-solid); border: 1px solid var(--orbit); }
 .guide-box p { margin: 6px 0 10px; line-height: 1.55; font-size: 13.5px; } .guide-box .row { justify-content: flex-end; gap: 8px; align-items: center; } .guide-box .small { margin-right: auto; }
 .guide-hl { outline: 2px solid var(--orbit); outline-offset: 3px; }
+.sb-atm { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); } .sb-atm .sb-field { display: grid; grid-template-columns: 1fr 1.2fr 64px; gap: 6px; align-items: center; }
