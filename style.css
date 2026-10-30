@@ -106,3 +106,11 @@ select, input[type=datetime-local] { background: var(--panel-solid); color: inhe
 #wiki-img { width: 100%; border-radius: 8px; margin-bottom: 8px; background: #000; }
 .scrub { display: flex; align-items: center; gap: 8px; }
 #scrub { width: min(260px, 50vw); accent-color: var(--orbit); }
+
+/* guided tour */
+#tour { position: fixed; left: 50%; top: 64px; transform: translateX(-50%); width: min(460px, calc(100vw - 24px)); z-index: 5;
+  padding: 14px 16px; border-radius: 14px; background: var(--panel); border: 1px solid var(--orbit); backdrop-filter: blur(8px); }
+#tour p { margin: 6px 0 10px; font-size: 14px; line-height: 1.6; }
+#tour .tour-head { display: flex; justify-content: space-between; align-items: center; }
+#tour .row { display: flex; gap: 6px; justify-content: flex-end; }
+#tour-next { background: var(--orbit); color: var(--night); border-color: var(--orbit); font-weight: 700; }

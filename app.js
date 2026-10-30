@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { buildCraft } from './craft.js';
@@ -326,6 +327,17 @@ const ELEM = { // JPL approximate elements (J2000 + per-century rates): a e I L 
   Uranus: [19.18916464, 0.04725744, 0.77263783, 313.23810451, 170.95427630, 74.01692503, -0.00196176, -0.00004397, -0.00242939, 428.48202785, 0.40805281, 0.04240589],
   Neptune: [30.06992276, 0.00859048, 1.77004347, -55.12002969, 44.96476227, 131.78422574, 0.00026291, 0.00005105, 0.00035372, 218.45945325, -0.32241464, -0.01262724],
 };
+function sbHelio(el, jdNow, Mdeg) { // heliocentric ecliptic J2000 (AU) from osculating elements
+  const M = (Mdeg ?? (el.ma + el.n * (jdNow - el.epoch))) * D2R, e = el.e;
+  let E = e > 0.8 ? Math.PI : M; for (let k = 0; k < 50; k++) { const dE = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E)); E -= dE; if (Math.abs(dE) < 1e-12) break; }
+  const xp = el.a * (Math.cos(E) - e), yp = el.a * Math.sqrt(1 - e * e) * Math.sin(E);
+  const O = el.om * D2R, I = el.i * D2R, w = el.w * D2R;
+  const cO = Math.cos(O), sO = Math.sin(O), ci = Math.cos(I), si = Math.sin(I), cw = Math.cos(w), sw = Math.sin(w);
+  return new THREE.Vector3(
+    (cw * cO - sw * sO * ci) * xp + (-sw * cO - cw * sO * ci) * yp,
+    (cw * sO + sw * cO * ci) * xp + (-sw * sO + cw * cO * ci) * yp,
+    (sw * si) * xp + (cw * si) * yp);
+}
 function helio(name, T, Mdeg) {
   const E0 = ELEM[name];
   const [a, e, I, L, wb, O] = E0.slice(0, 6).map((v, i) => v + E0[i + 6] * T);
@@ -401,6 +413,20 @@ const PLANETS = [
   { name: 'Europa', ko: '유로파', parent: 'Jupiter', R: 1561, pole: [268.06, 64.5], tex: () => rocky('#d9cfbf', ['#a0785a', '#f4efe6'], 43), period: 3.551 },
   { name: 'Ganymede', ko: '가니메데', parent: 'Jupiter', R: 2634, pole: [268.06, 64.5], tex: () => rocky('#8f8578', ['#5d544a', '#c9c2b5'], 47, 120), period: 7.155 },
   { name: 'Callisto', ko: '칼리스토', parent: 'Jupiter', R: 2410, pole: [268.06, 64.5], tex: () => rocky('#5e554b', ['#3b342d', '#a59c8f'], 53, 400), period: 16.689 },
+  { name: 'Ceres', ko: '세레스', img: 'textures/2k_ceres_fictional.jpg', R: 470, pole: [291.4, 66.8], period: 0.378, small: '왜행성',
+    sb: { epoch: 2461200.5, a: 2.765552595034094, e: .07969229514816586, i: 10.58802780183462, om: 80.24862682043221, w: 73.29421453021587, ma: 274.4193463761342, n: .21430445064843 } },
+  { name: 'Vesta', ko: '베스타', R: 263, pole: [309, 42], period: 0.223, small: '소행성', tex: () => rocky('#8f8a80', ['#5f5a52', '#b8b2a6'], 61, 200),
+    sb: { epoch: 2461200.5, a: 2.361365965127599, e: .09020374382834395, i: 7.143925545058711, om: 103.701293265032, w: 151.4686478221564, ma: 81.19015607686903, n: .2716183613599909 } },
+  { name: 'Pluto', ko: '명왕성', R: 1188, pole: [132.99, -6.16], period: -6.387, small: '왜행성', tex: () => rocky('#c9a982', ['#6b4a35', '#efe2cf', '#8a6a52'], 67),
+    sb: { epoch: 2457588.5, a: 39.58862938517124, e: .2518378778576892, i: 17.14771140999114, om: 110.2923840543057, w: 113.7090015158565, ma: 38.68366347318184, n: .003956838955553025 } },
+  { name: 'Eris', ko: '에리스', img: 'textures/2k_eris_fictional.jpg', R: 1163, pole: [0, 90], period: 15.8, small: '왜행성',
+    sb: { epoch: 2461200.5, a: 67.93394687853566, e: .4382385347971672, i: 43.9258279471791, om: 36.00477044417249, w: 150.7949235840312, ma: 211.774434275007, n: .001760247770619088 } },
+  { name: 'Haumea', ko: '하우메아', img: 'textures/2k_haumea_fictional.jpg', R: 780, pole: [0, 90], period: 0.163, small: '왜행성',
+    sb: { epoch: 2461200.5, a: 43.06029023650952, e: .1944430148898797, i: 28.20847393040364, om: 121.7860561329425, w: 240.6905472508661, ma: 223.2104118812299, n: .003488097731816818 } },
+  { name: 'Makemake', ko: '마케마케', img: 'textures/2k_makemake_fictional.jpg', R: 715, pole: [0, 90], period: 0.95, small: '왜행성',
+    sb: { epoch: 2461200.5, a: 45.57093317300052, e: .1588889953992523, i: 29.02785603743067, om: 79.2948338209406, w: 297.0922733397207, ma: 169.9379962048232, n: .003203850120050116 } },
+  { name: 'Halley', ko: '핼리 혜성', R: 5.5, pole: [0, 90], period: 2.2, small: '혜성 (1P)', tex: () => rocky('#3a342e', ['#1e1a17', '#5a5048'], 71, 60),
+    sb: { epoch: 2439875.5, a: 17.92863504856923, e: .9679359956953211, i: 162.1905300439129, om: 59.09894720612437, w: 112.2414314637764, ma: 274.3823371366792, n: .01298324443268444 } },
   { name: 'Titan', ko: '타이탄', parent: 'Saturn', R: 2575, pole: [40.59, 83.54], tex: () => banded(['#d29a4a', '#c88c3c', '#ddb070'], 59, 3), period: 15.945 },
 ];
 const KM_AU = 149597870.7;
@@ -426,7 +452,7 @@ const planetMat = (tex, emissive) => new THREE.ShaderMaterial({
 const texLoader = new THREE.TextureLoader();
 const planetGroup = new THREE.Group(); planetScene.add(planetGroup);
 for (const p of PLANETS) {
-  p.mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 32), planetMat(p.tex(), p.emissive));
+  p.mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 32), planetMat(p.tex ? p.tex() : rocky('#8a8580', ['#5a5650', '#b0aaa0'], 5), p.emissive));
   p.mesh.renderOrder = 5;
   // real texture maps (Solar System Scope, CC BY 4.0); procedural map stays as fallback
   if (p.name === 'Earth') texLoader.load('textures/2k_earth_nightmap.jpg', (t) => { t.colorSpace = THREE.SRGBColorSpace; p.mesh.material.uniforms.night.value = t; p.mesh.material.uniforms.hasNight.value = 1; });
@@ -533,6 +559,7 @@ for (const d of PROBES) {
 }
 // NASA 3D Resources models (public domain, github.com/nasa/NASA-3D-Resources) replace the placeholder once loaded
 function fitUnit(obj) { // center the model and scale it to a unit bounding sphere
+  obj.traverse((m) => { if (m.isMesh) for (const mt of [].concat(m.material)) { mt.side = THREE.DoubleSide; mt.transparent = false; mt.depthWrite = true; mt.alphaTest = mt.alphaTest || 0; } });
   const box = new THREE.Box3().setFromObject(obj), c = box.getCenter(new THREE.Vector3()), r = box.getSize(new THREE.Vector3()).length() / 2;
   const g = new THREE.Group(); obj.position.sub(c); g.add(obj); g.scale.setScalar(1 / r); return g;
 }
@@ -540,9 +567,10 @@ function swapModel(model, obj) {
   const ps = PROBES.filter(p => p.model === model);
   ps.forEach((p, i) => { p.mesh.clear(); p.mesh.add(i ? obj.clone(true) : obj); });
 }
-const gltfLoader = new GLTFLoader();
+const gltfLoader = new GLTFLoader(); // NASA's .glb files are Draco-compressed
+gltfLoader.setDRACOLoader(new DRACOLoader().setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/gltf/'));
 for (const p of PROBES) if (!p.model) { const c = buildCraft(p.name); if (c) { p.mesh.clear(); p.mesh.add(fitUnit(c)); } }
-for (const m of ['voyager', 'pioneer', 'jwst', 'juno', 'parker']) gltfLoader.load(`models/${m}.glb`, (g) => swapModel(m, fitUnit(g.scene)), undefined, () => {});
+for (const m of ['voyager', 'pioneer', 'jwst', 'juno', 'parker']) gltfLoader.load(`models/${m}.glb`, (g) => swapModel(m, fitUnit(g.scene)), undefined, (e) => console.warn('model', m, e.message));
 (async () => { // New Horizons ships as 3D-printing STL parts; assemble them with flight-like materials
   const stl = new STLLoader(), parts = { antenna: 0xe8e6e0, body: 0xd8b25a, body_l: 0xd8b25a, body_r: 0xd8b25a, rtg: 0x4c4f57 };
   const g = new THREE.Group();
@@ -600,6 +628,7 @@ function updatePlanets() {
   geo.Sun = earth.clone().negate();
   geo.Moon = moonGeo(T);
   for (const n of ['Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']) geo[n] = helio(n, T).sub(earth);
+  for (const p of PLANETS) if (p.sb) geo[p.name] = sbHelio(p.sb, jd(state.time)).sub(earth);
   const minAng = view.fov * D2R * 0.0045;
   const mo = moonOffsets(T, geo); rotOnly.setFromMatrix4(sky.matrixWorld);
   for (const p of PLANETS) {
@@ -770,8 +799,9 @@ const WIKI_KO = { Sun: '태양', Moon: '달', Earth: '지구', Mercury: '수성'
   Io: '이오 (위성)', Europa: '유로파 (위성)', Ganymede: '가니메데 (위성)', Callisto: '칼리스토 (위성)', Titan: '타이탄 (위성)',
   'Voyager 1': '보이저 1호', 'Voyager 2': '보이저 2호', 'New Horizons': '뉴호라이즌스', 'Pioneer 10': '파이어니어 10호', 'Pioneer 11': '파이어니어 11호',
   JWST: '제임스 웹 우주 망원경', Juno: '주노 (탐사선)', 'Parker Solar Probe': '파커 태양 탐사선', 'Solar Orbiter': '솔라 오비터', BepiColombo: '베피콜롬보',
+  Ceres: '세레스 (왜행성)', Vesta: '베스타 (소행성)', Pluto: '명왕성', Eris: '에리스 (왜행성)', Haumea: '하우메아 (왜행성)', Makemake: '마케마케 (왜행성)', Halley: '핼리 혜성',
   Juice: '주스 (탐사선)', 'Europa Clipper': '유로파 클리퍼', Lucy: '루시 (탐사선)', Psyche: '프시케 (탐사선)' };
-const WIKI_EN = { Mercury: 'Mercury (planet)', Io: 'Io (moon)', Europa: 'Europa (moon)', Ganymede: 'Ganymede (moon)', Callisto: 'Callisto (moon)', Titan: 'Titan (moon)',
+const WIKI_EN = { Ceres: 'Ceres (dwarf planet)', Vesta: '4 Vesta', Pluto: 'Pluto', Eris: 'Eris (dwarf planet)', Haumea: 'Haumea', Makemake: 'Makemake', Halley: "Halley's Comet", Mercury: 'Mercury (planet)', Io: 'Io (moon)', Europa: 'Europa (moon)', Ganymede: 'Ganymede (moon)', Callisto: 'Callisto (moon)', Titan: 'Titan (moon)',
   JWST: 'James Webb Space Telescope', Juno: 'Juno (spacecraft)', Juice: 'Jupiter Icy Moons Explorer', Lucy: 'Lucy (spacecraft)', Psyche: 'Psyche (spacecraft)' };
 const wikiCache = new Map(); let wikiSeq = 0;
 async function wikiLookup(lang, titles) {
@@ -802,7 +832,9 @@ async function showWiki(o) {
   box.hidden = false;
 }
 
+let prevSelected = null;
 function select(o) {
+  if (selected && o && selected !== o) prevSelected = selected;
   selected = o; $('info').hidden = !o; if (!o) { showPhoto(null); writeHash(); return; }
   const t = $('info-table'); t.innerHTML = '';
   const row = (k, v) => { if (v === undefined || v === '' || (typeof v === 'number' && isNaN(v))) return; const tr = t.insertRow(); tr.insertCell().textContent = k; tr.insertCell().textContent = v; };
@@ -817,7 +849,7 @@ function select(o) {
     row('설명', p.note);
   } else if (o.planet) {
     const p = o.p; ra = p.ra; dec = p.dec;
-    $('info-title').textContent = `${p.ko} (${p.name})`; $('info-sub').textContent = p.name === 'Sun' ? '항성' : p.name === 'Moon' ? '위성' : p.parent ? `${PLANETS.find(q => q.name === p.parent).ko}의 위성 · 위치 근사` : '행성';
+    $('info-title').textContent = `${p.ko} (${p.name})`; $('info-sub').textContent = p.small ? `${p.small} · 궤도: JPL SBDB` : p.name === 'Sun' ? '항성' : p.name === 'Moon' ? '위성' : p.parent ? `${PLANETS.find(q => q.name === p.parent).ko}의 위성 · 위치 근사` : '행성';
     if (p.name !== 'Earth') row('지구로부터 거리', p.name === 'Moon' ? `${(p.dist * KM_AU).toFixed(0)} km` : `${p.dist.toFixed(3)} AU`);
     if (p.name !== 'Earth') row('시직경', fmtAng(p.angR * 2 * R2D)); if (p.name !== 'Sun' && p.name !== 'Earth') row('위상 (밝은 면)', (p.phase * 100).toFixed(1) + '%'); row('반지름', `${p.R.toLocaleString()} km`);
   } else if (o.kindName === 'star') {
@@ -833,7 +865,11 @@ function select(o) {
   }
   row('적경 (J2000)', fmtRA(ra)); row('적위 (J2000)', fmtDec(dec));
   if (!mode.space) { const aa = dirToAzAlt(worldOf(o)); row('방위 / 고도', `${aa.az.toFixed(1)}° / ${aa.alt.toFixed(1)}°`); }
-  else if (o.planet) row('현재 위치에서', fmtDist(o.p.camDist));
+  else if (o.planet && isFinite(o.p.camDist)) row('현재 위치에서', fmtDist(o.p.camDist));
+  if (prevSelected && !mode.space && (!prevSelected.planet || prevSelected.p.world) && (!o.planet || o.p.world)) {
+    const a = Math.acos(Math.max(-1, Math.min(1, worldOf(prevSelected).dot(worldOf(o))))) * R2D;
+    row(`${prevSelected.planet ? prevSelected.p.ko : prevSelected.messier || prevSelected.name}까지 각거리`, fmtAng(a));
+  }
   showPhoto(o.kindName === 'dso' ? o : null);
   showWiki(o); writeHash();
   if (o.planet && o.p.probe) $('info-goto').textContent = mode.space ? '탐사선으로 비행' : '이동 · 확대'; else $('info-goto').textContent = '이동 · 확대';
@@ -888,6 +924,7 @@ function computeHelio() {
   const mo = moonOffsets(T, geo);
   for (const n of ['Io', 'Europa', 'Ganymede', 'Callisto']) helioPos[n] = helioPos.Jupiter.clone().add(mo[n].clone().multiplyScalar(MKM_AU));
   helioPos.Titan = helioPos.Saturn.clone().add(mo.Titan.clone().multiplyScalar(MKM_AU));
+  for (const p of PLANETS) if (p.sb) helioPos[p.name] = toEq(sbHelio(p.sb, jd(state.time)));
   for (const p of PROBES) { const h = probeHelio(p, jd(state.time)); p.active = !!h; if (h) helioPos[p.name] = h; }
 }
 const bodyR = (p) => p.R / 1e6;
@@ -926,6 +963,7 @@ function updateSpace() {
   orbits.position.copy(sp.pos).negate(); trails.position.copy(orbits.position); updateTrails(jd(state.time));
   orbits.visible = $('t-orbits').checked && nearest > 2; trails.visible = orbits.visible; // orbit lines only clutter close-ups
   sp.nearest = nearest;
+  updateTail();
 }
 // orbit lines (Kepler ellipses, drawn in absolute coordinates and shifted by the camera position)
 const orbits = new THREE.Group(); orbits.visible = false; planetScene.add(orbits);
@@ -937,7 +975,41 @@ const orbits = new THREE.Group(); orbits.visible = false; planetScene.add(orbits
       new THREE.LineBasicMaterial({ color: n === 'Earth' ? 0x8ea2ff : 0x4a5a82, transparent: true, opacity: 0.55 }));
     l.frustumCulled = false; orbits.add(l);
   }
+  for (const p of PLANETS) if (p.sb) {
+    const pts = []; for (let i = 0; i <= 720; i++) pts.push(ecl2eq(sbHelio(p.sb, 0, i / 2)).multiplyScalar(MKM_AU));
+    const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+      new THREE.LineBasicMaterial({ color: p.name === 'Halley' ? 0x7fd8ff : 0x8a6f9e, transparent: true, opacity: 0.45 }));
+    l.frustumCulled = false; orbits.add(l);
+  }
 })();
+// Halley's tail: a soft additive cone pointing away from the Sun, growing as the comet nears perihelion
+const tailMat = new THREE.ShaderMaterial({
+  uniforms: { strength: { value: 0 } },
+  vertexShader: `#include <common>
+    #include <logdepthbuf_pars_vertex>
+    varying float vY; varying vec2 vXZ; void main(){ vY = position.y; vXZ = position.xz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+    #include <logdepthbuf_vertex>
+    }`,
+  fragmentShader: `#include <logdepthbuf_pars_fragment>
+    uniform float strength; varying float vY; void main(){
+    #include <logdepthbuf_fragment>
+    float a = strength * pow(1.0 - clamp(vY, 0.0, 1.0), 1.6);
+    gl_FragColor = vec4(vec3(0.75, 0.88, 1.0) * a, 1.0); }`,
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+});
+const tailGeo = new THREE.ConeGeometry(0.12, 1, 32, 1, true); tailGeo.rotateX(Math.PI); tailGeo.translate(0, 0.5, 0); // apex at the nucleus, opening along +Y
+const halleyTail = new THREE.Mesh(tailGeo, tailMat); halleyTail.frustumCulled = false; halleyTail.visible = false; planetScene.add(halleyTail);
+function updateTail() {
+  const h = PLANETS.find(p => p.name === 'Halley'); const hp = helioPos.Halley;
+  if (!mode.space || !hp) { halleyTail.visible = false; return; }
+  const r = hp.length() / MKM_AU; halleyTail.visible = r < 6;
+  if (!halleyTail.visible) return;
+  const len = Math.min(60, 12 / (r * r)); // 10^6 km
+  halleyTail.position.copy(h.mesh.position);
+  halleyTail.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), hp.clone().normalize());
+  halleyTail.scale.set(len, len, len);
+  tailMat.uniforms.strength.value = Math.min(0.9, 0.9 / r);
+}
 function spaceDrag(dx, dy) {
   sp.flight = null;
   const k = (sp.target ? 0.3 : view.fov / innerHeight) * D2R;
@@ -1131,6 +1203,34 @@ $('tonight-btn').onclick = () => $('tonight').hidden ? tonight() : ($('tonight')
 $('tonight-close').onclick = () => $('tonight').hidden = true;
 addEventListener('keydown', (e) => { if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
   if (e.code === 'KeyF') $('full').click(); if (e.code === 'KeyP') $('shot').click(); if (e.code === 'KeyT' && !mode.space) $('tonight-btn').click(); });
+
+// ---------- guided tour ----------
+const TOUR = [
+  { space: false, o: 'M31', text: '안드로메다 은하. 250만 광년 떨어져 있으며, 맨눈으로 볼 수 있는 가장 먼 천체입니다.' },
+  { space: false, o: 'M42', text: '오리온 대성운. 별이 지금도 태어나고 있는 1,300광년 거리의 가스 구름입니다.' },
+  { space: false, o: 'M13', text: '헤르쿨레스 구상성단. 수십만 개의 오래된 별이 지름 150광년 안에 모여 있습니다.' },
+  { space: true, o: 'Sun', text: '우주 모드로 나왔습니다. 태양은 태양계 질량의 99.8%를 차지합니다.' },
+  { space: true, o: 'Earth', text: '지구. 낮과 밤, 자전 방향이 지금 이 순간과 같습니다. 밤쪽에는 도시 불빛이 보입니다.' },
+  { space: true, o: 'JWST', text: '제임스 웹 우주망원경. 지구에서 약 150만 km 떨어진 L2 점 주변을 돕니다.' },
+  { space: true, o: 'Mars', text: '화성. 지름은 지구의 절반 정도이고, 하루는 24시간 37분입니다.' },
+  { space: true, o: 'Jupiter', text: '목성과 갈릴레이 위성들. 이오, 유로파, 가니메데, 칼리스토가 실제 위치에 있습니다.' },
+  { space: true, o: 'Saturn', text: '토성. 고리의 기울기도 지금 지구에서 보이는 모습과 같습니다.' },
+  { space: true, o: 'Pluto', text: '명왕성. 2015년 뉴호라이즌스가 처음으로 가까이 지나갔습니다.' },
+  { space: true, o: 'Voyager 1', text: '보이저 1호. 사람이 만든 물체 중 가장 멀리 간 탐사선입니다. 신호가 지구에 닿는 데 하루 가까이 걸립니다.' },
+];
+let tourStep = -1;
+function tourGo(i) {
+  tourStep = Math.max(0, Math.min(TOUR.length - 1, i)); const st = TOUR[tourStep];
+  setMode(st.space); if (!st.space) $('t-ground').checked = false; // keep targets visible even if they are below the horizon
+  const mk = searchIndex.get(st.o.toLowerCase().replace(/\s+/g, ''));
+  if (mk) { const o = mk(); select(o); flyTo(o); }
+  $('tour-text').textContent = st.text; $('tour-step').textContent = `${tourStep + 1} / ${TOUR.length}`;
+  $('tour').hidden = false;
+}
+$('tour-btn').onclick = () => tourGo(0);
+$('tour-next').onclick = () => tourGo(tourStep + 1);
+$('tour-prev').onclick = () => tourGo(tourStep - 1);
+$('tour-close').onclick = () => { $('tour').hidden = true; tourStep = -1; };
 
 // ---------- labels ----------
 const labelBox = $('labels'); const pool = []; let used = 0;

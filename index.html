@@ -37,6 +37,7 @@
   </div>
   <div id="tools">
     <button id="tonight-btn" class="ground-only" title="지금 볼 수 있는 천체 (T)">지금 하늘</button>
+    <button id="tour-btn" title="주요 천체를 차례로 둘러봅니다">투어</button>
     <button id="share" title="지금 보는 화면의 링크 복사">링크</button>
     <button id="shot" title="화면 저장 (P)">캡처</button>
     <button id="full" title="전체 화면 (F)">전체 화면</button>
@@ -104,6 +105,12 @@
   <h2>지금 하늘에 보이는 천체</h2>
   <div id="tonight-sub" class="small"></div>
   <ul id="tonight-list"></ul>
+</div>
+
+<div id="tour" hidden>
+  <div class="tour-head"><span id="tour-step" class="small"></span><button id="tour-close">×</button></div>
+  <p id="tour-text"></p>
+  <div class="row"><button id="tour-prev">이전</button><button id="tour-next">다음</button></div>
 </div>
 
 <div id="help"><span class="ground-only">드래그: 회전 · 휠/핀치: 확대 · 클릭: 선택 · 더블클릭: 이동·확대</span><span class="space-only">드래그: 공전/시점 · 휠: 거리 · W A S D / Q E: 이동 · Shift: 가속 · 더블클릭: 천체로 비행</span><br>행성 텍스처 © <a href="https://www.solarsystemscope.com/textures/" target="_blank" style="color:inherit">Solar System Scope</a> (CC BY 4.0)</div>
