@@ -3078,6 +3078,30 @@ function cometLabels() {
   for (const d of cometGroup.children) { if (!d.userData.comet) continue; v.copy(d.userData.pos).sub(sp.pos).normalize(); if (v.dot(fwd) < 0.2) continue;
     const p = toScreen(v); if (p) label(p[0], p[1], d.userData.comet.name.replace(/\s*\(.*\)/, ''), 'small comet'); }
 }
+// ---------- top bar: the most used tools stay visible, the rest go into three menus (fixed pop-ups, so the scrolling bar on phones does not clip them) ----------
+(function groupMenus() {
+  const groups = [['관측', ['today-btn', 'obs-btn', 'exp-btn', 'night', 'gyro', 'ar']], ['배우기', ['tour-btn', 'cine-btn', 'sizes-btn', 'hist-btn', 'ls-btn']], ['저장·공유', ['share', 'shot', 'rec-btn', 'full']]];
+  const tools = $('tools'), lang = $('lang'), pops = [];
+  for (const [name, ids] of groups) {
+    const wrap = document.createElement('div'), btn = document.createElement('button'), pop = document.createElement('div');
+    wrap.className = 'menu'; btn.className = 'menu-btn'; btn.textContent = name + ' ▾'; btn.setAttribute('aria-haspopup', 'true'); pop.className = 'menu-pop'; pop.hidden = true; pop.setAttribute('role', 'menu');
+    for (const id of ids) { const b = $(id); if (!b) continue; b.setAttribute('role', 'menuitem'); pop.append(b); b.addEventListener('click', () => { pop.hidden = true; }); }
+    btn.onclick = (e) => { e.stopPropagation(); const open = pop.hidden; pops.forEach(q => q.hidden = true); if (!open) return; const r = btn.getBoundingClientRect();
+      pop.style.left = Math.min(r.left, innerWidth - 200) + 'px'; pop.style.top = r.bottom + 4 + 'px'; pop.hidden = false; };
+    wrap.append(btn); document.body.append(pop); pops.push(pop); tools.insertBefore(wrap, lang);
+  }
+  addEventListener('click', (e) => { if (!e.target.closest('.menu-pop')) pops.forEach(q => q.hidden = true); });
+})();
+// ---------- bottom panel: the everyday display switches stay, the rest fold into "more" ----------
+(function foldToggles() {
+  const keep = new Set(['t-ground', 't-refr', 't-lines', 't-labels', 't-mw', 't-orbits']), boxes = [...document.querySelectorAll('#panel input[type=checkbox]')];
+  const labels = boxes.map(b => b.closest('label')).filter(Boolean), move = labels.filter(l => !keep.has(l.querySelector('input').id));
+  if (!move.length) return; const host = move[0].parentElement, det = document.createElement('details'), sum = document.createElement('summary'), box = document.createElement('div');
+  det.className = 'more-toggles'; sum.textContent = '더 많은 표시 설정'; box.className = 'row'; det.append(sum, box);
+  for (const l of move) { const sel = l.nextElementSibling?.tagName === 'SELECT' ? l.nextElementSibling : null; box.append(l); if (sel) box.append(sel); }
+  for (const id of ['mwstyle', 'wavelen', 'skyculture', 'csver']) { const s = $(id); if (s && !box.contains(s) && s.closest('#panel')) box.append(s); }
+  host.parentElement.insertBefore(det, host.nextSibling);
+})();
 // ---------- 22. whole spacecraft journeys (S7) ----------
 function journeyTimeline(p) {
   const box = $('info-exo'), ev = JOURNEYS[p.name], e = probeEph[p.name]; box.innerHTML = ''; box.hidden = false;

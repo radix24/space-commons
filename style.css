@@ -430,3 +430,9 @@ body.cvd { --orbit: #0072B2; --brass: #E69F00; } body.cvd button.on, body.cvd .o
 body.cvd .lbl.small.comet, body.cvd .lbl.sat { color: #56B4E9; }
 @media (prefers-reduced-motion: reduce) { #loader, .loader-mark, .loader-bar i { animation: none !important; transition: none !important; } }
 body.calm .loader-mark, body.calm .loader-bar i { animation: none; }
+
+/* grouped top-bar menus */
+.menu-pop { position: fixed; z-index: 30; display: flex; flex-direction: column; min-width: 180px; padding: 4px; background: var(--panel-solid); border: 1px solid var(--line); }
+.menu-pop[hidden] { display: none; } .menu-pop button { text-align: left; border: 0; padding: 8px 10px; } .menu-pop button:hover { background: rgba(76,141,246,.12); }
+body.space .menu-pop .ground-only, body:not(.space) .menu-pop .space-only { display: none; }
+.more-toggles summary { cursor: pointer; color: var(--mute); font-size: 12.5px; margin: 4px 0; } .more-toggles .row { flex-wrap: wrap; }
