@@ -3079,7 +3079,7 @@ function cometLabels() {
 }
 // ---------- top bar: the most used tools stay visible, the rest go into three menus (fixed pop-ups, so the scrolling bar on phones does not clip them) ----------
 (function groupMenus() {
-  const groups = [['관측', ['today-btn', 'obs-btn', 'exp-btn', 'night', 'gyro', 'ar']], ['배우기', ['tour-btn', 'cine-btn', 'sizes-btn', 'hist-btn', 'ls-btn']], ['저장·공유', ['share', 'shot', 'rec-btn', 'full']]];
+  const groups = [['관측', ['today-btn', 'obs-btn', 'exp-btn', 'night', 'gyro', 'ar']], ['배우기', ['tour-btn', 'cine-btn', 'sizes-btn', 'hist-btn', 'ls-btn']], ['저장·공유', ['share', 'shot', 'rec-btn', 'offline-btn', 'full']]];
   const tools = $('tools'), lang = $('lang'), pops = [];
   for (const [name, ids] of groups) {
     const wrap = document.createElement('div'), btn = document.createElement('button'), pop = document.createElement('div');
@@ -3173,6 +3173,19 @@ function updateHips() {
     m.material.uniforms.op.value += (target - m.material.uniforms.op.value) * 0.1;
     if (!cur && m.material.uniforms.op.value < 0.01 && now - m.userData.used > 8000) { hips.group.remove(m); m.geometry.dispose(); m.material.uniforms.map.value?.dispose(); hips.tiles.delete(key); } }
 }
+// ---------- offline: store the core pack (libraries, catalogues, textures, small models) in the service-worker cache in one go ----------
+async function offlinePack() {
+  if (!('caches' in window)) { $('status').textContent = '이 브라우저는 오프라인 저장을 지원하지 않습니다'; return; }
+  const pack = await fetch('data/offline-pack.json').then(r => r.json()), cache = await caches.open('space-commons-pack'); // kept across service-worker updates
+  let done = 0, bytes = 0; const list = ['./', 'index.html', ...pack.files], N = list.length;
+  for (let i = 0; i < N; i += 6) { await Promise.all(list.slice(i, i + 6).map(async (f) => { try { const r = await fetch(f, { cache: 'reload' }); if (r.ok) { await cache.put(f, r.clone()); bytes += +(r.headers.get('content-length') || 0); } } catch {} done++; }));
+    $('status').textContent = `오프라인용으로 받는 중 ${done}/${N} (${(bytes / 1e6).toFixed(0)} MB)`; }
+  try { localStorage.setItem('space-commons-offline', new Date().toISOString()); } catch {}
+  $('status').textContent = `오프라인에서도 쓸 수 있게 저장했습니다 (${N}개, 약 ${(pack.bytes / 1e6).toFixed(0)} MB). 실시간 자료는 마지막으로 받은 것을 씁니다.`;
+}
+$('offline-btn').onclick = () => offlinePack();
+const NEEDS_NET = '인터넷 없음: 위성 목록, 오로라, 오늘의 지구, 날씨, 확대 사진은 마지막으로 받은 것만 보입니다';
+addEventListener('offline', () => { $('status').textContent = NEEDS_NET; }); if (!navigator.onLine) setTimeout(() => { $('status').textContent = NEEDS_NET; }, 3000);
 // ---------- 22. whole spacecraft journeys (S7) ----------
 function journeyTimeline(p) {
   const box = $('info-exo'), ev = JOURNEYS[p.name], e = probeEph[p.name]; box.innerHTML = ''; box.hidden = false;
