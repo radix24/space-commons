@@ -531,7 +531,7 @@ function renderToc() {
   renderTex(grid);
 }
 function build() {
-  root = el('div', 'cc-root'); root.innerHTML = `<div class="cc-win"><div class="cc-head"><b>우주 교과서</b><span class="small">${ALL.length}개 개념 · 6단원 · 카드마다 직접 조작하는 그림, 먼저 볼 것과 이어서 볼 것 · 기초 · 교양 · 전공</span><button class="cc-x">×</button></div><div class="cc-grid"></div><div class="cc-detail" hidden></div></div>`;
+  root = el('div', 'cc-root'); root.innerHTML = `<div class="cc-win"><div class="cc-head"><b>우주 알아보기</b><span class="small">${ALL.length}개 개념 · 6단원 · 카드마다 직접 조작하는 그림, 먼저 볼 것과 이어서 볼 것 · 기초 · 교양 · 전공</span><button class="cc-x">×</button></div><div class="cc-grid"></div><div class="cc-detail" hidden></div></div>`;
   document.body.append(root); root.querySelector('.cc-x').onclick = close; root.onclick = (e) => { if (e.target === root) close(); };
   renderToc();
 }
