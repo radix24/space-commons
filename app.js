@@ -22,7 +22,7 @@ const URLS = {
   ngc: CDN + 'mattiaverga/OpenNGC@master/database_files/NGC.csv',
 };
 const $ = (id) => document.getElementById(id);
-export const VERSION = 'Alpha 0.0.2f';
+export const VERSION = 'Alpha 0.0.2g';
 const MOBILE = matchMedia('(max-width: 640px), (pointer: coarse)').matches; // phones get lighter versions of heavy features // bump the letter with every feature batch
 for (const el of document.querySelectorAll('[data-version]')) el.textContent = el.dataset.version.replace('{v}', VERSION);
 
@@ -962,6 +962,26 @@ function updateTrails(jdNow) {
     // show a trail when its craft is selected, or all of them with the toggle
     l.visible = $('t-trails').checked || sp.target?.name === l.userData.name || selected?.p?.name === l.userData.name;
   }
+  localTrail(jdNow);
+}
+// Up close, absolute float32 vertices (~10^3-10^4 Mkm) jitter by hundreds of km: redraw the nearby stretch of the
+// selected craft's path relative to the craft itself (double precision on the CPU) and hide the absolute lines.
+const nearTrail = new THREE.Group(); planetScene.add(nearTrail);
+const nearPast = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0x4fe3c1, transparent: true, opacity: 0.45 }));
+const nearFut = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineDashedMaterial({ color: 0xffb454, transparent: true, opacity: 0.4 }));
+nearPast.frustumCulled = nearFut.frustumCulled = false; nearTrail.add(nearPast, nearFut);
+function localTrail(jdNow) {
+  const p = sp.target?.probe ? sp.target : null, e = p && probeEph[p.name], cur = e && helioPos[p.name];
+  const close = cur && mode.space && sp.dist < 5 && !p.orbiter; nearTrail.visible = !!close; if (!close) return;
+  for (const l of trails.children) if (l.userData.name === p.name) l.visible = false;
+  const n = e.xyz.length / 3, k = (jdNow - e.jd0) / e.step, i0 = Math.max(0, Math.min(n - 1, Math.floor(k))), K = 60, x = e.xyz;
+  const rel = (i) => new THREE.Vector3(x[3 * i] - cur.x, x[3 * i + 1] - cur.y, x[3 * i + 2] - cur.z);
+  const past = [], fut = [new THREE.Vector3()];
+  for (let i = Math.max(0, i0 - K); i <= i0; i++) past.push(rel(i)); past.push(new THREE.Vector3());
+  for (let i = i0 + 1; i < Math.min(n, i0 + 1 + K); i++) fut.push(rel(i));
+  nearPast.geometry.setFromPoints(past); nearFut.geometry.setFromPoints(fut); nearFut.computeLineDistances();
+  nearFut.material.dashSize = nearFut.material.gapSize = Math.max(1e-6, sp.dist * 0.6); nearFut.visible = fut.length > 1;
+  nearTrail.position.set(cur.x - sp.pos.x, cur.y - sp.pos.y, cur.z - sp.pos.z);
 }
 function placeProbe(p, rel, earthRel, sunRel, minScale) { // rel: camera->probe in world units
   const d = rel.length();
@@ -2424,6 +2444,38 @@ function goJourney(p, t, focus) {
   $('sp-target').textContent = `${p.ko} 여정`; $('status').textContent = `${p.ko} · ${new Date(t).toISOString().slice(0, 10)} · 1시간/초로 재생`;
 }
 
+// ---------- 23. faint stars when zoomed in: Gaia DR3 tiles to G = 12 (G2) ----------
+const gaia = { index: null, tiles: new Map(), loading: 0, group: new THREE.Group(), max: MOBILE ? 40 : 160 };
+sky.add(gaia.group);
+fetch('data/gaia/index.json').then(r => r.json()).then(j => gaia.index = j).catch(() => {});
+async function loadGaiaTile(b, i, key) {
+  const [d0, n, counts] = gaia.index.tiles[b], w = 360 / n, B = gaia.index.band; gaia.loading++;
+  const t = { pts: null, used: performance.now() }; gaia.tiles.set(key, t);
+  try {
+    if (!counts[i]) return;
+    const buf = await fetch(`data/gaia/${b}_${i}.bin`).then(r => r.arrayBuffer()), dv = new DataView(buf), N = buf.byteLength / 6;
+    const pos = new Float32Array(N * 3), mag = new Float32Array(N), col = new Float32Array(N * 3);
+    for (let k = 0; k < N; k++) { const o = k * 6, ra = (i * w + dv.getUint16(o, true) / 65535 * w) * D2R, de = (d0 + dv.getUint16(o + 2, true) / 65535 * B) * D2R;
+      pos[3 * k] = R_SKY * Math.cos(de) * Math.cos(ra); pos[3 * k + 1] = R_SKY * Math.cos(de) * Math.sin(ra); pos[3 * k + 2] = R_SKY * Math.sin(de);
+      mag[k] = 8 + dv.getUint8(o + 4) / 60; const c = bvToRGB(dv.getUint8(o + 5) / 60 - 0.5 - 0.1); col.set(c, 3 * k); } // BP-RP is a little redder than B-V
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('mag', new THREE.BufferAttribute(mag, 1)); g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    t.pts = new THREE.Points(g, starMat); t.pts.frustumCulled = false; t.pts.renderOrder = 2; gaia.group.add(t.pts);
+  } catch {} finally { gaia.loading--; }
+}
+function updateGaia() {
+  const on = !!gaia.index && !s3d.far && view.fov < (MOBILE ? 15 : 30) && starMat.uniforms.limit.value > 8;
+  gaia.group.visible = on; if (!on) return;
+  const inv = new THREE.Matrix4().copy(sky.matrixWorld).invert(), f = camFwd().applyMatrix4(inv).normalize();
+  const dec = Math.asin(f.z) * R2D, ra = (Math.atan2(f.y, f.x) * R2D + 360) % 360, r = view.fov * 0.5 * Math.max(1, innerWidth / innerHeight) + 3, B = gaia.index.band, now = performance.now();
+  gaia.tiles.forEach(t => { if (t.pts) t.pts.visible = false; });
+  for (let b = 0; b < gaia.index.tiles.length; b++) { const [d0, n] = gaia.index.tiles[b]; if (d0 + B < dec - r || d0 > dec + r) continue;
+    const c = Math.cos(Math.min(89, Math.max(Math.abs(d0), Math.abs(d0 + B), Math.abs(dec)) - (Math.abs(dec) < Math.abs(d0) ? 0 : 0)) * D2R), half = Math.abs(dec) + r > 88 ? 180 : Math.min(180, r / Math.max(0.05, c)), w = 360 / n;
+    for (let i = 0; i < n; i++) { const mid = (i + 0.5) * w, dRA = Math.abs(((mid - ra + 540) % 360) - 180); if (dRA > half + w / 2) continue;
+      const key = b + '_' + i, t = gaia.tiles.get(key); if (t) { t.used = now; if (t.pts) t.pts.visible = true; } else if (gaia.loading < 6) loadGaiaTile(b, i, key); } }
+  if (gaia.tiles.size > gaia.max) { const old = [...gaia.tiles.entries()].sort((a, b) => a[1].used - b[1].used).slice(0, gaia.tiles.size - gaia.max);
+    for (const [k, t] of old) { if (t.pts) { gaia.group.remove(t.pts); t.pts.geometry.dispose(); } gaia.tiles.delete(k); } }
+}
+
 // ---------- 11. observing list (kept in this browser) ----------
 const OBS_KEY = 'space-commons-obslist';
 const loadObs = () => { try { return JSON.parse(localStorage.getItem(OBS_KEY)) || []; } catch { return []; } };
@@ -2566,7 +2618,7 @@ function frame(now) {
   updateSkyMatrix();
   if (mode.space) { computeHelio(); stepSpaceFlight(now); spaceKeys(dt); }
   updatePlanets();   // positions for this frame first...
-  updateAsteroids(); updateLight(); updateStations(); updateNeo(); updateStars3d(); updateSkyPhoto();
+  updateAsteroids(); updateLight(); updateStations(); updateNeo(); updateStars3d(); updateGaia(); updateSkyPhoto();
   updateSats();
   stepFlight(now);   // ...then aim the camera at them (aiming at last frame's position made zoomed views shake)
   updateCamera();
@@ -2592,7 +2644,7 @@ function frame(now) {
   const NELM = [7.6, 7.1, 6.6, 6.2, 5.7, 5.2, 4.7, 4.2, 3.8], MWK = [1, 0.95, 0.8, 0.55, 0.3, 0.12, 0.04, 0, 0];
   const atmo = gOn && $('t-refr').checked; atmoU.refractOn.value = atmo ? 1 : 0; atmoU.extK.value = atmo ? 0.25 : 0;
   if (gOn && bortle > 3) bg.lerp(new THREE.Color(0x2a2620), (bortle - 3) / 6 * 0.35 * (1 - skyDayK)); renderer.setClearColor(bg); // skyglow
-  starMat.uniforms.limit.value = Math.min(8.5, (gOn ? NELM[bortle - 1] : 6.4) + 2.2 * zoom) - day * 5;
+  starMat.uniforms.limit.value = Math.min(view.fov > 30 ? 8.5 : MOBILE ? 11 : 12.5, (gOn ? NELM[bortle - 1] : 6.4) + (view.fov > 30 ? 2.2 : 3) * zoom) - day * 5; // deeper when zoomed: Gaia tiles
   mwMat.uniforms.gain.value = 3.5 * dim * MWK[bortle - 1] / Math.max(1, Math.sqrt(70 / view.fov) * 0.6);
   starMat.uniforms.pr.value = renderer.getPixelRatio(); starMat.uniforms.dim.value = dim;
   starMat.uniforms.time.value = now / 1000; starMat.uniforms.twinkle.value = gOn && $('t-twinkle').checked && atmo ? (MOBILE ? 0.5 : 1) : 0;
