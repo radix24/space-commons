@@ -900,7 +900,9 @@ for (const m of ['voyager', 'pioneer', 'jwst', 'juno', 'parker', 'lro', 'mro']) 
 })();
 // Voyager's ten-sided bus wears black thermal blankets; the NASA model paints it beige
 function voyagerBlack(root) {
-  root.traverse(o => { for (const m of [].concat(o.material || [])) if (/^Voyager(Base|Ring|BronzeDetail(-sm)?|DetailGold|MidTriangle)$/.test(m.name)) { m.color.setHex(0x161618); m.roughness = 0.55; m.metalness = 0.05; } });
+  root.traverse(o => { for (const m of [].concat(o.material || [])) {
+    if (/^Voyager(Base|Ring|BronzeDetail(-sm)?|DetailGold|MidTriangle)$/.test(m.name)) { m.color.setHex(0x161618); m.roughness = 0.55; m.metalness = 0.05; }
+    if (m.name === 'VoyagerDiskEmblem') { m.color.setHex(0xd9a83a); m.metalness = 0.9; m.roughness = 0.3; } } }); // the Golden Record has no colour in the model
   return root;
 }
 // ephemerides
