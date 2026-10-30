@@ -492,6 +492,8 @@ const planetMat = (tex, emissive) => new THREE.ShaderMaterial({
       #include <logdepthbuf_fragment>
       float ndl = dot(normalize(vN), sunDir);
       vec3 c = texture2D(map, vUv).rgb; float l = emissive > 0.5 ? 1.2 : max(ndl, 0.0) * 1.15 + 0.025;
+      // the Sun map is a filtered (orange) image; to the eye the photosphere is near-white, keep only a hint of granulation
+      if (emissive > 0.5) { c = mix(vec3(1.0, 0.97, 0.9), c, 0.18); l = 1.25; }
       vec3 col = c * l;
       if (hasNight > 0.5) col += texture2D(night, vUv).rgb * (1.0 - smoothstep(-0.12, 0.08, ndl)) * 1.3; // city lights on the night side
       gl_FragColor = vec4(col, 1.0); }`,
@@ -527,7 +529,7 @@ for (const p of PLANETS) {
   }
   if (p.emissive) {
     const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: noiseTex(256, 256, (c, w, h) => { const g = c.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2);
-      g.addColorStop(0, 'rgba(255,240,200,1)'); g.addColorStop(.2, 'rgba(255,210,120,.5)'); g.addColorStop(1, 'rgba(255,180,80,0)'); c.fillStyle = g; c.fillRect(0, 0, w, h); }),
+      g.addColorStop(0, 'rgba(255,252,240,1)'); g.addColorStop(.2, 'rgba(255,244,220,.45)'); g.addColorStop(1, 'rgba(255,236,200,0)'); c.fillStyle = g; c.fillRect(0, 0, w, h); }),
       blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
     glow.scale.setScalar(8); p.mesh.add(glow); p.glow = glow;
   }
