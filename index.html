@@ -35,6 +35,11 @@
     <button data-mode="ground" class="on">지상</button>
     <button data-mode="space">우주</button>
   </div>
+  <div id="tools">
+    <button id="tonight-btn" class="ground-only" title="지금 볼 수 있는 천체 (T)">지금 하늘</button>
+    <button id="shot" title="화면 저장 (P)">캡처</button>
+    <button id="full" title="전체 화면 (F)">전체 화면</button>
+  </div>
   <span id="status">카탈로그 불러오는 중…</span>
 </div>
 
@@ -50,8 +55,16 @@
     <button data-speed="0">정지</button>
     <button id="now">지금</button>
   </div>
+  <div class="row">
+    <label>날짜·시각 <input id="dt" type="datetime-local"></label>
+  </div>
   <div class="row space-only"><b id="sp-target">지구 주위 공전</b><button id="sp-free">자유 비행</button></div>
   <div class="row ground-only">
+    <select id="place" aria-label="관측 장소">
+      <option value="">장소 선택</option><option value="seoul">서울</option><option value="busan">부산</option><option value="jeju">제주</option>
+      <option value="tokyo">도쿄</option><option value="newyork">뉴욕</option><option value="london">런던</option><option value="sydney">시드니</option>
+      <option value="atacama">아타카마 (칠레)</option><option value="maunakea">마우나케아 (하와이)</option><option value="northpole">북극</option>
+    </select>
     <label>위도 <input id="lat" type="number" step="0.01" value="37.57"></label>
     <label>경도 <input id="lon" type="number" step="0.01" value="126.98"></label>
   </div>
@@ -75,6 +88,13 @@
   <table id="info-table"></table>
   <img id="info-img" alt="" hidden>
   <div class="row"><button id="info-goto">이동 · 확대</button></div>
+</div>
+
+<div id="tonight" hidden>
+  <button id="tonight-close">×</button>
+  <h2>지금 하늘에 보이는 천체</h2>
+  <div id="tonight-sub" class="small"></div>
+  <ul id="tonight-list"></ul>
 </div>
 
 <div id="help"><span class="ground-only">드래그: 회전 · 휠/핀치: 확대 · 클릭: 선택 · 더블클릭: 이동·확대</span><span class="space-only">드래그: 공전/시점 · 휠: 거리 · W A S D / Q E: 이동 · Shift: 가속 · 더블클릭: 천체로 비행</span><br>행성 텍스처 © <a href="https://www.solarsystemscope.com/textures/" target="_blank" style="color:inherit">Solar System Scope</a> (CC BY 4.0)</div>

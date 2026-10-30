@@ -83,3 +83,18 @@ body.space .ground-only { display: none !important; }
 #panel .row.space-only { display: none !important; }
 body.space #panel .row.space-only { display: flex !important; }
 #sp-target { color: var(--star); }
+
+/* tools and the "tonight" list */
+#tools { pointer-events: auto; display: flex; gap: 4px; }
+#tools button { white-space: nowrap; background: var(--panel); }
+select, input[type=datetime-local] { background: var(--panel-solid); color: inherit; border: 1px solid var(--line); border-radius: 6px; padding: 2px 5px; font: 12px var(--sans); color-scheme: dark; }
+#tonight { position: fixed; top: 60px; left: 12px; width: min(300px, calc(100vw - 24px)); max-height: calc(100vh - 300px); overflow: auto;
+  padding: 14px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); backdrop-filter: blur(6px); }
+#tonight h2 { margin: 0 26px 4px 0; font: 800 16px var(--display); }
+#tonight ul { list-style: none; margin: 10px 0 0; padding: 0; }
+#tonight li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 4px 0; border-top: 1px solid rgba(38,43,77,.6); }
+#tonight li button { background: none; border: 0; padding: 2px 0; color: var(--ink); font-weight: 600; text-align: left; }
+#tonight li button:hover { color: var(--orbit); }
+#tonight li span { color: var(--mute); font-size: 11px; white-space: nowrap; }
+#tonight-close { position: absolute; top: 10px; right: 10px; padding: 0 8px; }
+@media (max-width: 640px) { #tools #full { display: none; } #tonight { max-height: 40vh; } }
