@@ -33,6 +33,9 @@ function makeBody(name, r, v, opts = {}) {
   const b = { name, ko: opts.ko || KO[name] || name, m: opts.m ?? MASS[name] ?? 0, r: [...r], v: [...v], color: opts.color ?? COL[name] ?? 0xffb454,
     Rkm: opts.Rkm ?? RADIUS_KM[name] ?? 0, test: !(opts.m ?? MASS[name]), ignore: opts.ignore || null, ignoreUntil: opts.ignoreUntil || 0, minD: {}, crashed: false,
     trail: new Float32Array(3 * 2400), tn: 0, lastRec: -1e9 };
+  b.kind = opts.kind || (name === 'Sun' ? 'star' : b.test ? 'test' : 'planet');
+  if (b.kind === 'star' && !opts.Rkm && name !== 'Sun') b.Rkm = starRadiusKm(b.m);
+  if (b.kind === 'star' && opts.color == null && name !== 'Sun') b.color = starColor(b.m);
   return b;
 }
 function resetSolarSystem(jd, names = ['Sun', ...PL]) {
@@ -67,7 +70,8 @@ function step(dt) {
   for (const b of live) if (b.test) for (const o of ms) { // closest approaches and impacts, for the labs
     const d = Math.hypot(o.r[0] - b.r[0], o.r[1] - b.r[1], o.r[2] - b.r[2]) * O.AU_KM;
     if (!(o.name in b.minD) || d < b.minD[o.name].d) b.minD[o.name] = { d, t: sim.t };
-    if (o.Rkm && d < o.Rkm && !(b.ignore === o.name && sim.t < b.ignoreUntil)) { b.crashed = true; b.v = [...o.v]; toast(`${b.ko}이(가) ${o.ko}에 충돌했습니다`); } }
+    if (o.Rkm && d < captureKm(o) && !(b.ignore === o.name && sim.t < b.ignoreUntil)) { b.crashed = true; b.v = [...o.v]; toast(o.kind === 'bh' ? `${b.ko}이(가) ${o.ko}의 사건의 지평선 안으로 떨어졌습니다` : `${b.ko}이(가) ${o.ko}에 충돌했습니다`); } }
+  if (ms.length > 1) encounters(ms);
 }
 function advance(days) {
   let left = Math.abs(days), n = 0; const dir = Math.sign(days); sim.slow = false;
@@ -90,15 +94,120 @@ const dotTex = (() => { const c = document.createElement('canvas'); c.width = c.
   r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.35, 'rgba(255,255,255,.9)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
 function buildMesh(b) {
   const g = new THREE.Group();
-  const dot = new THREE.Sprite(new THREE.SpriteMaterial({ map: dotTex, color: b.color, sizeAttenuation: false, depthTest: false, transparent: true }));
-  dot.scale.setScalar(b.name === 'Sun' ? 0.03 : b.test ? 0.012 : 0.018); dot.renderOrder = 3; g.add(dot);
-  if (b.Rkm) { const s = new THREE.Mesh(new THREE.SphereGeometry(b.Rkm / O.AU_KM, 32, 16), new THREE.MeshBasicMaterial({ color: b.color })); g.add(s); }
+  const bh = b.kind === 'bh', dot = new THREE.Sprite(new THREE.SpriteMaterial({ map: bh ? bhTex : dotTex, color: bh ? 0xffffff : b.color, sizeAttenuation: false, depthTest: false, transparent: true }));
+  dot.scale.setScalar(bh ? 0.05 : b.kind === 'star' ? 0.022 + 0.012 * Math.min(2, Math.cbrt(b.m)) : b.test ? (b.frag ? 0.007 : 0.012) : 0.018); dot.renderOrder = 3; g.add(dot);
+  if (b.Rkm && !bh) { const s = new THREE.Mesh(new THREE.SphereGeometry(b.Rkm / O.AU_KM, 32, 16), new THREE.MeshBasicMaterial({ color: b.color })); g.add(s); }
   const tg = new THREE.BufferGeometry(); tg.setAttribute('position', new THREE.BufferAttribute(b.trail, 3)); tg.setDrawRange(0, 0);
   const line = new THREE.Line(tg, new THREE.LineBasicMaterial({ color: b.color, transparent: true, opacity: b.test ? 0.85 : 0.45 })); line.frustumCulled = false;
   scene.add(g, line); b.mesh = g; b.line = line;
   const lb = el('div', 'sb-label' + (b.test ? ' probe' : ''), b.ko); root.querySelector('.sb-labels').append(lb); view.labels.set(b, lb);
 }
 function buildMeshes() { for (const b of sim.bodies) buildMesh(b); }
+function rebuild(b) { scene.remove(b.mesh, b.line); view.labels.get(b)?.remove(); view.labels.delete(b); buildMesh(b); }
+const bhTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  const r = g.createRadialGradient(64, 64, 10, 64, 64, 64); r.addColorStop(0, 'rgba(0,0,0,1)'); r.addColorStop(0.3, 'rgba(0,0,0,1)'); r.addColorStop(0.36, 'rgba(255,190,110,1)');
+  r.addColorStop(0.5, 'rgba(255,120,40,.55)'); r.addColorStop(1, 'rgba(255,90,20,0)'); g.fillStyle = r; g.fillRect(0, 0, 128, 128); return new THREE.CanvasTexture(c); })();
+
+// ---------------- stars, black holes, encounters (Universe-Sandbox style) ----------------
+const MSUN_KG = 1.98847e30;
+const RS_KM = (m) => 2.9532 * m;                              // Schwarzschild radius, km, m in solar masses
+const starRadiusKm = (m) => 696000 * Math.pow(Math.max(m, 0.08), m > 1 ? 0.57 : 0.8); // main-sequence mass-radius
+const lum = (b) => b.kind !== 'star' ? 0 : b.m < 0.43 ? 0.23 * Math.pow(b.m, 2.3) : b.m < 2 ? Math.pow(b.m, 4) : 1.4 * Math.pow(b.m, 3.5); // L in suns
+function starColor(m) { const T = 5772 * Math.pow(Math.max(m, 0.08), 0.54); return T > 9000 ? 0xaabfff : T > 7000 ? 0xd8e2ff : T > 5500 ? 0xffe6a6 : T > 4000 ? 0xffc27a : 0xff8a5c; }
+const captureKm = (o) => o.kind === 'bh' ? 3 * RS_KM(o.m) : o.Rkm; // inside 3 r_s (the innermost stable orbit) material plunges
+function encounters(ms) {
+  for (let i = 0; i < ms.length; i++) for (let j = i + 1; j < ms.length; j++) {
+    const a = ms[i], b = ms[j]; if (a.dead || b.dead) continue;
+    const d = Math.hypot(a.r[0] - b.r[0], a.r[1] - b.r[1], a.r[2] - b.r[2]) * O.AU_KM, big = a.m >= b.m ? a : b, small = big === a ? b : a;
+    if (d < captureKm(big) + (small.kind === 'bh' ? captureKm(small) : small.Rkm)) { merge(big, small); continue; }
+    // tidal disruption: inside r_t = R (M/m)^(1/3) the bigger body's tide beats the smaller one's self-gravity
+    if (small.kind !== 'bh' && small.Rkm && small.m < big.m * 0.5 && d < small.Rkm * Math.cbrt(big.m / small.m) * (big.kind === 'bh' ? 1 : 1.26)) disrupt(small, big);
+  }
+  if (ms.some(b => b.dead)) { sim.bodies = sim.bodies.filter(b => !b.dead); sim.E0 = energy(); }
+}
+function merge(big, small) {
+  const M = big.m + small.m, vrel = Math.hypot(big.v[0] - small.v[0], big.v[1] - small.v[1], big.v[2] - small.v[2]) * O.KMS * 1e3;
+  const E = 0.5 * (big.m * small.m / M) * MSUN_KG * vrel * vrel; // J, in the centre-of-mass frame
+  for (let k = 0; k < 3; k++) { big.v[k] = (big.m * big.v[k] + small.m * small.v[k]) / M; big.r[k] = (big.m * big.r[k] + small.m * small.r[k]) / M; }
+  big.m = M; if (big.kind === 'bh') big.Rkm = RS_KM(M); else if (big.kind === 'star') { big.Rkm = starRadiusKm(M); } else big.Rkm = Math.cbrt(big.Rkm ** 3 + small.Rkm ** 3);
+  if (big.kind === 'planet' && M > 0.08) { big.kind = 'star'; big.Rkm = starRadiusKm(M); big.color = starColor(M); }
+  small.dead = true; scene.remove(small.mesh, small.line); view.labels.get(small)?.remove(); view.labels.delete(small); if (selected === small) select(null); rebuild(big);
+  if (big.kind === 'planet' && small.kind === 'planet' && small.m > big.m * 0.02) debrisDisk(big, small);
+  const mt = E / 4.184e15; toast(`${small.ko}이(가) ${big.ko}와 합쳐졌습니다 · 충돌 에너지 ${E.toExponential(1)} J (TNT ${mt >= 1e6 ? (mt / 1e6).toExponential(1) + '조' : mt.toExponential(1) + '메가'}톤)`);
+}
+function disrupt(small, big) {
+  const N = 90, u = scale(add(small.r, big.r, -1), 1 / norm(add(small.r, big.r, -1))), spread = small.Rkm * 4 / O.AU_KM, vesc = Math.sqrt(2 * O.MU_SUN * small.m / (small.Rkm / O.AU_KM));
+  for (let i = 0; i < N; i++) { const t = (i / (N - 1) - 0.5) * 2, j = () => (Math.random() - 0.5);
+    const b = makeBody(`${small.name}-f${i}`, add(small.r, add(scale(u, t * spread), [j() * spread * 0.3, j() * spread * 0.3, j() * spread * 0.1])), add(small.v, add(scale(u, t * vesc * 0.5), [j() * vesc * 0.2, j() * vesc * 0.2, 0])), { m: 0, ko: '', color: small.color });
+    b.frag = true; sim.bodies.push(b); buildMesh(b); }
+  small.dead = true; scene.remove(small.mesh, small.line); view.labels.get(small)?.remove(); view.labels.delete(small); if (selected === small) select(null);
+  toast(`${small.ko}이(가) ${big.ko}의 조석력에 부서졌습니다 (로슈 한계 안)`);
+}
+function debrisDisk(p, imp) { // vaporised mantle flung into orbit: a disk between ~1.5 and 6 planet radii (most falls back, some outside the Roche limit gathers into a moon)
+  const R = p.Rkm / O.AU_KM, mu = O.MU_SUN * p.m, n = 160, hdir = Math.sign(cross(add(imp.r, p.r, -1), add(imp.v, p.v, -1))[2] || 1);
+  for (let i = 0; i < n; i++) { const r = R * (1.4 + Math.pow(Math.random(), 1.6) * 5), th = Math.random() * 2 * Math.PI, vc = Math.sqrt(mu / r) * (0.92 + Math.random() * 0.1);
+    const b = makeBody(`${p.name}-d${i}`, add(p.r, [r * Math.cos(th), r * Math.sin(th), (Math.random() - 0.5) * R * 0.2]), add(p.v, [-Math.sin(th) * vc * hdir, Math.cos(th) * vc * hdir, 0]), { m: 0, ko: '', color: 0xd9c9b0 });
+    b.frag = true; sim.bodies.push(b); buildMesh(b); }
+}
+function toBlackHole(b) {
+  b.kind = 'bh'; b.Rkm = RS_KM(b.m); b.color = 0x000000; rebuild(b); sim.E0 = energy();
+  toast(`${b.ko}을(를) 같은 질량의 블랙홀로 바꿨습니다 · 사건의 지평선 반지름 ${fmt(b.Rkm, 1)} km. 멀리 있는 행성의 궤도는 그대로입니다 (빛과 열만 사라짐)`);
+}
+function dominant(r) { let best = null, bs = 0; for (const o of massive()) { const d2 = (o.r[0] - r[0]) ** 2 + (o.r[1] - r[1]) ** 2 + (o.r[2] - r[2]) ** 2, s = o.m / d2; if (s > bs) { bs = s; best = o; } } return best; }
+const ADD = { asteroid: { ko: '소행성', m: 0 }, earth: { ko: '새 지구', m: MASS.Earth, Rkm: 6371, color: 0x6fa8ff }, jupiter: { ko: '새 목성', m: MASS.Jupiter, Rkm: 71492, color: 0xd9b48a },
+  star: { ko: '새 별', m: 1, kind: 'star' }, reddwarf: { ko: '적색왜성', m: 0.2, kind: 'star' }, bh: { ko: '블랙홀', m: 10, kind: 'bh' } };
+function addBody(kind, r, v) {
+  const t = ADD[kind], b = makeBody(`${kind}${Date.now()}`, r, v, { ko: t.ko, m: t.m, Rkm: t.kind === 'bh' ? RS_KM(t.m) : t.Rkm, color: t.color, kind: t.kind });
+  sim.bodies.push(b); buildMesh(b); sim.E0 = energy(); return b;
+}
+function circularAt(r) { const o = dominant(r); if (!o) return [0, 0, 0]; const d = add(r, o.r, -1), dn = norm(d), vc = Math.sqrt(O.MU_SUN * o.m / dn); return add(o.v, [-d[1] / dn, d[0] / dn, 0], vc); }
+
+// habitable zones: Kopparapu-style bounds 0.95 and 1.37 sqrt(L) AU
+const hzGroup = new THREE.Group();
+function updateHZ() {
+  hzGroup.visible = root.querySelector('.sb-hz').checked; if (!hzGroup.visible) return;
+  const stars = sim.bodies.filter(b => b.kind === 'star' && lum(b) > 1e-4);
+  while (hzGroup.children.length < stars.length) { const g = new THREE.RingGeometry(0.95, 1.37, 96); hzGroup.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: 0x4fe3c1, transparent: true, opacity: 0.12, side: THREE.DoubleSide, depthWrite: false }))); }
+  hzGroup.children.forEach((m, i) => { const s = stars[i]; m.visible = !!s; if (s) { m.position.set(...s.r); m.scale.setScalar(Math.sqrt(lum(s))); } });
+}
+// Roche limits around the selected body (fluid satellite): d = 2.44 R (rho_primary / rho_satellite)^(1/3)
+const rocheGroup = new THREE.Group(); for (const c of [0xff7aa2, 0x9fe0e6]) { const pts = []; for (let i = 0; i <= 128; i++) pts.push(new THREE.Vector3(Math.cos(i / 64 * Math.PI), Math.sin(i / 64 * Math.PI), 0));
+  rocheGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineDashedMaterial({ color: c, dashSize: 0.05, gapSize: 0.04 }))); }
+const density = (b) => b.m * MSUN_KG / (4 / 3 * Math.PI * (b.Rkm * 1e3) ** 3); // kg/m^3
+const rocheKm = (b, rhoSat) => 2.44 * b.Rkm * Math.cbrt(density(b) / rhoSat);
+function updateRoche() {
+  const b = selected; rocheGroup.visible = !!b && !b.test && b.kind !== 'bh' && b.Rkm > 0; if (!rocheGroup.visible) return;
+  rocheGroup.position.set(...b.r); [3000, 900].forEach((rho, i) => { const l = rocheGroup.children[i]; l.scale.setScalar(rocheKm(b, rho) / O.AU_KM); l.computeLineDistances(); l.material.dashSize = l.material.gapSize = 0.25 * l.scale.x; });
+}
+const teq = (b) => { let F = 0; for (const s of sim.bodies) if (s.kind === 'star') { const d2 = (s.r[0] - b.r[0]) ** 2 + (s.r[1] - b.r[1]) ** 2 + (s.r[2] - b.r[2]) ** 2; F += lum(s) / d2; } return 255 * Math.pow(F, 0.25); }; // K, albedo 0.3
+
+// scenarios
+function scenario(key) {
+  const jd = ctx.jdNow(); resetSolarSystem(jd); const sun = byName('Sun'), J = byName('Jupiter'); sim.playing = true; sim.speed = 50; select(null);
+  if (key === 'nosun') { sun.m = 1e-12; sun.kind = 'test'; rebuild(sun); toast('태양이 사라졌습니다. 행성들은 그 순간의 속도로 곧게 날아갑니다'); sim.speed = 20; }
+  if (key === 'sunbh') { toBlackHole(sun); }
+  if (key === 'sun2') { sun.m = 2; sun.Rkm = starRadiusKm(2); sun.color = starColor(2); rebuild(sun); toast('태양 질량 2배: 행성들이 더 빨리, 더 안쪽으로 휘어 돕니다. 밝기는 16배'); }
+  if (key === 'sunhalf') { sun.m = 0.5; sun.Rkm = starRadiusKm(0.5); sun.color = starColor(0.5); rebuild(sun); toast('태양 질량 절반: 행성들이 느슨해져 멀어지고, 몇몇은 탈출합니다'); }
+  if (key === 'jupstar') { J.m = 0.3; J.kind = 'star'; J.Rkm = starRadiusKm(0.3); J.color = starColor(0.3); J.ko = '목성 (적색왜성)'; rebuild(J); toast('목성을 0.3 태양질량의 적색왜성으로: 안쪽 행성들의 궤도가 흔들립니다'); }
+  if (key === 'jupx10') { J.m *= 10; rebuild(J); toast('목성 질량 10배: 토성과 화성의 궤도가 서서히 흐트러지는지 보세요'); sim.speed = 200; }
+  if (key === 'rogue') { const r = [-120, 18, 2], v = [26 / O.KMS, 0, 0]; addBody('star', r, v).ko = '떠돌이 별'; rebuild(sim.bodies[sim.bodies.length - 1]); toast('1 태양질량의 떠돌이 별이 26 km/s로 지나갑니다'); sim.speed = 400; focus('Sun', 120); return; }
+  if (key === 'roguebh') { const r = [-150, 12, 0], v = [30 / O.KMS, 0, 0]; addBody('bh', r, v); toast('10 태양질량 블랙홀이 30 km/s로 태양계를 스쳐 갑니다'); sim.speed = 400; focus('Sun', 120); return; }
+  if (key === 'theia') {
+    clearScene(); sim.bodies = []; const mE = MASS.Earth * 0.9, mT = MASS.Earth * 0.11, RE2 = 6100 / O.AU_KM, RT = 3390 / O.AU_KM;
+    sim.bodies.push(makeBody('Earth', [0, 0, 0], [0, 0, 0], { ko: '원시 지구', m: mE, Rkm: 6100, color: 0xd98a5c }));
+    const vimp = 9.3 / O.KMS, d = RE2 * 7; // ~ escape speed, grazing: impact parameter ~0.7 of the summed radii
+    sim.bodies.push(makeBody('Theia', [-d, (RE2 + RT) * 0.7, 0], [vimp, 0, 0], { ko: '테이아 (화성 크기)', m: mT, Rkm: 3390, color: 0xb5aa9c }));
+    buildMeshes(); sim.E0 = energy(); snapshot(); sim.speed = 0.0035; sim.playing = true; focus('Earth', RE2 * 30);
+    toast('약 45억 년 전: 화성만 한 천체 테이아가 원시 지구에 비스듬히 부딪힙니다. 튀어 나간 맨틀 물질이 원반을 이루고, 로슈 한계 밖에서 모여 달이 됩니다'); return; }
+  if (key === 'binary') { // Kepler-16-like: two stars and a circumbinary planet
+    clearScene(); sim.bodies = []; const mA = 0.69, mB = 0.2, a = 0.224, M = mA + mB, vrel = Math.sqrt(O.MU_SUN * M / a);
+    sim.bodies.push(makeBody('Sun', [-a * mB / M, 0, 0], [0, -vrel * mB / M, 0], { ko: '별 A (0.69)', m: mA, kind: 'star', Rkm: starRadiusKm(mA), color: starColor(mA) }));
+    sim.bodies.push(makeBody('starB', [a * mA / M, 0, 0], [0, vrel * mA / M, 0], { ko: '별 B (0.20)', m: mB, kind: 'star', color: starColor(mB) }));
+    const ap = 0.705; sim.bodies.push(makeBody('tatooine', [ap, 0, 0], [0, Math.sqrt(O.MU_SUN * M / ap), 0], { ko: '쌍성 둘레 행성', m: MASS.Saturn, Rkm: 60000, color: 0xe6d29c }));
+    const ai = 0.4; sim.bodies.push(makeBody('inner', [-ai, 0, 0], [0, -Math.sqrt(O.MU_SUN * M / ai), 0], { ko: '너무 가까운 행성', m: MASS.Earth, Rkm: 6371, color: 0x6fa8ff }));
+    buildMeshes(); sim.E0 = energy(); snapshot(); sim.speed = 10; focus('Sun', 2.5); toast('케플러-16형 쌍성계: 바깥 행성은 안정하고, 쌍성에 너무 가까운 행성은 튕겨 나가거나 부딪힙니다'); return; }
+  focus('Sun', key === 'jupx10' ? 25 : 8); snapshot();
+}
 function clearScene() {
   for (const b of sim.bodies) { if (b.mesh) scene.remove(b.mesh, b.line); b.line?.geometry.dispose(); }
   root?.querySelectorAll('.sb-label').forEach(e => e.remove()); view.labels.clear();
@@ -127,9 +236,9 @@ function draw() {
   const E = energy(), dE = sim.E0 ? Math.abs((E - sim.E0) / sim.E0) : 0;
   root.querySelector('.sb-date').textContent = `${fmtDate(sim.t)} · ${sim.playing ? (sim.speed < 0 ? '역재생 ' : '') + speedLabel(Math.abs(sim.speed)) : '정지'}${sim.slow ? ' · 근접 통과 계산 중 (느려짐)' : ''}`;
   root.querySelector('.sb-energy').textContent = `에너지 보존 오차 ${dE < 1e-12 ? '0' : dE.toExponential(1)}`;
-  updateSelected(); labTick();
+  updateSelected(); labTick(); updateHZ(); updateRoche();
 }
-const speedLabel = (s) => s >= 1 ? `1초에 ${s}일` : `1초에 ${Math.round(s * 24)}시간`;
+const speedLabel = (s) => s >= 1 ? `1초에 ${s}일` : s * 24 >= 1 ? `1초에 ${Math.round(s * 24)}시간` : `1초에 ${Math.round(s * 1440)}분`;
 function loop(now) {
   const dt = Math.min(0.1, (now - lastNow) / 1000); lastNow = now;
   if (sim.playing) { advance(sim.speed * dt); recordTrails(); }
@@ -149,19 +258,25 @@ function planePoint(ev) {
   const p = new THREE.Vector3(); return ray.ray.intersectPlane(plane, p) ? [p.x, p.y, 0] : null;
 }
 let selected = null, drag = null;
-function select(b) { selected = b; root.querySelector('.sb-sel').hidden = !b; if (b) root.querySelector('.sb-mass').value = 0; }
+function select(b) { selected = b; root.querySelector('.sb-sel').hidden = !b; if (b) { b.base = b.m; root.querySelector('.sb-mass').value = 0; root.querySelector('.sb-massv').textContent = ''; } }
 function updateSelected() {
   const box = root.querySelector('.sb-sel'); if (!selected || box.hidden) return;
   const b = selected, sun = byName('Sun'), rel = sun ? add(b.r, sun.r, -1) : b.r, vrel = sun ? add(b.v, sun.v, -1) : b.v, e = O.elements(rel, vrel);
   box.querySelector('.sb-sel-name').textContent = b.ko + (b.crashed ? ' (충돌)' : '');
-  box.querySelector('.sb-sel-data').innerHTML = `태양에서 ${fmt(norm(rel), 3)} AU · 속도 ${fmt(norm(vrel) * O.KMS, 2)} km/s<br>` +
-    (e.e < 1 ? `긴반지름 ${fmt(e.a, 3)} AU · 이심률 ${fmt(e.e, 3)} · 주기 ${fmt(e.period / 365.25, 2)}년` : `태양계를 벗어나는 궤도 (이심률 ${fmt(e.e, 2)})`) +
-    (b.test ? '' : `<br>질량 ${b.m.toExponential(3)} 태양질량`);
+  box.querySelector('.sb-sel-data').innerHTML = (b === sun ? '이 계의 기준 별 (거리와 궤도는 이 별을 기준으로 잽니다)<br>' : `태양에서 ${fmt(norm(rel), 3)} AU · 속도 ${fmt(norm(vrel) * O.KMS, 2)} km/s<br>` +
+    (e.e < 1 ? `긴반지름 ${fmt(e.a, 3)} AU · 이심률 ${fmt(e.e, 3)} · 주기 ${fmt(e.period / 365.25, 2)}년` : `태양계를 벗어나는 궤도 (이심률 ${fmt(e.e, 2)})`)) +
+    (b.test ? '' : `<br>질량 ${b.m.toExponential(3)} 태양질량`) +
+    (b.kind === 'star' ? `<br>밝기 ${fmt(lum(b), 3)} 태양 · 반지름 ${fmt(b.Rkm / 696000, 2)} 태양 · 생명 가능 지대 ${fmt(0.95 * Math.sqrt(lum(b)), 2)}~${fmt(1.37 * Math.sqrt(lum(b)), 2)} AU` : '') +
+    (b.kind === 'bh' ? `<br>사건의 지평선 반지름 ${fmt(RS_KM(b.m), 1)} km · 이 안에서는 빛도 탈출 못 함` : '') +
+    (!b.test && b.kind !== 'bh' && b.Rkm ? `<br>로슈 한계 (점선): 암석 위성 ${fmt(rocheKm(b, 3000), 0)} km · 얼음 위성 ${fmt(rocheKm(b, 900), 0)} km (평균 밀도 ${fmt(density(b), 0)} kg/m³)` : '') +
+    (b.kind === 'planet' ? `<br>평형 온도 ${fmt(teq(b), 0)} K (${fmt(teq(b) - 273.15, 0)} °C, 반사율 0.3)` : '');
+  box.querySelector('.sb-bh').hidden = b.test || b.kind === 'bh';
 }
 function bindEditing() {
   const cv = renderer.domElement;
   cv.addEventListener('pointerdown', (ev) => {
-    if (view.tool === 'throw') { const p = planePoint(ev); if (!p) return; drag = { p, ev }; controls.enabled = false; ev.preventDefault(); return; }
+    if (view.tool === 'add' && root.querySelector('.sb-circ').checked) { const p = planePoint(ev); if (p) { const k = root.querySelector('.sb-addkind').value, b = addBody(k, p, circularAt(p)); toast(`${b.ko}을(를) 원 궤도로 놓았습니다`); } setTool(null); return; }
+    if (view.tool === 'throw' || view.tool === 'add') { const p = planePoint(ev); if (!p) return; drag = { p, ev, add: view.tool === 'add' }; controls.enabled = false; ev.preventDefault(); return; }
     drag = { click: [ev.clientX, ev.clientY] };
   });
   cv.addEventListener('pointermove', (ev) => {
@@ -170,7 +285,7 @@ function bindEditing() {
     toolHint(`속도 ${fmt(norm(v.rel) * O.KMS, 1)} km/s · 이 거리의 원 궤도 ${fmt(v.vc * O.KMS, 1)} km/s, 탈출 ${fmt(v.vc * Math.SQRT2 * O.KMS, 1)} km/s`);
   });
   cv.addEventListener('pointerup', (ev) => {
-    if (drag?.p) { const q = planePoint(ev); controls.enabled = true; if (q) { const v = throwVelocity(drag.p, q); addProbe(drag.p, v.abs, { ko: '던진 탐사선' }); } clearPreview(); drag = null; setTool(null); return; }
+    if (drag?.p) { const q = planePoint(ev); controls.enabled = true; if (q) { const v = throwVelocity(drag.p, q); if (drag.add) addBody(root.querySelector('.sb-addkind').value, drag.p, v.abs); else addProbe(drag.p, v.abs, { ko: '던진 탐사선' }); } clearPreview(); drag = null; setTool(null); return; }
     if (drag?.click && Math.hypot(ev.clientX - drag.click[0], ev.clientY - drag.click[1]) < 4) select(screenPick(ev)); drag = null;
   });
 }
@@ -186,7 +301,8 @@ function showPreview(r, v) { // ahead 1.5 orbits (or 3 years) on the Sun alone
   view.preview.computeLineDistances(); scene.add(view.preview);
 }
 function clearPreview() { if (view.preview) { scene.remove(view.preview); view.preview.geometry.dispose(); view.preview = null; } }
-function setTool(t) { view.tool = t; root.querySelector('.sb-throw').classList.toggle('on', t === 'throw'); toolHint(t === 'throw' ? '궤도면 위를 눌러 위치를 정하고, 끌어서 속도와 방향을 주세요' : ''); }
+function setTool(t) { view.tool = t; root.querySelector('.sb-throw').classList.toggle('on', t === 'throw'); root.querySelector('.sb-add').classList.toggle('on', t === 'add');
+  toolHint(t === 'throw' || (t === 'add' && !root.querySelector('.sb-circ').checked) ? '궤도면 위를 눌러 위치를 정하고, 끌어서 속도와 방향을 주세요' : t === 'add' ? '궤도면 위를 누르면 그 자리에서 가장 끌어당기는 천체를 도는 원 궤도로 놓습니다' : ''); }
 const toolHint = (s) => { root.querySelector('.sb-hint').textContent = s; };
 let toastT = 0; function toast(s) { const t = root.querySelector('.sb-toast'); t.textContent = s; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 4000); }
 
@@ -278,7 +394,7 @@ function labVisViva() {
     const X = (x) => 30 + (x - r0) / (r1 - r0) * (W - 40), Y = (y) => H - 20 - y / vmax * (H - 30);
     g.clearRect(0, 0, W, H); g.strokeStyle = '#4FE3C1'; g.lineWidth = 2; g.beginPath(); for (let i = 0; i <= 60; i++) { const x = r0 + (r1 - r0) * i / 60, y = Math.sqrt(Math.max(0, O.MU_SUN * (2 / x - 1 / pr.a0))) * O.KMS; i ? g.lineTo(X(x), Y(y)) : g.moveTo(X(x), Y(y)); } g.stroke();
     g.fillStyle = '#ffb454'; for (const p of pts) g.fillRect(X(p[0]) - 1.5, Y(p[1]) - 1.5, 3, 3);
-    g.fillStyle = '#c9d1e6'; g.font = '10px sans-serif'; g.fillText('속도 km/s ↑', 2, 10); g.fillText('거리 r (AU) →', W - 80, H - 4); g.fillText('초록: 공식 · 주황: 잰 값', 34, 22); } };
+    g.fillStyle = '#c9d1e6'; g.font = '10px "Pretendard Variable", "Malgun Gothic", sans-serif'; g.fillText('속도 km/s ↑', 2, 10); g.fillText('거리 r (AU) →', W - 80, H - 4); g.fillText('초록: 공식 · 주황: 잰 값', 34, 22); } };
 }
 
 // O-2 Hohmann transfer Earth -> Mars
@@ -333,7 +449,7 @@ function labPorkchop() {
       im.data[o] = 20 + 230 * t; im.data[o + 1] = 60 + 140 * (1 - Math.abs(t - 0.45) * 2); im.data[o + 2] = 160 * (1 - t) + 60; im.data[o + 3] = 255; }
     const tmp = document.createElement('canvas'); tmp.width = NX; tmp.height = NY; tmp.getContext('2d').putImageData(im, 0, 0);
     g.imageSmoothingEnabled = true; g.drawImage(tmp, 0, 0, cv.width, cv.height);
-    g.fillStyle = '#c9d1e6'; g.font = '10px sans-serif'; g.fillText(`${fmtDate(t0)} → ${fmtDate(t0 + span)}`, 4, cv.height - 4); g.fillText(`비행 ${tofR[0]}~${tofR[1]}일 ↑`, 4, 12);
+    g.fillStyle = '#c9d1e6'; g.font = '10px "Pretendard Variable", "Malgun Gothic", sans-serif'; g.fillText(`${fmtDate(t0)} → ${fmtDate(t0 + span)}`, 4, cv.height - 4); g.fillText(`비행 ${tofR[0]}~${tofR[1]}일 ↑`, 4, 12);
     let bi = 0; grid.c3.forEach((c, k) => { if (c < (grid.c3[bi] || 1e9)) bi = k; });
     info.textContent = `가장 적은 C3: ${fmt(grid.c3[bi], 1)} km²/s² · 출발 ${fmtDate(t0 + span * (bi % NX) / (NX - 1))}, 비행 ${Math.round(tofR[0] + (tofR[1] - tofR[0]) * Math.floor(bi / NX) / (NY - 1))}일. 칸을 눌러 보세요.`;
   };
@@ -377,10 +493,10 @@ function labFlyby() {
     // vector diagram: planet velocity, v_inf in/out, heliocentric in/out
     const g = cv.getContext('2d'); g.clearRect(0, 0, cv.width, cv.height); const S = 150 / Math.max(Vp + v, 1), ox = 30, oy = 150, L = (x, y, x2, y2, c, w = 2, lab2) => { g.strokeStyle = c; g.lineWidth = w; g.beginPath(); g.moveTo(ox + x * S, oy - y * S); g.lineTo(ox + x2 * S, oy - y2 * S); g.stroke();
       const a = Math.atan2(-(y2 - y), x2 - x); g.beginPath(); g.moveTo(ox + x2 * S, oy - y2 * S); g.lineTo(ox + x2 * S - 8 * Math.cos(a - 0.4), oy - y2 * S - 8 * Math.sin(a - 0.4)); g.lineTo(ox + x2 * S - 8 * Math.cos(a + 0.4), oy - y2 * S - 8 * Math.sin(a + 0.4)); g.fillStyle = c; g.fill();
-      if (lab2) { g.fillStyle = c; g.font = '11px sans-serif'; g.fillText(lab2, ox + x2 * S + 4, oy - y2 * S - 4); } };
+      if (lab2) { g.fillStyle = c; g.font = '11px "Pretendard Variable", "Malgun Gothic", sans-serif'; g.fillText(lab2, ox + x2 * S + 4, oy - y2 * S - 4); } };
     L(0, 0, Vp, 0, '#9aa5c0', 2, '행성 속도'); L(Vp, 0, hin[0], hin[1], '#ffb454', 2, 'v∞ 들어옴'); L(Vp, 0, hout[0], hout[1], '#4FE3C1', 2, 'v∞ 나감');
     L(0, 0, hin[0], hin[1], '#ffb454', 1, ''); L(0, 0, hout[0], hout[1], '#4FE3C1', 1, '');
-    g.fillStyle = '#c9d1e6'; g.font = '10px sans-serif'; g.fillText('가는 선: 태양 기준 속도 (들어옴 · 나감)', 6, 14);
+    g.fillStyle = '#c9d1e6'; g.font = '10px "Pretendard Variable", "Malgun Gothic", sans-serif'; g.fillText('가는 선: 태양 기준 속도 (들어옴 · 나감)', 6, 14);
   };
   for (const i of [planet, vinf, alt, ang, side]) i.oninput = i.onchange = calc;
   box.append(btn('샌드박스에서 해 보기', () => { calc(); freshSystem(sim.t); const pl = byName(plan.n), sun = byName('Sun');
@@ -509,14 +625,18 @@ function buildUI() {
       <div class="sb-row"><span class="sb-date"></span></div>
       <div class="sb-row">
         <button class="sb-reset" title="처음 상태로">처음으로</button><button class="sb-back" title="역재생">역재생</button><button class="sb-play">정지</button>
-        <select class="sb-speed"><option value="0.0417">1초에 1시간</option><option value="0.25">1초에 6시간</option><option value="1">1초에 1일</option><option value="10" selected>1초에 10일</option><option value="50">1초에 50일</option><option value="200">1초에 200일</option></select>
+        <select class="sb-speed"><option value="0.0007">1초에 1분</option><option value="0.0035">1초에 5분</option><option value="0.0417">1초에 1시간</option><option value="0.25">1초에 6시간</option><option value="1">1초에 1일</option><option value="10" selected>1초에 10일</option><option value="50">1초에 50일</option><option value="200">1초에 200일</option></select>
       </div>
-      <div class="sb-row"><button class="sb-throw">탐사선 던지기</button><button class="sb-now">지금 태양계로 새로</button><button class="sb-recbtn">기록지</button><button class="sb-cards">개념 카드</button></div>
+      <div class="sb-row"><button class="sb-throw">탐사선 던지기</button><button class="sb-now">지금 태양계로 새로</button><button class="sb-recbtn">기록지</button><button class="sb-cards">우주 교과서</button></div>
+      <div class="sb-row"><select class="sb-addkind"><option value="asteroid">소행성 (질량 없음)</option><option value="earth">지구</option><option value="jupiter">목성</option><option value="reddwarf">적색왜성 (0.2)</option><option value="star">태양 같은 별</option><option value="bh">블랙홀 (10 태양질량)</option></select>
+        <label class="small"><input type="checkbox" class="sb-circ" checked> 원 궤도로</label><button class="sb-add">천체 놓기</button></div>
+      <div class="sb-row"><select class="sb-scen"><option value="">시나리오…</option><option value="nosun">태양이 사라진다면</option><option value="sunbh">태양이 같은 질량의 블랙홀이라면</option><option value="sun2">태양 질량 2배</option><option value="sunhalf">태양 질량 절반</option><option value="jupstar">목성이 별이었다면</option><option value="jupx10">목성 질량 10배</option><option value="rogue">떠돌이 별이 지나간다면</option><option value="roguebh">블랙홀이 지나간다면</option><option value="binary">쌍성 둘레 행성 (케플러-16형)</option><option value="theia">달의 탄생: 거대 충돌 (테이아)</option></select>
+        <label class="small"><input type="checkbox" class="sb-hz" checked> 생명 가능 지대</label></div>
       <div class="sb-row small sb-energy"></div>
       <div class="sb-sel" hidden><b class="sb-sel-name"></b><div class="small sb-sel-data"></div>
-        <label class="small">질량 바꾸기 <input class="sb-mass" type="range" min="-1" max="2" step="0.05" value="0"></label><span class="small sb-massv"></span>
-        <div class="sb-row"><button class="sb-follow">따라가기</button><button class="sb-del">지우기</button></div></div>
-      <div class="sb-labs"><b>궤도역학 실습</b></div>
+        <label class="small">질량 바꾸기 <input class="sb-mass" type="range" min="-3" max="3" step="0.05" value="0"></label><span class="small sb-massv"></span>
+        <div class="sb-row"><button class="sb-follow">따라가기</button><button class="sb-del">지우기</button><button class="sb-bh">블랙홀로 바꾸기</button></div></div>
+      <div class="sb-labs"><b>우주 더 알아보기</b></div>
       <div class="small sb-hint"></div>
     </div>
     <div class="sb-lab" hidden></div>
@@ -541,8 +661,16 @@ function buildUI() {
   q('.sb-recbtn').onclick = showRecords;
   q('.sb-cards').onclick = () => openCards({ openLab: (n) => openLab(n) });
   q('.sb-follow').onclick = () => selected && focus(selected.name, Math.max(selected.Rkm / O.AU_KM * 40, 0.02));
-  q('.sb-del').onclick = () => { if (!selected || selected.name === 'Sun') return; sim.bodies = sim.bodies.filter(b => b !== selected); scene.remove(selected.mesh, selected.line); view.labels.get(selected)?.remove(); select(null); sim.E0 = energy(); };
-  q('.sb-mass').oninput = (e) => { if (!selected || selected.test) return; const base = MASS[selected.name] ?? selected.m; const k = Math.pow(10, +e.target.value); selected.m = base * k; q('.sb-massv').textContent = `×${fmt(k, 2)}`; sim.E0 = energy(); };
+  q('.sb-del').onclick = () => { if (!selected) return; if (selected.name === 'Sun') { selected.m = 1e-12; selected.kind = 'test'; rebuild(selected); select(null); sim.E0 = energy(); return; } sim.bodies = sim.bodies.filter(b => b !== selected); scene.remove(selected.mesh, selected.line); view.labels.get(selected)?.remove(); select(null); sim.E0 = energy(); };
+  q('.sb-mass').oninput = (e) => { if (!selected || selected.test) return; const b = selected; b.base ??= b.m; const k = Math.pow(10, +e.target.value); b.m = b.base * k; q('.sb-massv').textContent = `×${fmt(k, 2)} (${b.m.toExponential(2)} 태양질량)`;
+    if (b.kind === 'planet' && b.m > 0.08) { b.kind = 'star'; b.Rkm = starRadiusKm(b.m); b.color = starColor(b.m); rebuild(b); toast(`${b.ko}이(가) 0.08 태양질량을 넘어 중심에서 수소 핵융합이 시작됩니다: 별이 되었습니다`); }
+    else if (b.kind === 'star') { b.Rkm = starRadiusKm(b.m); b.color = starColor(b.m); if (b.m < 0.08) { b.kind = 'planet'; toast('0.08 태양질량 아래로: 핵융합이 꺼진 갈색왜성·행성이 됩니다'); } rebuild(b); }
+    else if (b.kind === 'bh') b.Rkm = RS_KM(b.m);
+    sim.E0 = energy(); };
+  q('.sb-bh').onclick = () => selected && toBlackHole(selected);
+  q('.sb-add').onclick = () => setTool(view.tool === 'add' ? null : 'add');
+  q('.sb-scen').onchange = (e) => { if (e.target.value) scenario(e.target.value); e.target.value = ''; };
+  scene.add(hzGroup, rocheGroup);
   for (const [t, f] of [['원 궤도와 탈출 속도', labCircular], ['활력 방정식 (vis-viva)', labVisViva], ['호만 전이 (지구→화성)', labHohmann], ['발사 시기와 포크찹', labPorkchop], ['플라이바이 설계', labFlyby], ['임무 설계 (여러 행성 경유)', labMission], ['라그랑주점과 트로이', labLagrange]])
     q('.sb-labs').append(btn(t, f));
   const rs = () => { const w = root.clientWidth, h = root.clientHeight; renderer.setSize(w, h, false); renderer.domElement.style.width = w + 'px'; renderer.domElement.style.height = h + 'px'; camera.aspect = w / h; camera.updateProjectionMatrix(); };

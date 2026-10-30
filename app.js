@@ -2594,7 +2594,7 @@ async function loadArt() {
   }
 }
 // Korean sky culture: the Cheonsang Yeolcha Bunyajido itself (woodcut print, public domain), laid on the sky.
-// The chart is a polar equidistant map of the sky some 1,400 years before J2000 (tools/make_cheonsang.py fitted it).
+// Carved in 1395 (Joseon) from an older Goguryeo-era rubbing; as a polar equidistant map its stars fit the sky of about 600 CE best (tools/make_cheonsang.py).
 const csGroup = new THREE.Group(); csGroup.visible = false; sky.add(csGroup); let csLoaded = false;
 function precessDeg(ra, dec, years) { // rotation about the ecliptic pole by general precession in longitude
   const e = 23.44 * D2R, r = ra * D2R, d = dec * D2R, x = Math.cos(d) * Math.cos(r), y = Math.cos(d) * Math.sin(r), z = Math.sin(d);
@@ -2614,7 +2614,7 @@ async function loadCheonsang() {
 }
 function updateArt() {
   const korean = $('skyculture').value === 'korean';
-  const kon = $('t-art').checked && korean && !s3d.far; csGroup.visible = kon; if (kon && !csLoaded) { loadCheonsang(); $('status').textContent = '천상열차분야지도 (목판본, 퍼블릭 도메인)를 겹칩니다. 1,400여 년 전 하늘 기준이라 별 위치가 조금씩 어긋납니다.'; }
+  const kon = $('t-art').checked && korean && !s3d.far; csGroup.visible = kon; if (kon && !csLoaded) { loadCheonsang(); $('status').textContent = '천상열차분야지도 (조선 태조 4년 1395년 각석, 목판본 인쇄, 퍼블릭 도메인)를 겹칩니다. 고구려 시대 원본을 바탕으로 해서 별 위치가 서기 600년 무렵 하늘과 가장 잘 맞고, 지금 하늘과는 조금씩 어긋납니다.'; }
   if (kon) csGroup.children.forEach(m => m.material.opacity = 0.38 * Math.max(0, Math.min(1, (view.fov - 4) / 16)));
   const on = $('t-art').checked && !s3d.far && !korean; artGroup.visible = on; if (!on) return; if (!artLoaded) loadArt();
   const op = 0.3 * Math.max(0, Math.min(1, (view.fov - 6) / 20));

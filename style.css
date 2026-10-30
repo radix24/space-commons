@@ -1,9 +1,9 @@
 :root {
   --ink: #EEF0FA; --night: #0A0D1C; --panel: rgba(14,18,48,.84); --panel-solid: #0E1230;
   --orbit: #4FE3C1; --violet: #8B7CFF; --star: #F3E2A6; --line: #262B4D; --mute: #8D93B3;
-  --display: Manrope, "Pretendard Variable", sans-serif;
-  --sans: "Pretendard Variable", Pretendard, system-ui, "Malgun Gothic", sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  --display: Manrope, "Pretendard Variable", Pretendard, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  --sans: "Pretendard Variable", Pretendard, "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, "Pretendard Variable", "Malgun Gothic", "Apple SD Gothic Neo", monospace; /* Hangul falls to Pretendard, never GulimChe */
 }
 * { box-sizing: border-box; }
 html, body { -webkit-user-select: none; user-select: none; margin: 0; height: 100%; overflow: hidden; background: var(--night); color: var(--ink);
@@ -278,7 +278,8 @@ body.sandbox #loader { display: none; }
 .cc-root[hidden] { display: none; }
 .cc-win { width: min(1040px, 100%); max-height: calc(100vh - 32px); overflow: auto; border-radius: 14px; background: #0c1120; border: 1px solid var(--line, #26314d); padding: 14px 16px; }
 .cc-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; } .cc-head b { font: 800 18px var(--display, sans-serif); } .cc-head .cc-x { margin-left: auto; }
-.cc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.cc-grid { display: block; }
+.cc-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-bottom: 6px; }
 .cc-grid[hidden], .cc-detail[hidden] { display: none; }
 .cc-card { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; text-align: left; padding: 12px; border-radius: 12px; background: #111830; border: 1px solid var(--line, #26314d); min-height: 140px; }
 .cc-card:hover { border-color: var(--orbit, #4FE3C1); }
@@ -298,3 +299,12 @@ body.sandbox #loader { display: none; }
 .cc-lab { margin-top: 10px; border-color: var(--orbit) !important; color: var(--orbit); } .cc-back { margin-bottom: 4px; }
 @media (max-width: 760px) { .cc-body { grid-template-columns: 1fr; } .cc-slider { grid-template-columns: 1fr 1fr 52px; } }
 .cc-left .cc-level { display: inline-block; }
+
+/* 0.0.3d: textbook */
+.cc-ch { margin: 14px 0 8px; font: 800 16px var(--display); } .cc-ch span { font: 12px var(--mono); color: var(--mute); margin-left: 6px; }
+.cc-num { font: 600 11px var(--mono); color: var(--orbit); }
+.cc-card.seen { border-color: rgba(79,227,193,.35); } .cc-card.seen .cc-num::after { content: ' · 읽음'; color: var(--mute); }
+.cc-pre { font-size: 11px; color: var(--mute); }
+.cc-links { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0; font-size: 12px; } .cc-links > span { color: var(--mute); margin-right: 2px; }
+.cc-chip { font-size: 12px; padding: 3px 9px; border-radius: 99px; }
+.cc-nav { display: flex; justify-content: space-between; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
