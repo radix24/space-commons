@@ -20,7 +20,7 @@ const jdOf = (s) => Date.parse(s + 'T12:00:00Z') / 864e5 + 2440587.5;
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 
 let ctx = null, root = null, renderer, scene, camera, controls, raf = 0, lastNow = 0;
-const sim = { t: 0, bodies: [], speed: 10, playing: true, t0: 0, snapshot: null, E0: 0, slow: false };
+const sim = { G: 1, collide: true, t: 0, bodies: [], speed: 10, playing: true, t0: 0, snapshot: null, E0: 0, slow: false };
 const view = { focus: null, labels: new Map(), tool: null, preview: null, extras: new THREE.Group() };
 
 // ---------------- ephemeris for the starting state ----------------
@@ -53,14 +53,14 @@ const massive = () => sim.bodies.filter(b => !b.test);
 function accel(b, out, list) {
   out[0] = out[1] = out[2] = 0;
   for (const o of list) { if (o === b || (b.ignore === o.name && sim.t < b.ignoreUntil)) continue;
-    const dx = o.r[0] - b.r[0], dy = o.r[1] - b.r[1], dz = o.r[2] - b.r[2], d2 = dx * dx + dy * dy + dz * dz, k = O.MU_SUN * o.m / (d2 * Math.sqrt(d2));
+    const dx = o.r[0] - b.r[0], dy = o.r[1] - b.r[1], dz = o.r[2] - b.r[2], d2 = dx * dx + dy * dy + dz * dz, k = O.MU_SUN * sim.G * o.m / (d2 * Math.sqrt(d2));
     out[0] += k * dx; out[1] += k * dy; out[2] += k * dz; }
 }
 function stepDt() { // shortest dynamical time between any body and a massive one
   let tmin = 50; const ms = massive();
   for (const b of sim.bodies) { if (b.crashed) continue; for (const o of ms) { if (o === b || (b.ignore === o.name && sim.t < b.ignoreUntil)) continue;
     const d = Math.hypot(o.r[0] - b.r[0], o.r[1] - b.r[1], o.r[2] - b.r[2]), v = Math.hypot(o.v[0] - b.v[0], o.v[1] - b.v[1], o.v[2] - b.v[2]);
-    const t = Math.min(Math.sqrt(d * d * d / (O.MU_SUN * (o.m + b.m))), d / Math.max(v, 1e-9)); if (t < tmin) tmin = t; } }
+    const t = Math.min(Math.sqrt(d * d * d / (O.MU_SUN * sim.G * (o.m + b.m))), d / Math.max(v, 1e-9)); if (t < tmin) tmin = t; } }
   return 0.015 * tmin;
 }
 const _a = [0, 0, 0];
@@ -74,7 +74,7 @@ function step(dt) {
     const d = Math.hypot(o.r[0] - b.r[0], o.r[1] - b.r[1], o.r[2] - b.r[2]) * O.AU_KM;
     if (!(o.name in b.minD) || d < b.minD[o.name].d) b.minD[o.name] = { d, t: sim.t };
     if (o.Rkm && d < captureKm(o) && !(b.ignore === o.name && sim.t < b.ignoreUntil)) { b.crashed = true; b.v = [...o.v]; toast(o.kind === 'bh' ? `${b.ko}이(가) ${o.ko}의 사건의 지평선 안으로 떨어졌습니다` : `${b.ko}이(가) ${o.ko}에 충돌했습니다`); } }
-  if (ms.length > 1) encounters(ms);
+  if (ms.length > 1 && sim.collide) encounters(ms);
 }
 function advance(days) {
   let left = Math.abs(days), n = 0; const dir = Math.sign(days); sim.slow = false;
@@ -85,7 +85,7 @@ function advance(days) {
 function energy() {
   const ms = massive(); let E = 0;
   for (let i = 0; i < ms.length; i++) { const a = ms[i]; E += 0.5 * a.m * dot(a.v, a.v);
-    for (let j = i + 1; j < ms.length; j++) { const b = ms[j]; E -= O.MU_SUN * a.m * b.m / Math.hypot(a.r[0] - b.r[0], a.r[1] - b.r[1], a.r[2] - b.r[2]); } }
+    for (let j = i + 1; j < ms.length; j++) { const b = ms[j]; E -= O.MU_SUN * sim.G * a.m * b.m / Math.hypot(a.r[0] - b.r[0], a.r[1] - b.r[1], a.r[2] - b.r[2]); } }
   return E;
 }
 function snapshot() { sim.snapshot = { t: sim.t, bodies: sim.bodies.map(b => ({ ...b, r: [...b.r], v: [...b.v], minD: {}, trail: new Float32Array(b.trail.length), tn: 0 })) }; }
@@ -125,6 +125,8 @@ function climateMat(m) {
 }
 const TEX = { Sun: 'sun', Mercury: 'mercury', Venus: 'venus_atmosphere', Earth: 'earth_daymap', Mars: 'mars', Jupiter: 'jupiter', Saturn: 'saturn', Uranus: 'uranus', Neptune: 'neptune',
   Moon: 'moon', Ceres: 'ceres', Vesta: 'vesta', Pluto: 'pluto', Eris: 'eris_fictional', Haumea: 'haumea_fictional', Makemake: 'makemake_fictional' };
+const SPIN_H = { Sun: 609.1, Mercury: 1407.6, Venus: -5832.5, Earth: 23.93, Moon: 655.7, Mars: 24.62, Jupiter: 9.93, Saturn: 10.66, Uranus: -17.24, Neptune: 16.11, Pluto: -153.3, Ceres: 9.07, Vesta: 5.34 };
+const TILT = { Sun: 7.25, Mercury: 0.03, Venus: 177.4, Earth: 23.44, Moon: 6.68, Mars: 25.19, Jupiter: 3.13, Saturn: 26.73, Uranus: 97.77, Neptune: 28.32, Pluto: 122.5 };
 const texCache = {}; const texOf = (k) => texCache[k] ||= (() => { const t = new THREE.TextureLoader().load(`textures/2k_${k}.jpg`); t.colorSpace = THREE.SRGBColorSpace; return t; })();
 const starLight = new THREE.PointLight(0xffffff, 2.2, 0, 0); const ambient = new THREE.AmbientLight(0xffffff, 0.12);
 const dotTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'), r = g.createRadialGradient(32, 32, 0, 32, 32, 32);
@@ -251,7 +253,7 @@ function updateTempMap() {
     else if (limb) limb.visible = false;
     const cu = b.mesh?.children[1]?.material?.userData?.climate;
     if (cu && k) { const x = ATM.extremes(k.Ts + impactHeat(b), k.a.P), top = Object.entries(k.a.mix).sort((p1, p2) => p2[1] - p1[1])[0]?.[0];
-      cu.uOn.value = 1; cu.uTeq.value = x.eq; cu.uTpole.value = x.pole; cu.uBoil.value = 373 + 30 * Math.log10(Math.max(k.a.P, 0.01));
+      const tl = Math.abs(Math.sin((b.tilt ?? TILT[b.name] ?? 0) * Math.PI / 180)); cu.uOn.value = 1; cu.uTeq.value = x.eq - (x.eq - x.pole) * 0.3 * tl; cu.uTpole.value = x.pole + (x.eq - x.pole) * 0.6 * tl; cu.uBoil.value = 373 + 30 * Math.log10(Math.max(k.a.P, 0.01));
       cu.uCloud.value = Math.max(0, Math.min(1, (Math.log10(Math.max(k.a.P, 1e-4)) - 0.3) / 1.4)) + (k.a.mix.H2O > 0.005 && x.eq > 273 && x.eq < cu.uBoil.value ? 0.25 : 0);
       cu.uCloudCol.value.set(GAS_COL[top] || '#ffffff').lerp(new THREE.Color(0.95, 0.93, 0.86), 0.7); }
     if (!on) { if (lb.dataset.t) { lb.textContent = b.ko; lb.style.color = ''; delete lb.dataset.t; if (dot) dot.material.color.set(b.color); } continue; }
@@ -377,7 +379,7 @@ function makeBelt() {
 function gpuAdvance(days) {
   if (!gsw.on) return; gsw.acc += days; const n = Math.min(64, Math.ceil(Math.abs(gsw.acc) / 4)); if (!n) return;
   const h = gsw.acc / n, ms = massive().slice(0, 16), B = gsw.kick.uniforms.B.value; gsw.acc = 0;
-  ms.forEach((o, k) => B[k].set(o.r[0], o.r[1], o.r[2], O.MU_SUN * o.m)); gsw.kick.uniforms.nB.value = ms.length;
+  ms.forEach((o, k) => B[k].set(o.r[0], o.r[1], o.r[2], O.MU_SUN * sim.G * o.m)); gsw.kick.uniforms.nB.value = ms.length;
   for (let s = 0; s < n; s++) { const r = gsw.read, w = 1 - r;   // symplectic Euler: new velocity from the old position, then the position from the new velocity
     gsw.kick.uniforms.pos.value = gsw.rt.p[r].texture; gsw.kick.uniforms.vel.value = gsw.rt.v[r].texture; gsw.kick.uniforms.h.value = h; gsw.quad.material = gsw.kick; renderer.setRenderTarget(gsw.rt.v[w]); renderer.render(gsw.simScene, gsw.simCam);
     gsw.drift.uniforms.pos.value = gsw.rt.p[r].texture; gsw.drift.uniforms.vel.value = gsw.rt.v[w].texture; gsw.drift.uniforms.h.value = h; gsw.quad.material = gsw.drift; renderer.setRenderTarget(gsw.rt.p[w]); renderer.render(gsw.simScene, gsw.simCam);
@@ -389,7 +391,7 @@ function clearSwarm() { clearGpuSwarm(); if (swarm.pts) { scene.remove(swarm.pts
 function swarmAdvance(days) { gpuAdvance(days); // leapfrog (half kicks fused) against the massive bodies where they are now; 4-day steps are fine at 2-3.5 AU
   if (!swarm.n) return; swarm.acc += days; const n = Math.ceil(Math.abs(swarm.acc) / 4); if (!n) return;
   const dt = swarm.acc / n, ms = massive(), M = ms.length, P = new Float64Array(M * 4), r = swarm.r, v = swarm.v, L = swarm.n * 3; swarm.acc = 0;
-  ms.forEach((o, k) => P.set([o.r[0], o.r[1], o.r[2], O.MU_SUN * o.m], k * 4));
+  ms.forEach((o, k) => P.set([o.r[0], o.r[1], o.r[2], O.MU_SUN * sim.G * o.m], k * 4));
   const kick = (h) => { for (let i = 0; i < L; i += 3) { const x = r[i], y = r[i + 1], z = r[i + 2]; let ax = 0, ay = 0, az = 0;
     for (let k = 0; k < M * 4; k += 4) { const dx = P[k] - x, dy = P[k + 1] - y, dz = P[k + 2] - z, d2 = dx * dx + dy * dy + dz * dz + 1e-10, f = P[k + 3] / (d2 * Math.sqrt(d2)); ax += f * dx; ay += f * dy; az += f * dz; }
     v[i] += ax * h; v[i + 1] += ay * h; v[i + 2] += az * h; } };
@@ -496,6 +498,8 @@ function draw() {
   const W = root.clientWidth, H = root.clientHeight;
   const rf = relTrailRef();
   for (const b of sim.bodies) { if (rf) b.line.position.set(...rf.r); else b.line.position.set(0, 0, 0); b.mesh.position.set(b.r[0], b.r[1], b.r[2]); b.mesh.visible = !b.crashed || b.test;
+    const globe = b.mesh.children[1]; if (globe && b.Rkm && b.kind !== 'bh') { const tilt = (b.tilt ?? TILT[b.name] ?? 0) * Math.PI / 180, spin = b.spinH ?? SPIN_H[b.name] ?? 24;
+      globe.rotation.set(Math.PI / 2 + tilt, (sim.t * 24 / spin) % 1 * 2 * Math.PI, 0); }
     if (b.Rkm && b.kind !== 'bh' && b.mesh.children[1]) { const dd = camera.position.distanceTo(b.mesh.position) || 1, px = (b.Rkm / O.AU_KM) / dd / Math.tan(camera.fov * Math.PI / 360) * H / 2;
       b.mesh.children[0].visible = px < 7; if (px >= 7 && b.mesh.userData.halo) b.mesh.userData.halo.visible = false; } // close enough to see the globe: drop the marker dot and halo
     const lb = view.labels.get(b); _v.set(b.r[0], b.r[1], b.r[2]).project(camera);
@@ -530,6 +534,8 @@ function planePoint(ev) {
 }
 let selected = null, drag = null;
 function showNums() { const b = selected; if (!b) return; const q = (s) => root.querySelector(s), u = +q('.sb-munit').value;
+  q('.sb-rnum').value = b.Rkm ? +b.Rkm.toPrecision(4) : ''; q('.sb-spin').value = b.spinH ?? (SPIN_H[b.name] ?? ''); q('.sb-tilt').value = b.tilt ?? (TILT[b.name] ?? '');
+  const hs = hostStar(b); q('.sb-vnum').value = +(norm(add(b.v, hs && hs !== b ? hs.v : [0, 0, 0], -1)) * O.KMS).toPrecision(4);
   q('.sb-mnum').value = b.test ? 0 : +(b.m / u).toPrecision(4); q('.sb-mnum').disabled = !!b.test;
   const st = hostStar(b); q('.sb-dnum').value = st && st !== b ? +Math.hypot(...add(b.r, st.r, -1)).toPrecision(3) : ''; }
 function hostStar(b) { return sim.bodies.filter(o => (o.kind === 'star' || o.kind === 'bh') && o !== b).sort((x, y) => y.m - x.m)[0] || null; }
@@ -544,6 +550,15 @@ function quick(k) {
   if (k === 'jup2star') { const j = pick('Jupiter'); if (j) { select(j); root.querySelector('.sb-mass').value = Math.log10(90); root.querySelector('.sb-mass').dispatchEvent(new Event('input')); showNums(); focus('Sun', 12); } }
   if (k === 'earthvenus') { const e = pick('Earth'); if (e) { select(e); moveToOrbit(e, 0.72); root.querySelector('.sb-temp').checked = true; root.querySelector('.sb-temp').dispatchEvent(new Event('change')); } }
   if (k === 'marsatm') { const m = pick('Mars'); if (m) { m.atm = JSON.parse(JSON.stringify(ATM.PRESETS.Earth)); select(m); root.querySelector('.sb-temp').checked = true; root.querySelector('.sb-temp').dispatchEvent(new Event('change')); toast('화성에 지구 같은 1기압 공기를 줬습니다. 아래 "대기 바꾸기"에서 이산화탄소를 늘려 보세요'); } }
+  if (k === 'random') { // a random star with 3-8 planets on near-circular orbits, spaced like real systems (each ~1.4-2x farther out)
+    clearScene(); const ms = 0.3 + Math.random() * 1.4, star = makeBody('Star', [0, 0, 0], [0, 0, 0], { ko: '새 별', m: ms, kind: 'star', Rkm: starRadiusKm(ms) }); sim.bodies = [star];
+    let a = 0.15 + Math.random() * 0.3; const n = 3 + Math.floor(Math.random() * 6), giant = 2 + Math.floor(Math.random() * (n - 2));
+    for (let i = 0; i < n; i++) { const big = i >= giant, m = big ? MASS.Jupiter * (0.1 + Math.random() * 2) : MASS.Earth * (0.1 + Math.random() * 4), th = Math.random() * 2 * Math.PI, vc = Math.sqrt(O.MU_SUN * sim.G * (ms + m) / a);
+      const p = makeBody(`P${i + 1}`, [a * Math.cos(th), a * Math.sin(th), (Math.random() - 0.5) * 0.02 * a], [-vc * Math.sin(th), vc * Math.cos(th), 0], { ko: `행성 ${'bcdefghi'[i]}`, m, Rkm: big ? 50000 + Math.random() * 25000 : 3000 + Math.random() * 6000, color: big ? 0xd9b48a : 0x8aa0c8, kind: 'planet' });
+      if (!big) p.atm = JSON.parse(JSON.stringify(ATM.PRESETS[['Earth', 'Venus', 'Mars', 'Titan', 'none'][Math.floor(Math.random() * 5)]]));
+      sim.bodies.push(p); a *= 1.4 + Math.random() * 0.7; }
+    sim.t0 = sim.t; buildMeshes(); sim.E0 = energy(); snapshot(); focus('Star', a * 1.2); root.querySelector('.sb-temp').checked = true;
+    toast(`질량 ${fmt(ms, 2)}배인 별과 행성 ${n}개로 이루어진 새 행성계입니다. 생명 가능 지대(초록 띠) 안의 행성을 찾아보세요`); return; }
   if (k === 'moonaway') { const m = byName('Moon'); if (!m) return toast('달이 없습니다. 위의 "태양계 천체 더하기"에서 달을 먼저 놓아 보세요'); select(m); root.querySelector('.sb-del').click(); toast('달을 지웠습니다. 실제로는 조석이 약해지고 자전축이 오랜 세월에 걸쳐 크게 흔들리게 됩니다'); }
 }
 function select(b) { selected = b; root.querySelector('.sb-sel').hidden = !b; if (b) { b.base = b.m; root.querySelector('.sb-mass').value = 0; root.querySelector('.sb-massv').textContent = ''; showNums(); } atmEditor(b); }
@@ -1111,6 +1126,7 @@ function buildUI() {
           <li><button data-q="earthvenus">지구를 금성 자리로</button><span>0.72 AU에서 바다는</span></li>
           <li><button data-q="marsatm">화성에 1기압 공기</button><span>대기가 기온을 바꾼다</span></li>
           <li><button data-q="moonaway">달 없애기</button><span>지구 혼자 남으면</span></li>
+          <li><button data-q="random">새 행성계 만들기</button><span>별 하나와 무작위 행성들</span></li>
         </ol>
         <h3>더하기</h3>
         <div class="sb-line"><label>태양계 천체</label><select class="sb-addsol"><option value="">고르기</option>${Object.entries(EXTRA).map(([k, v]) => `<option value="${k}">${v[0]}</option>`).join('')}<option value="all">모두</option></select></div>
@@ -1140,6 +1156,9 @@ function buildUI() {
         <label><input type="checkbox" class="sb-reltrail"> 지나온 길을 중심 천체 기준으로</label>
         <label><input type="checkbox" class="sb-names" checked> 이름</label>
         <div class="small sb-center"></div>
+        <h3>물리 설정</h3>
+        <div class="sb-prop sb-gprop"><label>중력 세기</label><input class="sb-g" type="number" min="0" max="10" step="0.1" value="1"><span class="u">배</span><input class="sb-gr" type="range" min="0" max="1000" value="500"></div>
+        <label><input type="checkbox" class="sb-coll" checked> 충돌 (끄면 서로 통과)</label>
         <button class="sb-now">지금 태양계로 새로 시작</button>
       </div>
     </aside>
@@ -1154,6 +1173,10 @@ function buildUI() {
       <table class="sb-nums">
         <tr><th>질량</th><td><input class="sb-mnum" type="number" min="0" step="any"><select class="sb-munit"><option value="${MASS.Earth}">지구 질량</option><option value="${MASS.Jupiter}">목성 질량</option><option value="1">태양 질량</option></select></td></tr>
         <tr><th></th><td><button class="sb-mx" data-k="0.1">×0.1</button><button class="sb-mx" data-k="0.5">×0.5</button><button class="sb-mx" data-k="2">×2</button><button class="sb-mx" data-k="10">×10</button></td></tr>
+        <tr><th>반지름</th><td><input class="sb-rnum" type="number" min="1" step="any"><span class="u">km</span></td></tr>
+        <tr><th>속력</th><td><input class="sb-vnum" type="number" min="0" step="any"><span class="u">km/s</span><button class="sb-vcirc" title="지금 거리에서 원 궤도가 되는 속력으로">원 궤도 속력</button></td></tr>
+        <tr><th>자전 주기</th><td><input class="sb-spin" type="number" step="any"><span class="u">시간</span></td></tr>
+        <tr><th>자전축 기울기</th><td><input class="sb-tilt" type="number" min="0" max="180" step="any"><span class="u">°</span></td></tr>
         <tr><th>별에서 거리</th><td><input class="sb-dnum" type="number" min="0.05" step="any"><span class="u">AU</span><button class="sb-dgo">옮기기</button></td></tr>
       </table>
       <input class="sb-mass" type="range" min="-3" max="3" step="0.05" value="0" hidden><div class="small sb-massv"></div>
@@ -1205,6 +1228,12 @@ function buildUI() {
   q('.sb-mnum').onchange = () => { if (!selected || selected.test) return; const m = +q('.sb-mnum').value * +q('.sb-munit').value; if (m > 0) setMass(selected, m); };
   q('.sb-munit').onchange = showNums;
   root.querySelectorAll('.sb-mx').forEach(x => x.onclick = () => { if (selected && !selected.test) setMass(selected, selected.m * +x.dataset.k); });
+  q('.sb-rnum').onchange = () => { if (!selected) return; const r = +q('.sb-rnum').value; if (r > 0) { selected.Rkm = r; rebuild(selected); toast(`${selected.ko}의 반지름을 ${fmt(r, 0)} km로 바꿨습니다. 질량이 같으면 밀도와 표면 중력이 달라집니다`); } };
+  q('.sb-vnum').onchange = () => { const b = selected; if (!b) return; const hs = hostStar(b), ref = hs && hs !== b ? hs.v : [0, 0, 0], rel = add(b.v, ref, -1), s = norm(rel), want = +q('.sb-vnum').value / O.KMS;
+    if (s > 0 && want >= 0) { b.v = add(ref, scale(rel, want / s)); sim.E0 = energy(); toast(want / s > 1.41 ? '탈출 속도를 넘었습니다: 별을 떠나 날아갑니다' : '속력을 바꿨습니다. 궤도 모양이 달라집니다'); } };
+  q('.sb-vcirc').onclick = () => { const b = selected, hs = b && hostStar(b); if (!b || !hs) return; const d = norm(add(b.r, hs.r, -1)); q('.sb-vnum').value = +(Math.sqrt(O.MU_SUN * sim.G * (hs.m + b.m) / d) * O.KMS).toPrecision(4); q('.sb-vnum').dispatchEvent(new Event('change')); };
+  q('.sb-spin').onchange = () => { if (selected) selected.spinH = +q('.sb-spin').value || null; };
+  q('.sb-tilt').onchange = () => { if (selected) { selected.tilt = Math.max(0, Math.min(180, +q('.sb-tilt').value)); toast('자전축이 많이 기울수록 극지방이 여름에 해를 오래 받아 계절 차이가 커집니다'); } };
   q('.sb-dgo').onclick = () => { if (!selected) return; const d = +q('.sb-dnum').value; if (d > 0) moveToOrbit(selected, d); };
   q('.sb-addsol').onchange = (e) => { const v = e.target.value; e.target.value = ''; if (v === 'all') Object.keys(EXTRA).forEach(n => byName(n) || addSolarBody(n)); else if (v) addSolarBody(v); };
   root.querySelectorAll('.sb-quick button').forEach(x => x.onclick = () => { quick(x.dataset.q); if (innerWidth < 760) root.querySelector('.sb-tabs button.on')?.click(); }); // on a phone, close the drawer so the result is visible
@@ -1227,6 +1256,9 @@ function buildUI() {
   root.querySelectorAll('.sb-tabs button').forEach(b => b.onclick = () => { const open = !b.classList.contains('on');
     root.querySelectorAll('.sb-tabs button').forEach(x => x.classList.toggle('on', open && x === b)); root.querySelectorAll('.sb-tab').forEach(t => t.hidden = !open || t.dataset.tab !== b.dataset.tab); root.classList.toggle('drawer', open); });
   q('.sb-selx').onclick = () => select(null);
+  const setG = (g) => { sim.G = Math.max(0, Math.min(10, g)); q('.sb-g').value = +sim.G.toFixed(2); q('.sb-gr').value = sim.G <= 0 ? 0 : 500 + Math.log10(sim.G) * 500; sim.E0 = energy(); };
+  q('.sb-g').onchange = () => setG(+q('.sb-g').value); q('.sb-gr').oninput = () => { const s = +q('.sb-gr').value; setG(s < 5 ? 0 : Math.pow(10, (s - 500) / 500)); };
+  q('.sb-coll').onchange = () => { sim.collide = q('.sb-coll').checked; };
   root.querySelectorAll('.sb-itabs button').forEach(b => b.onclick = () => { root.querySelectorAll('.sb-itabs button').forEach(x => x.classList.toggle('on', x === b)); root.querySelectorAll('.sb-ipane').forEach(p => p.hidden = p.dataset.it !== b.dataset.it); });
   const dock = (t) => { if (t === 'select') setTool(null); else if (t === 'add') setTool(view.tool === 'add' ? null : 'add'); else if (t === 'throw') setTool(view.tool === 'throw' ? null : 'throw');
     else if (t === 'belt') makeBelt(); else if (t === 'play') q('.sb-play').click(); else if (t === 'reset') restore(); };

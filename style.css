@@ -543,3 +543,5 @@ body.space .menu-pop .ground-only, body:not(.space) .menu-pop .space-only { disp
 .sb-line[hidden] { display: none; }
 
 .lbl.cluster { color: #F3E2A6; font-weight: 700; letter-spacing: .02em; }
+
+.sb-drawer .sb-gprop { grid-template-columns: 72px 70px 20px; }

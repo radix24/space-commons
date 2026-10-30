@@ -2015,6 +2015,7 @@ function readHash() {
   if (q.get('t')) { const t = Date.parse(q.get('t') + 'Z'); if (!isNaN(t)) { state.time = t; state.speed = 0; document.querySelectorAll('[data-speed]').forEach(x => x.classList.toggle('on', x.dataset.speed === '0')); } }
   if (q.get('lat')) { state.lat = +q.get('lat'); state.lon = +q.get('lon'); $('lat').value = state.lat; $('lon').value = state.lon; }
   if (q.get('az')) { view.az = +q.get('az'); view.alt = +q.get('alt'); view.fov = +q.get('fov') || view.fov; }
+  if (q.get('m') === 'g' && mode.space) setMode(false); // a ground link opened while flying returns to the ground
   if (q.get('m') === 's') {
     setMode(true);
     const p = PLANETS.find(x => x.name === q.get('at'));
@@ -3484,17 +3485,19 @@ function goJourney(p, t, focus) {
 // ---------- 23. faint stars when zoomed in: Gaia DR3 tiles to G = 12 (G2) ----------
 const gaia = { index: null, tiles: new Map(), loading: 0, group: new THREE.Group(), max: MOBILE ? 40 : 160 };
 sky.add(gaia.group);
-fetch('data/gaia/index.json').then(r => r.json()).then(j => gaia.index = j).catch(() => {});
-async function loadGaiaTile(b, i, key) {
-  const [d0, n, counts] = gaia.index.tiles[b], w = 360 / n, B = gaia.index.band; gaia.loading++;
+// two layers with the same tiling: G 8-12 (about 3 million) and, zoomed further in, G 12-13 (about 6 million more)
+const GAIA_LAYERS = [{ dir: 'gaia', m0: 8, k: 60, fov: MOBILE ? 15 : 30, lim: 8, index: null }, { dir: 'gaia13', m0: 12, k: 250, fov: MOBILE ? 4 : 8, lim: 12, index: null }];
+for (const L of GAIA_LAYERS) fetch(`data/${L.dir}/index.json`).then(r => r.json()).then(j => { L.index = j; if (L.dir === 'gaia') gaia.index = j; }).catch(() => {});
+async function loadGaiaTile(b, i, key, L) {
+  const [d0, n, counts] = L.index.tiles[b], w = 360 / n, B = L.index.band; gaia.loading++;
   const t = { pts: null, used: performance.now() }; gaia.tiles.set(key, t);
   try {
     if (!counts[i]) return;
-    const buf = await fetch(`data/gaia/${b}_${i}.bin`).then(r => r.arrayBuffer()), dv = new DataView(buf), N = buf.byteLength / 6;
+    const buf = await fetch(`data/${L.dir}/${b}_${i}.bin`).then(r => r.arrayBuffer()), dv = new DataView(buf), N = buf.byteLength / 6;
     const pos = new Float32Array(N * 3), mag = new Float32Array(N), col = new Float32Array(N * 3);
     for (let k = 0; k < N; k++) { const o = k * 6, ra = (i * w + dv.getUint16(o, true) / 65535 * w) * D2R, de = (d0 + dv.getUint16(o + 2, true) / 65535 * B) * D2R;
       pos[3 * k] = R_SKY * Math.cos(de) * Math.cos(ra); pos[3 * k + 1] = R_SKY * Math.cos(de) * Math.sin(ra); pos[3 * k + 2] = R_SKY * Math.sin(de);
-      mag[k] = 8 + dv.getUint8(o + 4) / 60; const c = bvToRGB(dv.getUint8(o + 5) / 60 - 0.5 - 0.1); col.set(c, 3 * k); } // BP-RP is a little redder than B-V
+      mag[k] = L.m0 + dv.getUint8(o + 4) / L.k; const c = bvToRGB(dv.getUint8(o + 5) / 60 - 0.5 - 0.1); col.set(c, 3 * k); } // BP-RP is a little redder than B-V
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('mag', new THREE.BufferAttribute(mag, 1)); g.setAttribute('color', new THREE.BufferAttribute(col, 3));
     t.pts = new THREE.Points(g, starMat); t.pts.frustumCulled = false; t.pts.renderOrder = 2; gaia.group.add(t.pts);
   } catch {} finally { gaia.loading--; }
@@ -3502,15 +3505,18 @@ async function loadGaiaTile(b, i, key) {
 function updateGaia() {
   const on = !!gaia.index && !s3d.far && view.fov < (MOBILE ? 15 : 30) && starMat.uniforms.limit.value > 8;
   gaia.group.visible = on; if (!on) return;
-  const inv = new THREE.Matrix4().copy(sky.matrixWorld).invert(), f = camFwd().applyMatrix4(inv).normalize();
-  const dec = Math.asin(f.z) * R2D, ra = (Math.atan2(f.y, f.x) * R2D + 360) % 360, r = view.fov * 0.5 * Math.max(1, innerWidth / innerHeight) + 3, B = gaia.index.band, now = performance.now();
   gaia.tiles.forEach(t => { if (t.pts) t.pts.visible = false; });
-  for (let b = 0; b < gaia.index.tiles.length; b++) { const [d0, n] = gaia.index.tiles[b]; if (d0 + B < dec - r || d0 > dec + r) continue;
-    const c = Math.cos(Math.min(89, Math.max(Math.abs(d0), Math.abs(d0 + B), Math.abs(dec)) - (Math.abs(dec) < Math.abs(d0) ? 0 : 0)) * D2R), half = Math.abs(dec) + r > 88 ? 180 : Math.min(180, r / Math.max(0.05, c)), w = 360 / n;
-    for (let i = 0; i < n; i++) { const mid = (i + 0.5) * w, dRA = Math.abs(((mid - ra + 540) % 360) - 180); if (dRA > half + w / 2) continue;
-      const key = b + '_' + i, t = gaia.tiles.get(key); if (t) { t.used = now; if (t.pts) t.pts.visible = true; } else if (gaia.loading < 6) loadGaiaTile(b, i, key); } }
+  for (const L of GAIA_LAYERS) if (L.index && view.fov < L.fov && starMat.uniforms.limit.value > L.lim) gaiaLayer(L);
   if (gaia.tiles.size > gaia.max) { const old = [...gaia.tiles.entries()].sort((a, b) => a[1].used - b[1].used).slice(0, gaia.tiles.size - gaia.max);
     for (const [k, t] of old) { if (t.pts) { gaia.group.remove(t.pts); t.pts.geometry.dispose(); } gaia.tiles.delete(k); } }
+}
+function gaiaLayer(L) {
+  const inv = new THREE.Matrix4().copy(sky.matrixWorld).invert(), f = camFwd().applyMatrix4(inv).normalize();
+  const dec = Math.asin(f.z) * R2D, ra = (Math.atan2(f.y, f.x) * R2D + 360) % 360, r = view.fov * 0.5 * Math.max(1, innerWidth / innerHeight) + 3, B = L.index.band, now = performance.now();
+  for (let b = 0; b < L.index.tiles.length; b++) { const [d0, n] = L.index.tiles[b]; if (d0 + B < dec - r || d0 > dec + r) continue;
+    const c = Math.cos(Math.min(89, Math.max(Math.abs(d0), Math.abs(d0 + B), Math.abs(dec)) - (Math.abs(dec) < Math.abs(d0) ? 0 : 0)) * D2R), half = Math.abs(dec) + r > 88 ? 180 : Math.min(180, r / Math.max(0.05, c)), w = 360 / n;
+    for (let i = 0; i < n; i++) { const mid = (i + 0.5) * w, dRA = Math.abs(((mid - ra + 540) % 360) - 180); if (dRA > half + w / 2) continue;
+      const key = L.dir + b + '_' + i, t = gaia.tiles.get(key); if (t) { t.used = now; if (t.pts) t.pts.visible = true; } else if (gaia.loading < 6) loadGaiaTile(b, i, key, L); } }
 }
 
 // ---------- 24. real horizon from terrain (G4): Copernicus DEM through Open-Meteo's elevation API ----------
@@ -3865,7 +3871,7 @@ function frame(now) {
   const atmo = gOn && $('t-refr').checked; atmoU.refractOn.value = atmo ? 1 : 0; atmoU.extK.value = atmo ? 0.25 : 0;
   if (gOn && bortle > 3) bg.lerp(new THREE.Color(0x2a2620), (bortle - 3) / 6 * 0.35 * (1 - skyDayK)); renderer.setClearColor(bg); // skyglow
   if (arStream) { renderer.setClearColor(bg, 0); skyDome.visible = false; nightGlow.visible = false; milkyWay.visible = false; }
-  starMat.uniforms.limit.value = Math.min(view.fov > 30 ? 8.5 : MOBILE ? 11 : 12.5, (gOn ? NELM[bortle - 1] : 6.4) + (view.fov > 30 ? 2.2 : 3) * zoom) - day * 5; // deeper when zoomed: Gaia tiles
+  starMat.uniforms.limit.value = Math.min(view.fov > 30 ? 8.5 : MOBILE ? 11 : view.fov < 8 ? 13.5 : 12.5, (gOn ? NELM[bortle - 1] : 6.4) + (view.fov > 30 ? 2.2 : 3) * zoom) - day * 5; // deeper when zoomed: Gaia tiles
   mwMat.uniforms.gain.value = 3.5 * dim * MWK[bortle - 1] / Math.max(1, Math.sqrt(70 / view.fov) * 0.6);
   if (mwMat.uniforms.photo.value) mwMat.uniforms.gain.value *= Math.max(0, Math.min(1, (view.fov - 6) / 24));
   const waveOn = $('wavelen').value !== 'visible'; if (waveOn) mwMat.uniforms.gain.value = 0.95; // the photo's own stars smear into blobs when magnified: let the real stars take over
