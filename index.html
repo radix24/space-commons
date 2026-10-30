@@ -5,18 +5,30 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Space Commons</title>
 <meta name="description" content="Space Commons — 브라우저에서 보는 별·NGC 천체·태양계 플라네타리움">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#070A14">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="style.css">
 <script type="importmap">
 { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
 </script>
 </head>
 <body>
+<div id="loader">
+  <img src="assets/sc-mark.svg" alt="" class="loader-mark">
+  <div class="wordmark">Space <b>Commons</b></div>
+  <div class="tagline">모두의 하늘 · A sky held in common</div>
+  <div class="loader-bar"><i></i></div>
+  <div id="loader-step">별 4만 개와 NGC/IC 천체 1만 2천 개를 불러오는 중</div>
+</div>
 <canvas id="c"></canvas>
 <div id="labels"></div>
 <div id="sel-ring" hidden></div>
 
 <div id="topbar">
-  <div id="brand">✦ Space <b>Commons</b></div>
+  <a id="brand" href="./"><img src="assets/sc-mark.svg" alt=""><span>Space <b>Commons</b></span></a>
   <input id="search" list="search-list" placeholder="검색: M31, NGC 7000, Jupiter, Sirius…" autocomplete="off">
   <datalist id="search-list"></datalist>
   <span id="status">카탈로그 불러오는 중…</span>
@@ -39,7 +51,8 @@
   </div>
   <div class="row toggles">
     <label><input type="checkbox" id="t-ground" checked> 지면</label>
-    <label><input type="checkbox" id="t-atm" checked> 대기</label>
+    <label><input type="checkbox" id="t-atm"> 낮 하늘</label>
+    <label><input type="checkbox" id="t-mw" checked> 은하수</label>
     <label><input type="checkbox" id="t-lines" checked> 별자리선</label>
     <label><input type="checkbox" id="t-grid"> 적도 격자</label>
     <label><input type="checkbox" id="t-dso" checked> NGC/IC</label>

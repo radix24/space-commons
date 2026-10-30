@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 // ---------- constants & helpers ----------
 const D2R = Math.PI / 180, R2D = 180 / Math.PI;
-const R_SKY = 1000, R_DSO = 980, R_PLANET = 900;
+const R_MW = 1050, R_SKY = 1000, R_DSO = 980, R_PLANET = 900;
 const CDN = 'https://cdn.jsdelivr.net/gh/';
 const URLS = {
   stars: CDN + 'ofrohn/d3-celestial@master/data/stars.8.json',
@@ -43,7 +43,7 @@ const canvas = $('c');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(70, 1, 0.1, 5000);
+const camera = new THREE.PerspectiveCamera(70, 1, 600, 1200) // tight near/far: planets are tiny at r=900 and need depth precision;
 const sky = new THREE.Group(); // equatorial frame -> horizontal frame
 sky.matrixAutoUpdate = false;
 scene.add(sky);
@@ -126,6 +126,25 @@ async function loadStars() {
   sky.add(starPoints);
   return js.features.length;
 }
+
+// ---------- Milky Way (galactic-coordinate panorama mapped onto the equatorial sphere) ----------
+const mwMat = new THREE.ShaderMaterial({
+  uniforms: { map: { value: null }, gain: { value: 1 } },
+  vertexShader: `varying vec3 vP; void main(){ vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: `uniform sampler2D map; uniform float gain; varying vec3 vP;
+    const mat3 EQ2GAL = mat3(-0.0548755604, 0.4941094279, -0.8676661490,
+                             -0.8734370902, -0.4448296300, -0.1980763734,
+                             -0.4838350155, 0.7469822445, 0.4559837762);
+    void main(){ vec3 g = EQ2GAL * normalize(vP);
+      float l = atan(g.y, g.x), b = asin(clamp(g.z, -1.0, 1.0));
+      vec2 uv = vec2(0.5 - l / 6.2831853, 0.5 + b / 3.1415927);
+      vec3 c = texture2D(map, uv).rgb;
+      gl_FragColor = vec4(pow(c, vec3(0.85)) * gain, 1.0); }`,
+  side: THREE.BackSide, depthTest: false, depthWrite: false, blending: THREE.AdditiveBlending, transparent: true,
+});
+const milkyWay = new THREE.Mesh(new THREE.SphereGeometry(R_MW, 96, 48), mwMat);
+milkyWay.renderOrder = 0; milkyWay.visible = false; sky.add(milkyWay);
+new THREE.TextureLoader().load('textures/4k_milky_way.jpg', (t) => { t.colorSpace = THREE.SRGBColorSpace; mwMat.uniforms.map.value = t; milkyWay.visible = $('t-mw').checked; });
 
 // ---------- constellation lines & grid ----------
 const linesGroup = new THREE.Group(); sky.add(linesGroup);
@@ -367,6 +386,12 @@ const PLANETS = [
   { name: 'Saturn', img: 'textures/2k_saturn.jpg', ko: '토성', R: 60268, pole: [40.59, 83.54], tex: () => banded(['#d9c08c', '#e9d9b0', '#c4a56e', '#f0e4c4'], 23, 10), ring: true, period: 0.44 },
   { name: 'Uranus', img: 'textures/2k_uranus.jpg', ko: '천왕성', R: 25559, pole: [257.31, -15.18], tex: () => banded(['#a6dbe0', '#b5e4e8', '#9ad0d6'], 29, 4), period: -0.72 },
   { name: 'Neptune', img: 'textures/2k_neptune.jpg', ko: '해왕성', R: 24764, pole: [299.36, 43.46], tex: () => banded(['#3f66c8', '#5379d6', '#3456b0', '#6a8fe0'], 31, 6), period: 0.67 },
+  // major moons (approximate: Meeus low-accuracy theory for the Galilean moons, circular orbit for Titan)
+  { name: 'Io', ko: '이오', parent: 'Jupiter', R: 1822, pole: [268.06, 64.5], tex: () => rocky('#d8c45a', ['#b0742a', '#f1e7a0', '#7a4a1c'], 41), period: 1.769 },
+  { name: 'Europa', ko: '유로파', parent: 'Jupiter', R: 1561, pole: [268.06, 64.5], tex: () => rocky('#d9cfbf', ['#a0785a', '#f4efe6'], 43), period: 3.551 },
+  { name: 'Ganymede', ko: '가니메데', parent: 'Jupiter', R: 2634, pole: [268.06, 64.5], tex: () => rocky('#8f8578', ['#5d544a', '#c9c2b5'], 47, 120), period: 7.155 },
+  { name: 'Callisto', ko: '칼리스토', parent: 'Jupiter', R: 2410, pole: [268.06, 64.5], tex: () => rocky('#5e554b', ['#3b342d', '#a59c8f'], 53, 400), period: 16.689 },
+  { name: 'Titan', ko: '타이탄', parent: 'Saturn', R: 2575, pole: [40.59, 83.54], tex: () => banded(['#d29a4a', '#c88c3c', '#ddb070'], 59, 3), period: 15.945 },
 ];
 const KM_AU = 149597870.7;
 const planetMat = (tex, emissive) => new THREE.ShaderMaterial({
@@ -384,7 +409,7 @@ for (const p of PLANETS) {
   p.mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 32), planetMat(p.tex(), p.emissive));
   p.mesh.renderOrder = 5;
   // real texture maps (Solar System Scope, CC BY 4.0); procedural map stays as fallback
-  texLoader.load(p.img, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; p.mesh.material.uniforms.map.value = t; });
+  if (p.img) texLoader.load(p.img, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; p.mesh.material.uniforms.map.value = t; });
   if (p.ring) {
     const rg = new THREE.RingGeometry(1.11, 2.33, 128, 1);
     const pos = rg.attributes.position, uv = rg.attributes.uv;
@@ -406,6 +431,28 @@ for (const p of PLANETS) {
   }
   planetGroup.add(p.mesh);
 }
+function moonOffsets(T, geo) { // equatorial offsets (AU) from the parent planet
+  const JD = T * 36525 + 2451545.0, d = JD - 2451545.0, sd = (x) => Math.sin(x * D2R), cd = (x) => Math.cos(x * D2R);
+  const V = 172.74 + 0.00111588 * d, M = 357.529 + 0.9856003 * d;
+  const N = 20.020 + 0.0830853 * d + 0.329 * sd(V), J = 66.115 + 0.9025179 * d - 0.329 * sd(V);
+  const A = 1.915 * sd(M) + 0.020 * sd(2 * M), B = 5.555 * sd(N) + 0.168 * sd(2 * N), K = J + A - B;
+  const R = 1.00014 - 0.01671 * cd(M) - 0.00014 * cd(2 * M), r = 5.20872 - 0.25208 * cd(N) - 0.00611 * cd(2 * N);
+  const Dl = Math.sqrt(r * r + R * R - 2 * r * R * cd(K)), psi = Math.asin(R / Dl * sd(K)) * R2D, t = d - Dl / 173;
+  const u = [163.8069 + 203.4058646 * t, 358.4140 + 101.2916335 * t, 5.7176 + 50.2345180 * t, 224.8092 + 21.4879800 * t].map(x => x + psi - B);
+  const rad = [5.9057, 9.3966, 14.9883, 26.3627].map(x => x * 71492 / KM_AU);
+  const out = {};
+  // e_away: Earth->Jupiter projected on Jupiter's equator; e_side: toward celestial west (Meeus X > 0)
+  const Pj = eqVec(268.06, 64.5), away = ecl2eq(geo.Jupiter).normalize();
+  const ea = away.clone().addScaledVector(Pj, -away.dot(Pj)).normalize();
+  const { ra } = vecToRaDec(away); const west = new THREE.Vector3(Math.sin(ra * D2R), -Math.cos(ra * D2R), 0);
+  const es = west.addScaledVector(Pj, -west.dot(Pj)).addScaledVector(ea, -west.dot(ea)).normalize();
+  ['Io', 'Europa', 'Ganymede', 'Callisto'].forEach((n, i) => out[n] = ea.clone().multiplyScalar(rad[i] * cd(u[i])).addScaledVector(es, rad[i] * sd(u[i])));
+  const P = eqVec(40.59, 83.54), n1 = new THREE.Vector3(0, 0, 1).cross(P).normalize(), n2 = P.clone().cross(n1);
+  const ut = 261.1582 + 22.57697855 * (JD - 2411093.0), rt = 1221870 / KM_AU;
+  out.Titan = n1.multiplyScalar(rt * cd(ut)).addScaledVector(n2, rt * sd(ut));
+  return out;
+}
+const rotOnly = new THREE.Matrix3();
 function updatePlanets() {
   const T = (jd(state.time) - 2451545.0) / 36525;
   const earth = helio('Earth', T);
@@ -414,8 +461,14 @@ function updatePlanets() {
   geo.Moon = moonGeo(T);
   for (const n of ['Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']) geo[n] = helio(n, T).sub(earth);
   const minAng = view.fov * D2R * 0.0045;
+  const mo = moonOffsets(T, geo); rotOnly.setFromMatrix4(sky.matrixWorld);
   for (const p of PLANETS) {
-    const g = geo[p.name], eq = ecl2eq(g), dist = g.length();
+    let g = geo[p.name];
+    if (p.parent) { // offset is equatorial; rotate back to ecliptic to share the geo[] frame
+      const o = mo[p.name];
+      g = geo[p.name] = geo[p.parent].clone().add(new THREE.Vector3(o.x, o.y * Math.cos(OBL) + o.z * Math.sin(OBL), -o.y * Math.sin(OBL) + o.z * Math.cos(OBL)));
+    }
+    const eq = ecl2eq(g), dist = g.length();
     const sunEq = ecl2eq(geo.Sun.clone().sub(g)).normalize();
     p.eq = eq.clone().normalize(); const rd = vecToRaDec(p.eq); p.ra = rd.ra; p.dec = rd.dec; p.dist = dist;
     p.angR = Math.atan(p.R / KM_AU / dist); // true angular radius (rad)
@@ -425,6 +478,12 @@ function updatePlanets() {
     p.phase = (1 + sunEq.dot(p.eq.clone().negate())) / 2; // illuminated fraction
     p.mesh.position.copy(world).multiplyScalar(R);
     p.mesh.scale.setScalar(R * Math.tan(Math.max(p.angR, minAng)));
+    if (p.parent) { // true 3D placement around the parent so moons pass in front of / behind it
+      const par = PLANETS.find(q => q.name === p.parent), k = R_PLANET / par.dist;
+      p.mesh.position.copy(par.mesh.position).add(ecl2eq(g.clone().sub(geo[p.parent])).applyMatrix3(rotOnly).multiplyScalar(k));
+      p.mesh.scale.setScalar(Math.max(k * p.R / KM_AU, R * Math.tan(minAng * 0.5)));
+      p.mesh.visible = view.fov < 3;
+    }
     const pole = eqVec(p.pole[0], p.pole[1]).transformDirection(sky.matrixWorld);
     p.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), pole);
     p.mesh.rotateY(((jd(state.time) / p.period) % 1) * Math.PI * 2);
@@ -490,7 +549,7 @@ function zoomBy(f) { view.fov = Math.max(0.0008, Math.min(110, view.fov * f)); }
 const tmp = new THREE.Vector3();
 function worldOf(o) { return o.planet ? o.p.world.clone() : o.v.clone().applyMatrix4(sky.matrixWorld).normalize(); }
 function toScreen(w) {
-  tmp.copy(w).multiplyScalar(500).project(camera);
+  tmp.copy(w).multiplyScalar(900).project(camera);
   if (tmp.z > 1 || tmp.z < -1) return null;
   return [(tmp.x + 1) / 2 * innerWidth, (1 - tmp.y) / 2 * innerHeight];
 }
@@ -502,7 +561,7 @@ function pick(x, y) {
   let best = null, bd = 18;
   const test = (w, mk, bonus = 0) => { if (w.dot(fwd) < cosLim) return; const s = toScreen(w); if (!s) return;
     const d = Math.hypot(s[0] - x, s[1] - y) - bonus; if (d < bd) { bd = d; best = mk; } };
-  for (const p of PLANETS) if (p.world) {
+  for (const p of PLANETS) if (p.world && p.mesh.visible) {
     const s = toScreen(p.world); const rpx = p.mesh.scale.x / R_PLANET / Math.tan(view.fov / 2 * D2R) * innerHeight / 2;
     if (s && Math.hypot(s[0] - x, s[1] - y) < Math.max(14, rpx)) return planetObj(p);
   }
@@ -528,7 +587,7 @@ function select(o) {
   let ra, dec;
   if (o.planet) {
     const p = o.p; ra = p.ra; dec = p.dec;
-    $('info-title').textContent = `${p.ko} (${p.name})`; $('info-sub').textContent = p.name === 'Sun' ? '항성' : p.name === 'Moon' ? '위성' : '행성';
+    $('info-title').textContent = `${p.ko} (${p.name})`; $('info-sub').textContent = p.name === 'Sun' ? '항성' : p.name === 'Moon' ? '위성' : p.parent ? `${PLANETS.find(q => q.name === p.parent).ko}의 위성 · 위치 근사` : '행성';
     row('지구로부터 거리', p.name === 'Moon' ? `${(p.dist * KM_AU).toFixed(0)} km` : `${p.dist.toFixed(3)} AU`);
     row('시직경', fmtAng(p.angR * 2 * R2D)); if (p.name !== 'Sun') row('위상 (밝은 면)', (p.phase * 100).toFixed(1) + '%'); row('반지름', `${p.R.toLocaleString()} km`);
   } else if (o.kindName === 'star') {
@@ -589,7 +648,7 @@ $('search').addEventListener('change', (e) => {
   const n = /^(ngc|ic)0*(\d+)$/.exec(q); if (n) q = n[1] + n[2];
   let mk = searchIndex.get(q);
   if (!mk) for (const [k, v] of searchIndex) if (k.startsWith(q)) { mk = v; break; }
-  if (mk) { const o = mk(); select(o); flyTo(o); e.target.blur(); } else $('status').textContent = `"${e.target.value}" 를 찾지 못했습니다`;
+  if (mk) { const o = mk(); if (o.planet && o.p.dist === undefined) return; select(o); flyTo(o); e.target.blur(); } else $('status').textContent = `"${e.target.value}" 를 찾지 못했습니다`;
 });
 
 // ---------- UI ----------
@@ -599,6 +658,7 @@ $('now').onclick = () => { state.time = Date.now(); };
 $('lat').onchange = (e) => state.lat = Math.max(-90, Math.min(90, +e.target.value || 0));
 $('lon').onchange = (e) => state.lon = +e.target.value || 0;
 $('t-lines').onchange = (e) => linesGroup.visible = e.target.checked;
+$('t-mw').onchange = (e) => milkyWay.visible = e.target.checked && !!mwMat.uniforms.map.value;
 $('t-grid').onchange = (e) => gridGroup.visible = e.target.checked;
 $('t-dso').onchange = (e) => { if (dsoPoints) dsoPoints.visible = e.target.checked; };
 document.querySelector('[data-speed="1"]').classList.add('on');
@@ -638,7 +698,7 @@ function drawLabels() {
         label(s[0] + Math.min(px / 2, 80) * 0.7, s[1], o.messier ? (view.fov < 20 && o.common ? `${o.messier} ${o.common}` : o.messier) : o.name, 'dso'); m++;
       }
     }
-    for (const p of PLANETS) if (p.world && vis(p.world) || (p.world && !groundOn)) { const s = toScreen(p.world); if (s) {
+    for (const p of PLANETS) if (!(p.parent && view.fov > 1.5) && (p.world && vis(p.world) || (p.world && !groundOn))) { const s = toScreen(p.world); if (s) {
       const rpx = p.mesh.scale.x / R_PLANET / Math.tan(view.fov / 2 * D2R) * innerHeight / 2; label(s[0] + rpx, s[1], p.ko, 'planet'); } }
   }
   if (groundOn) for (const c of cardinals) { const s = toScreen(c.w); if (s && c.w.dot(viewDir()) > 0) label(s[0], s[1], c.name, 'card'); }
@@ -667,6 +727,7 @@ function frame(now) {
   renderer.setClearColor(bg);
   const dim = 1 - day * 0.97;
   starMat.uniforms.limit.value = Math.min(8.5, 6.2 + 2.2 * zoom) - day * 5;
+  mwMat.uniforms.gain.value = 3.5 * dim / Math.max(1, Math.sqrt(70 / view.fov) * 0.6);
   starMat.uniforms.pr.value = renderer.getPixelRatio(); starMat.uniforms.dim.value = dim;
   dsoMat.uniforms.pxPerDeg.value = innerHeight / view.fov; dsoMat.uniforms.pr.value = renderer.getPixelRatio();
   dsoMat.uniforms.limit.value = 7 + 3.2 * zoom; dsoMat.uniforms.dim.value = Math.max(0.05, dim);
@@ -687,5 +748,6 @@ updateSkyMatrix(); requestAnimationFrame(frame);
   if (r[0].status === 'fulfilled') parts.push(`별 ${r[0].value.toLocaleString()}개`); else parts.push('별 카탈로그 실패');
   if (r[1].status === 'fulfilled') parts.push(`NGC/IC 천체 ${r[1].value.toLocaleString()}개`); else parts.push('OpenNGC 실패');
   st.textContent = parts.join(' · ');
+  document.body.classList.add('ready');
   buildSearch();
 })();

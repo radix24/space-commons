@@ -11,3 +11,5 @@
 조작: 드래그 회전 · 휠/핀치 확대 · 클릭 선택 · 더블클릭 이동·확대
 
 로컬 실행: `python -m http.server 8765` → http://localhost:8765
+
+브랜드 가이드: [BRAND.md](BRAND.md) · 은하수 파노라마·행성 텍스처 © Solar System Scope (CC BY 4.0)
