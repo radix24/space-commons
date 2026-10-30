@@ -332,3 +332,9 @@ body.sandbox #loader { display: none; }
 .sb-scenbtn { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 1px; } .sb-scenbtn span { font-size: 11.5px; color: var(--mute); }
 .sb-graph { width: 100%; height: 60px; border-radius: 6px; }
 .sb-center { color: var(--orbit); }
+/* no system fallback anywhere: form controls do not inherit fonts by default (Windows shows Gulim), and KaTeX \text{} has no Hangul glyphs */
+input, textarea, select, button, option, optgroup { font-family: var(--sans); }
+input[type=number], input[type=date], input[type=datetime-local] { font-family: var(--mono); }
+.katex .text, .katex .mord.text, .katex .textrm { font-family: "Pretendard Variable", Pretendard, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif !important; }
+.sb-level { margin: 8px 0 2px; font: 700 11.5px var(--mono); color: var(--orbit); }
+#status { flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* a long message must not wrap into a tall column and push the top bar down */

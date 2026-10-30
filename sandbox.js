@@ -436,8 +436,10 @@ function showRecords() {
 
 // ---------------- labs ----------------
 let lab = null, labCard = null; // { tick() }; the concept card that goes with the lab being opened
-const LABS = [['원 궤도와 탈출 속도', () => labCircular(), 'twobody'], ['활력 방정식 (vis-viva)', () => labVisViva(), 'visviva'], ['호만 전이 (지구→화성)', () => labHohmann(), 'hohmann'], ['발사 시기와 포크찹', () => labPorkchop(), 'lambert'],
-  ['플라이바이 설계', () => labFlyby(), 'flyby'], ['임무 설계 (여러 행성 경유)', () => labMission(), 'flyby'], ['라그랑주점과 트로이', () => labLagrange(), 'cr3bp']];
+const LABS = [['1단계 · 관찰'], ['행성들의 빠르기 비교', () => labSpeeds(), 'keplerlaws'], ['태양 질량을 바꾸면?', () => labSunMass(), 'gravity'],
+  ['2단계 · 측정'], ['케플러 2법칙: 같은 시간, 같은 넓이', () => labKepler2(), 'keplerlaws'], ['케플러 3법칙: 주기와 거리', () => labKepler3(), 'keplerlaws'], ['목성의 질량 재기', () => labJupiterMass(), 'gravity'],
+  ['3단계 · 계산'], ['원 궤도와 탈출 속도', () => labCircular(), 'twobody'], ['활력 방정식 (vis-viva)', () => labVisViva(), 'visviva'], ['호만 전이 (지구→화성)', () => labHohmann(), 'hohmann'],
+  ['4단계 · 설계'], ['발사 시기와 포크찹', () => labPorkchop(), 'lambert'], ['플라이바이 설계', () => labFlyby(), 'flyby'], ['임무 설계 (여러 행성 경유)', () => labMission(), 'flyby'], ['라그랑주점과 트로이', () => labLagrange(), 'cr3bp']];
 const SCENS = [['nosun', '태양이 사라진다면', '행성들은 그 순간의 속도로 곧게 날아갑니다'], ['sunbh', '태양이 블랙홀이라면', '같은 질량이면 궤도는 그대로, 빛과 열만 사라집니다'], ['sun2', '태양 질량 2배', '더 빨리, 더 좁게 돕니다'], ['sunhalf', '태양 질량 절반', '바깥 행성은 풀려납니다'],
   ['jupstar', '목성이 별이었다면', '0.3 태양질량 적색왜성과 쌍성계'], ['jupx10', '목성 질량 10배', '이웃 행성 궤도가 흔들립니다'], ['rogue', '떠돌이 별이 지나간다면', '태양계 바깥이 흐트러집니다'], ['roguebh', '블랙홀이 지나간다면', '10 태양질량, 30 km/s'],
   ['binary', '쌍성 둘레 행성', '케플러-16형, 안정한 궤도와 불안정한 궤도'], ['theia', '달의 탄생: 거대 충돌', '테이아가 원시 지구에 부딪혀 파편 원반이 생깁니다'], ['belt', '소행성대와 목성', '1,000년 흘려 보내며 커크우드 간극 찾기']];
@@ -451,7 +453,7 @@ function loadKatex() {
 }
 function renderTex(box) { loadKatex().then(() => { for (const e of box.querySelectorAll('.tex:not([data-done])')) { katex.render(e.textContent, e, { throwOnError: false }); e.dataset.done = 1; } }).catch(() => {}); }
 function labBox(title, sub) {
-  const box = root.querySelector('.sb-lab'); box.innerHTML = ''; box.hidden = false; lab = null;
+  const box = root.querySelector('.sb-lab'); box.innerHTML = ''; box.hidden = false; lab = null; view.extras.clear(); // drawings from the previous lab
   const x = el('button', 'x', '×'); x.onclick = () => { box.hidden = true; lab = null; }; box.append(x, el('h2', '', title)); if (sub) box.append(el('div', 'small', sub));
   if (labCard) { const c = labCard; box.append(btn('이 실습의 개념 카드 보기 →', () => openCards({ card: c, openLab: (n) => openLab(n) }), 'sb-concept-wide')); labCard = null; }
   renderTex(box); return box;
@@ -466,6 +468,98 @@ function results(box) { const t = el('table', 'sb-res'); box.append(t); return (
 function noteAndSave(box, name, values) { const n = el('textarea', 'sb-note'); n.placeholder = '메모 (선택)'; box.append(n); box.append(btn('기록에 저장', () => saveRecord(name, values()), 'sb-save')); }
 function freshSystem(jd = sim.t) { resetSolarSystem(jd); }
 function focus(name, distAU) { view.focus = name; const b = byName(name); if (!b) return; controls.target.set(...b.r); camera.position.set(b.r[0] + distAU * 0.25, b.r[1] - distAU * 0.8, b.r[2] + distAU * 0.55); }
+
+// ---------------- step 1 and 2 labs: observe, then measure ----------------
+function quiz(box, q, opts, ans, why) { // a small multiple-choice check inside a lab
+  const c = el('div', 'sb-check'); c.append(el('b', '', '확인 문제'), el('div', '', q)); const fb = el('div', 'small');
+  const row = el('div', 'sb-row'); opts.forEach((o, k) => row.append(btn(o, () => { fb.innerHTML = k === ans ? `<span style="color:var(--orbit)">정답입니다.</span> ${why}` : '<span style="color:#ff7aa2">다시 생각해 보세요.</span>'; }))); c.append(row, fb); box.append(c);
+}
+function lapCounter(names) { // unwrap each planet's longitude about the Sun to count laps and time one full orbit
+  const st = {}; for (const n of names) { const b = byName(n), S = byName('Sun'); st[n] = { a0: Math.atan2(b.r[1] - S.r[1], b.r[0] - S.r[0]), acc: 0, last: null, t0: sim.t, T: null }; }
+  return () => { const S = byName('Sun'); for (const n of names) { const b = byName(n), q = st[n]; if (!b) continue; const a = Math.atan2(b.r[1] - S.r[1], b.r[0] - S.r[0]);
+    if (q.last != null) { let d = a - q.last; if (d > Math.PI) d -= 2 * Math.PI; if (d < -Math.PI) d += 2 * Math.PI; q.acc += d; } q.last = a;
+    if (q.T == null && q.acc >= 2 * Math.PI) q.T = sim.t - q.t0; } return st; };
+}
+
+// step 1: which planet is fastest?
+function labSpeeds() {
+  freshSystem(); sim.playing = true; sim.speed = 20; focus('Sun', 4); const names = ['Mercury', 'Venus', 'Earth', 'Mars'], laps = lapCounter([...names, 'Jupiter']);
+  const box = labBox('행성들의 빠르기 비교', '1단계 · 관찰: 태양에서 가까운 행성과 먼 행성 중 어느 쪽이 더 빨리 돌까요?');
+  steps(box, ['그냥 지켜보세요. 시간이 1초에 20일씩 흐릅니다.', '아래 표에 행성마다 지금까지 돈 바퀴 수와, 한 바퀴를 다 돈 행성의 공전 주기가 나옵니다.', '수성이 몇 바퀴 도는 동안 지구는 몇 바퀴 도는지 비교해 보세요.']);
+  const set = results(box);
+  quiz(box, '태양에서 멀리 있는 행성일수록 한 바퀴 도는 데 걸리는 시간은?', ['짧다', '같다', '길다'], 2, '멀수록 길 자체도 길고 속도도 느려서 주기가 훨씬 길어집니다 (케플러 3법칙).');
+  noteAndSave(box, '행성들의 빠르기', () => Object.fromEntries(Object.entries(laps()).map(([n, q]) => [KO[n], q.T ? fmt(q.T, 1) + '일' : fmt(q.acc / (2 * Math.PI), 2) + '바퀴'])));
+  lab = { tick() { const st = laps(); set(Object.entries(st).map(([n, q]) => { const b = byName(n), S = byName('Sun'), d = norm(add(b.r, S.r, -1)), v = norm(add(b.v, S.v, -1)) * O.KMS;
+    return [`${KO[n]} (${fmt(d, 2)} AU)`, `${fmt(q.acc / (2 * Math.PI), 2)}바퀴 · 속도 ${fmt(v, 1)} km/s · 주기 ${q.T ? fmt(q.T, 1) + '일' : '재는 중'}`]; })); } };
+}
+
+// step 1: change the Sun's mass
+function labSunMass() {
+  freshSystem(); sim.playing = true; sim.speed = 20; focus('Sun', 5);
+  const box = labBox('태양 질량을 바꾸면?', '1단계 · 관찰: 태양이 더 무겁거나 가벼워지면 행성들은 어떻게 될까요?');
+  steps(box, ['아래 막대로 태양 질량을 바꿔 보세요. 행성들의 속도는 그대로인 채 끄는 힘만 바뀝니다.', '무거워지면 궤도가 안쪽으로 휘고, 가벼워지면 바깥으로 풀려 나가는지 보세요.', '"처음으로"를 누르면 다시 시작합니다.']);
+  const m = field(box, '태양 질량 (지금 = 1)', el('input')); m.type = 'range'; m.min = 0.2; m.max = 4; m.step = 0.05; m.value = 1; const out = el('b', '', '1.00'); box.append(out);
+  m.oninput = () => { const S = byName('Sun'); S.m = +m.value; out.textContent = (+m.value).toFixed(2); sim.E0 = energy(); };
+  const set = results(box);
+  quiz(box, '태양 질량이 절반이 되면 지구는?', ['더 안쪽으로 떨어진다', '더 먼 타원 궤도로 나가거나 탈출한다', '그대로 돈다'], 1, '끄는 힘이 줄어 지금 속도가 원 궤도 속도보다 커지므로, 바깥으로 늘어난 타원이 되고 절반 이하면 탈출합니다.');
+  noteAndSave(box, '태양 질량', () => ({ '태양 질량': m.value }));
+  lab = { tick() { const S = byName('Sun'); set(['Earth', 'Mars', 'Jupiter'].map(n => { const b = byName(n), e = O.elements(add(b.r, S.r, -1), add(b.v, S.v, -1), O.MU_SUN * S.m);
+    return [KO[n], e.e < 1 ? `이심률 ${fmt(e.e, 2)} · 근일점 ${fmt(e.rp, 2)} · 원일점 ${fmt(e.ra, 2)} AU` : '태양에서 풀려나 날아감']; })); } };
+}
+
+// step 2: Kepler's second law, measured
+function labKepler2() {
+  clearScene(); sim.bodies = [makeBody('Sun', [0, 0, 0], [0, 0, 0], { m: 1, kind: 'star' })]; sim.t = ctx.jdNow(); const e = 0.6, a = 1.6, rp = a * (1 - e), vp = Math.sqrt(O.MU_SUN * (2 / rp - 1 / a));
+  const P = makeBody('comet', [rp, 0, 0], [0, vp, 0], { m: 0, ko: '혜성', color: 0x9fe0e6 }); sim.bodies.push(P); buildMeshes(); sim.E0 = 0; snapshot(); sim.playing = true; sim.speed = 10; focus('Sun', 4.5);
+  const T = 2 * Math.PI * Math.sqrt(a ** 3 / O.MU_SUN), N = 12, marks = [], t0 = sim.t; let next = 0;
+  const box = labBox('케플러 2법칙: 같은 시간, 같은 넓이', '2단계 · 측정: 이심률 0.6인 혜성이 같은 시간 동안 쓸고 지나가는 넓이를 직접 잽니다.');
+  steps(box, [`혜성의 공전 주기 ${fmt(T / 365.25, 2)}년을 12등분해, 같은 시간마다 태양-혜성 선이 쓸고 지나간 부채꼴을 색칠합니다.`, '근일점 근처 부채꼴은 짧고 넓고, 원일점 근처는 길고 좁습니다. 아래 표의 넓이를 비교하세요.']);
+  const set = results(box), fan = new THREE.Group(); view.extras.add(fan);
+  quiz(box, '근일점 근처에서 혜성의 속도는?', ['가장 느리다', '가장 빠르다', '일정하다'], 1, '같은 시간에 같은 넓이를 쓸려면 태양에 가까울 때 더 빨리 움직여야 합니다. 각운동량 보존입니다.');
+  noteAndSave(box, '케플러 2법칙', () => ({ '부채꼴 넓이 (AU²)': marks.slice(1).map((m, k) => fmt(m.area, 4)).join(', ') }));
+  let path = [];
+  lab = { tick() { path.push([...P.r]); if (path.length > 4000) path.shift();
+    if (sim.t - t0 >= next * T / N && marks.length <= N) { const prev = marks[marks.length - 1]; let area = 0;
+      if (prev) { const seg = path.slice(prev.k); for (let i = 1; i < seg.length; i++) area += 0.5 * Math.abs(seg[i - 1][0] * seg[i][1] - seg[i - 1][1] * seg[i][0]);
+        const pts = [new THREE.Vector3(0, 0, 0), ...seg.map(q => new THREE.Vector3(...q))], idx = []; for (let i = 1; i < pts.length - 1; i++) idx.push(0, i, i + 1);
+        const g = new THREE.BufferGeometry().setFromPoints(pts); g.setIndex(idx); fan.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: marks.length % 2 ? 0x4fe3c1 : 0xffb454, transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false }))); }
+      marks.push({ k: path.length - 1, area }); next++; if (marks.length > N) { sim.playing = false; toast('한 바퀴를 다 돌았습니다. 넓이를 비교해 보세요'); } }
+    const ar = marks.slice(1).map(m => m.area), avg = ar.reduce((x, y) => x + y, 0) / (ar.length || 1);
+    set([['부채꼴 수', `${Math.max(0, marks.length - 1)} / ${N}`], ['넓이 (AU²)', ar.map(x => fmt(x, 3)).join(' · ') || '-'], ['평균과의 최대 차이', ar.length ? `${fmt(Math.max(...ar.map(x => Math.abs(x - avg) / avg)) * 100, 2)}%` : '-'], ['이론값 (타원 넓이 / 12)', `${fmt(Math.PI * a * a * Math.sqrt(1 - e * e) / N, 3)} AU²`]]); } };
+}
+
+// step 2: Kepler's third law from measured periods
+function labKepler3() {
+  freshSystem(); sim.playing = true; sim.speed = 50; focus('Sun', 7); const names = ['Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter'], laps = lapCounter(names);
+  const box = labBox('케플러 3법칙: 주기와 거리', '2단계 · 측정: 행성마다 한 바퀴 걸리는 시간 T와 평균 거리 a를 재서 T²과 a³을 비교합니다.');
+  steps(box, ['시간을 흘려 각 행성이 한 바퀴 도는 시간을 잽니다 (목성은 약 12년이라 오래 걸립니다).', '평균 거리 a는 가장 가까울 때와 가장 멀 때의 평균으로 잽니다.', '단위를 년과 AU로 쓰면 모든 행성에서 T²/a³이 거의 1이 됩니다.']);
+  const cv = el('canvas', 'sb-vec'); cv.width = 320; cv.height = 180; box.append(cv); const set = results(box), mm = {}; for (const n of names) mm[n] = [1e9, 0];
+  quiz(box, '태양에서 4 AU인 소행성의 공전 주기는?', ['4년', '8년', '16년', '64년'], 1, 'T² = a³ = 64 → T = 8년.');
+  noteAndSave(box, '케플러 3법칙', () => Object.fromEntries(names.map(n => { const q = laps()[n], a2 = (mm[n][0] + mm[n][1]) / 2; return [KO[n], q.T ? `T ${fmt(q.T / 365.25, 3)}년, a ${fmt(a2, 3)} AU, T²/a³ ${fmt((q.T / 365.25) ** 2 / a2 ** 3, 3)}` : '재는 중']; })));
+  lab = { tick() { const st = laps(), S = byName('Sun'); for (const n of names) { const d = norm(add(byName(n).r, S.r, -1)); mm[n][0] = Math.min(mm[n][0], d); mm[n][1] = Math.max(mm[n][1], d); }
+    const rows = names.map(n => { const q = st[n], a2 = (mm[n][0] + mm[n][1]) / 2, T = q.T ? q.T / 365.25 : null; return [KO[n], T ? `T ${fmt(T, 3)}년 · a ${fmt(a2, 3)} AU · T²/a³ = ${fmt(T * T / a2 ** 3, 3)}` : `재는 중 (${fmt(q.acc / (2 * Math.PI) * 100, 0)}%)`]; }); set(rows);
+    const g = cv.getContext('2d'), W = cv.width, H = cv.height; g.fillStyle = '#0a0f1c'; g.fillRect(0, 0, W, H); const X = (a2) => 30 + Math.log10(a2 / 0.3) / Math.log10(6 / 0.3) * (W - 40), Y = (T) => H - 20 - Math.log10(T / 0.15) / Math.log10(15 / 0.15) * (H - 30);
+    g.strokeStyle = '#4FE3C1'; g.beginPath(); g.moveTo(X(0.3), Y(0.3 ** 1.5)); g.lineTo(X(6), Y(6 ** 1.5)); g.stroke(); g.fillStyle = '#9aa5c0'; g.font = '10px "Pretendard Variable", "Malgun Gothic", sans-serif'; g.fillText('log a (AU) →', W - 70, H - 4); g.fillText('↑ log T (년) · 선: T = a^1.5', 4, 12);
+    for (const n of names) { const q = st[n]; if (!q.T) continue; const a2 = (mm[n][0] + mm[n][1]) / 2; g.fillStyle = '#ffb454'; g.beginPath(); g.arc(X(a2), Y(q.T / 365.25), 4, 0, 7); g.fill(); g.fillText(KO[n], X(a2) + 6, Y(q.T / 365.25) + 4); } } };
+}
+
+// step 2: weigh Jupiter with its moons
+function labJupiterMass() {
+  clearScene(); sim.t = ctx.jdNow(); const J = makeBody('Jupiter', [0, 0, 0], [0, 0, 0], { ko: '목성', m: MASS.Jupiter, kind: 'planet' }); sim.bodies = [J];
+  const MOONS = [['Io', '이오', 421700], ['Europa', '유로파', 671034], ['Ganymede', '가니메데', 1070412], ['Callisto', '칼리스토', 1882709]];
+  MOONS.forEach(([n, ko, akm], k) => { const a = akm / O.AU_KM, th = k * 1.7, v = Math.sqrt(O.MU_SUN * MASS.Jupiter / a); sim.bodies.push(makeBody(n, [a * Math.cos(th), a * Math.sin(th), 0], [-Math.sin(th) * v, Math.cos(th) * v, 0], { m: 0, ko, color: 0xd9c9b0 })); });
+  buildMeshes(); sim.E0 = 0; snapshot(); sim.playing = true; sim.speed = 0.25; focus('Jupiter', 0.03);
+  const st = {}; for (const [n] of MOONS) st[n] = { last: null, acc: 0, t0: sim.t, T: null, a: 0 };
+  const box = labBox('목성의 질량 재기', '2단계 · 측정: 1610년 갈릴레이가 본 네 위성의 주기와 거리로 목성의 무게를 잽니다.');
+  steps(box, ['네 위성이 한 바퀴 도는 시간 T와 목성까지 거리 a를 잽니다 (1초에 6시간씩 흐릅니다).', '케플러 3법칙을 뉴턴식으로 쓰면 <span class="tex">M = \\frac{4\\pi^2 a^3}{G T^2}</span>입니다.', '위성 넷에서 구한 질량이 같은지, 실제 값 1.898×10²⁷ kg와 맞는지 보세요.']);
+  const set = results(box);
+  quiz(box, '위성까지 거리가 같고 주기가 절반이라면 행성의 질량은?', ['절반', '2배', '4배', '같다'], 2, 'M ∝ a³/T²이므로 주기가 절반이면 4배입니다.');
+  noteAndSave(box, '목성의 질량', () => Object.fromEntries(MOONS.map(([n, ko]) => { const q = st[n]; return [ko, q.T ? `${fmt(4 * Math.PI ** 2 * (q.a * 1.496e11) ** 3 / (6.674e-11 * (q.T * 86400) ** 2) / 1e27, 3)}×10²⁷ kg` : '-']; })));
+  lab = { tick() { for (const [n] of MOONS) { const b = byName(n), q = st[n], d = add(b.r, J.r, -1), an = Math.atan2(d[1], d[0]); q.a = norm(d);
+      if (q.last != null) { let x = an - q.last; if (x > Math.PI) x -= 2 * Math.PI; if (x < -Math.PI) x += 2 * Math.PI; q.acc += x; } q.last = an; if (q.T == null && q.acc >= 2 * Math.PI) q.T = sim.t - q.t0; }
+    set(MOONS.map(([n, ko]) => { const q = st[n]; if (!q.T) return [ko, `재는 중 (${fmt(q.acc / (2 * Math.PI) * 100, 0)}%) · a ${fmt(q.a * O.AU_KM, 0)} km`];
+      const M = 4 * Math.PI ** 2 * (q.a * 1.496e11) ** 3 / (6.674e-11 * (q.T * 86400) ** 2); return [ko, `T ${fmt(q.T, 3)}일 · a ${fmt(q.a * O.AU_KM, 0)} km → M = ${fmt(M / 1e27, 3)}×10²⁷ kg`]; })); } };
+}
 
 // O-1 circular and escape speed
 function labCircular() {
@@ -516,8 +610,48 @@ function labVisViva() {
     g.fillStyle = '#c9d1e6'; g.font = '10px "Pretendard Variable", "Malgun Gothic", sans-serif'; g.fillText('속도 km/s ↑', 2, 10); g.fillText('거리 r (AU) →', W - 80, H - 4); g.fillText('초록: 공식 · 주황: 잰 값', 34, 22); } };
 }
 
-// O-2 Hohmann transfer Earth -> Mars
+// O-2 Hohmann transfer Earth -> Mars. Default: the textbook model (circular, coplanar, massless planets) so the
+// simulation must reproduce the formulas; the real solar system stays one click away.
 function labHohmann() {
+  const AE = 1, AM = O.BODY.Mars.a, mu = O.MU_SUN, h = O.hohmann(AE, AM), dv1 = h.dv1 * O.KMS, dv2 = h.dv2 * O.KMS, tof = h.tof;
+  const nM = Math.sqrt(mu / AM ** 3), nE = Math.sqrt(mu / AE ** 3), phase = Math.PI - nM * tof; // Mars must lead Earth by this much at launch
+  clearScene(); sim.bodies = []; sim.t = ctx.jdNow();
+  const circ = (name, a, th, opts) => makeBody(name, [a * Math.cos(th), a * Math.sin(th), 0], [-Math.sin(th) * Math.sqrt(mu / a), Math.cos(th) * Math.sqrt(mu / a), 0], opts);
+  sim.bodies.push(makeBody('Sun', [0, 0, 0], [0, 0, 0], { m: 1, kind: 'star' }));
+  sim.bodies.push(circ('Earth', AE, 0, { m: 0, ko: '지구', color: COL.Earth, kind: 'planet' }), circ('Mars', AM, phase + 1.1, { m: 0, ko: '화성', color: COL.Mars, kind: 'planet' }));
+  buildMeshes(); sim.E0 = energy(); snapshot(); sim.playing = true; sim.speed = 20; focus('Sun', 4.2);
+  const box = labBox('호만 전이: 지구에서 화성으로', '교과서 모형: 태양 둘레를 같은 평면에서 원으로 도는 지구(1 AU)와 화성(1.524 AU). 시뮬레이션이 수식과 같은 답을 내는지 확인합니다.');
+  steps(box, ['<b>발사 창 기다리기</b>: 화성이 지구보다 정확히 앞선 각도(아래 표의 "필요한 위상각")에 올 때까지 기다립니다. 지구와 화성이 다시 그 배치가 되는 데는 약 2년 2개월(회합 주기)이 걸립니다.',
+    `<b>Δv₁ 분사</b>: 지구 궤도 속도 29.78 km/s에 ${fmt(dv1, 2)} km/s를 더해 근일점 1 AU, 원일점 1.524 AU인 전이 타원에 오릅니다.`,
+    `<b>도착</b>: ${fmt(tof, 1)}일 뒤 원일점에서 화성을 만납니다. 그때 탐사선은 화성보다 ${fmt(dv2, 2)} km/s 느리므로, 그만큼 더 분사해야 화성 궤도에 머뭅니다.`]);
+  const set = results(box); let probe = null, launchT = 0, arrived = null, waiting = false;
+  const lon = (b) => Math.atan2(b.r[1], b.r[0]), lead = () => (((lon(byName('Mars')) - lon(byName('Earth'))) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+  const wait = btn('발사 창까지 기다리기', () => { waiting = true; sim.playing = true; sim.speed = 50; toast('화성이 알맞은 자리에 올 때까지 시간을 돌립니다'); });
+  const go = btn('발사 (Δv₁ 분사)', () => { const E = byName('Earth'), r = norm(E.r), t = [-E.r[1] / r, E.r[0] / r, 0];
+    probe = addProbe(E.r, scale(t, Math.sqrt(mu / r) + dv1 / O.KMS), { ko: '전이 탐사선' }); launchT = sim.t; arrived = null; sim.playing = true; sim.speed = 20; }, 'sb-go');
+  box.append(wait, go, btn('실제 태양계로 해 보기 (타원·기울기·행성 중력)', () => { labCard = 'hohmann'; labHohmannReal(); }));
+  deeper(box, `전이 궤도의 긴반지름 <span class="tex">a_t = \\frac{r_1 + r_2}{2}</span>, 분사량은 활력 방정식으로 <span class="tex">\\Delta v_1 = \\sqrt{\\mu\\left(\\frac{2}{r_1} - \\frac{1}{a_t}\\right)} - \\sqrt{\\frac{\\mu}{r_1}}</span>,
+    <span class="tex">\\Delta v_2 = \\sqrt{\\frac{\\mu}{r_2}} - \\sqrt{\\mu\\left(\\frac{2}{r_2} - \\frac{1}{a_t}\\right)}</span>, 비행 시간은 전이 타원 주기의 절반 <span class="tex">t = \\pi\\sqrt{a_t^3/\\mu}</span>.
+    도착 때 만나려면 출발 순간 화성이 <span class="tex">\\theta = \\pi - n_M t</span> = ${fmt(phase * 180 / Math.PI, 1)}° 앞서 있어야 합니다(<span class="tex">n_M</span>은 화성의 평균 각속도).
+    이 모형에서는 지구와 화성의 질량을 0으로 두어 태양만 중력을 냅니다. 그래서 N체 적분 결과가 수식과 소수 둘째 자리까지 같아야 하고, 남는 차이는 적분 오차입니다. 실제 태양계 버튼을 누르면 타원 궤도, 궤도면 기울기, 행성 중력 때문에 답이 달라지는 것을 볼 수 있습니다.`);
+  noteAndSave(box, '호만 전이 (교과서 모형)', () => ({ 'Δv₁ 수식': fmt(dv1, 3), 'Δv₂ 수식': fmt(dv2, 3), '비행 시간 수식 (일)': fmt(tof, 1), 'Δv₂ 측정': arrived ? fmt(arrived.dv2, 3) : '-', '비행 시간 측정 (일)': arrived ? fmt(arrived.t, 1) : '-', '화성과 거리 (km)': arrived ? fmt(arrived.miss, 0) : '-' }));
+  lab = { tick() {
+    const need = phase, now = lead(), diff = ((now - need + 3 * Math.PI) % (2 * Math.PI)) - Math.PI;
+    if (waiting && Math.abs(diff) < 0.004 * Math.max(1, sim.speed / 20)) { waiting = false; sim.playing = false; toast('발사 창입니다. "발사"를 누르세요'); }
+    if (waiting && Math.abs(diff) < 0.15) sim.speed = 5;
+    if (probe && !arrived) { const r = norm(probe.r), vr = dot(probe.r, probe.v) / r;
+      if (sim.t - launchT > tof * 0.5 && vr <= 0) { // aphelion reached
+        const M = byName('Mars'), vM = M.v, dv2m = norm(add(vM, probe.v, -1)) * O.KMS; arrived = { t: sim.t - launchT, dv2: dv2m, miss: norm(add(M.r, probe.r, -1)) * O.AU_KM, r };
+        sim.playing = false; toast('원일점에 도착했습니다. 수식과 비교해 보세요'); } }
+    const rows = [['', '수식 · 시뮬레이션'], ['Δv₁ (출발)', `${fmt(dv1, 3)} km/s · ${probe ? fmt(dv1, 3) + ' km/s (분사한 값)' : '-'}`],
+      ['비행 시간', `${fmt(tof, 1)}일 · ${arrived ? fmt(arrived.t, 1) + '일' : probe ? fmt(sim.t - launchT, 1) + '일째' : '-'}`],
+      ['원일점 거리', `${fmt(AM, 3)} AU · ${arrived ? fmt(arrived.r, 4) + ' AU' : '-'}`], ['Δv₂ (도착)', `${fmt(dv2, 3)} km/s · ${arrived ? fmt(arrived.dv2, 3) + ' km/s' : '-'}`],
+      ['도착 때 화성과 거리', arrived ? `${fmt(arrived.miss, 0)} km` : '-'], ['필요한 위상각 / 지금', `${fmt(need * 180 / Math.PI, 1)}° / ${fmt(now * 180 / Math.PI, 1)}°`]];
+    set(rows); } };
+}
+
+// O-2 Hohmann transfer Earth -> Mars
+function labHohmannReal() {
   freshSystem(); sim.playing = false; sim.speed = 10; focus('Sun', 4);
   const box = labBox('호만 전이: 지구에서 화성으로', '연료를 가장 적게 쓰는 두 번의 분사로 화성까지 갑니다.');
   const h = O.hohmann(1, O.BODY.Mars.a), dv1 = h.dv1 * O.KMS, dv2 = h.dv2 * O.KMS, tof = h.tof, nM = 360 / (Math.sqrt(O.BODY.Mars.a ** 3) * 365.25), phase = 180 - nM * tof;
@@ -754,7 +888,7 @@ function buildUI() {
       <div class="sb-tabs"><button data-tab="learn" class="on">우주 더 알아보기</button><button data-tab="make">만들기</button><button data-tab="scen">시나리오</button><button data-tab="view">보기</button></div>
       <div class="sb-tab" data-tab="learn">
         <button class="sb-bigcard"><b>개념으로 배우기</b><span>하늘의 좌표부터 은하 진화까지 46개 개념 · 직접 조작하는 그림과 확인 문제</span></button>
-        <div class="small sb-sub">실습: 샌드박스에서 직접 해 보기 (오른쪽 "개념"을 누르면 관련 개념 카드가 열립니다)</div>
+        <div class="small sb-sub">실습: 1단계부터 차례로 해 보세요. 오른쪽 "개념"은 관련 개념 카드를 엽니다</div>
         <div class="sb-labs"></div>
         <button class="sb-recbtn">실습 기록지</button>
       </div>
@@ -809,7 +943,7 @@ function buildUI() {
   q('.sb-bh').onclick = () => selected && toBlackHole(selected);
   q('.sb-add').onclick = () => setTool(view.tool === 'add' ? null : 'add');
   scene.add(hzGroup, rocheGroup);
-  for (const [t, f, card] of LABS) { const row = el('div', 'sb-labrow'), go = btn(t, () => { labCard = card; f(); }), c = btn('개념', () => openCards({ card, openLab: (n) => openLab(n) }), 'sb-concept'); c.title = '관련 개념 카드 열기'; row.append(go, c); q('.sb-labs').append(row); }
+  for (const [t, f, card] of LABS) { if (!f) { q('.sb-labs').append(el('div', 'sb-level', t)); continue; } const row = el('div', 'sb-labrow'), go = btn(t, () => { labCard = card; f(); }), c = btn('개념', () => openCards({ card, openLab: (n) => openLab(n) }), 'sb-concept'); c.title = '관련 개념 카드 열기'; row.append(go, c); q('.sb-labs').append(row); }
   q('.sb-bigcard').onclick = () => openCards({ openLab: (n) => openLab(n) });
   root.querySelectorAll('.sb-tabs button').forEach(b => b.onclick = () => { root.querySelectorAll('.sb-tabs button').forEach(x => x.classList.toggle('on', x === b)); root.querySelectorAll('.sb-tab').forEach(t => t.hidden = t.dataset.tab !== b.dataset.tab); });
   for (const [k, t, d] of SCENS) { const b = el('button', 'sb-scenbtn', `<b>${t}</b><span>${d}</span>`); b.onclick = () => scenario(k); q('.sb-scens').append(b); }
@@ -829,4 +963,4 @@ export function openSandbox(context) {
   root.hidden = false; root.rs(); lastNow = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(loop);
 }
 export function closeSandbox() { if (!root) return; root.hidden = true; cancelAnimationFrame(raf); }
-export function openLab(name) { labCard = { circular: 'twobody', visviva: 'visviva', hohmann: 'hohmann', porkchop: 'lambert', flyby: 'flyby', mission: 'flyby', lagrange: 'cr3bp' }[name] || null; ({ circular: labCircular, visviva: labVisViva, hohmann: labHohmann, porkchop: labPorkchop, flyby: labFlyby, mission: labMission, lagrange: labLagrange })[name]?.(); }
+export function openLab(name) { labCard = { speeds: 'keplerlaws', sunmass: 'gravity', kepler2: 'keplerlaws', kepler3: 'keplerlaws', jupiter: 'gravity', circular: 'twobody', visviva: 'visviva', hohmann: 'hohmann', porkchop: 'lambert', flyby: 'flyby', mission: 'flyby', lagrange: 'cr3bp' }[name] || null; ({ speeds: labSpeeds, sunmass: labSunMass, kepler2: labKepler2, kepler3: labKepler3, jupiter: labJupiterMass, circular: labCircular, visviva: labVisViva, hohmann: labHohmann, porkchop: labPorkchop, flyby: labFlyby, mission: labMission, lagrange: labLagrange })[name]?.(); }

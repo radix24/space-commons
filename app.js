@@ -2595,27 +2595,28 @@ async function loadArt() {
 }
 // Korean sky culture: the Cheonsang Yeolcha Bunyajido itself (woodcut print, public domain), laid on the sky.
 // Carved in 1395 (Joseon) from an older Goguryeo-era rubbing; as a polar equidistant map its stars fit the sky of about 600 CE best (tools/make_cheonsang.py).
-const csGroup = new THREE.Group(); csGroup.visible = false; sky.add(csGroup); let csLoaded = false;
+const csGroup = new THREE.Group(); csGroup.visible = false; sky.add(csGroup); let csLoaded = '';
 function precessDeg(ra, dec, years) { // rotation about the ecliptic pole by general precession in longitude
   const e = 23.44 * D2R, r = ra * D2R, d = dec * D2R, x = Math.cos(d) * Math.cos(r), y = Math.cos(d) * Math.sin(r), z = Math.sin(d);
   const ye = y * Math.cos(e) + z * Math.sin(e), ze = -y * Math.sin(e) + z * Math.cos(e), L = 50.29 / 3600 * years * D2R;
   const x2 = x * Math.cos(L) - ye * Math.sin(L), y2 = x * Math.sin(L) + ye * Math.cos(L), y3 = y2 * Math.cos(e) - ze * Math.sin(e), z3 = y2 * Math.sin(e) + ze * Math.cos(e);
   return [(Math.atan2(y3, x2) * R2D + 360) % 360, Math.asin(Math.max(-1, Math.min(1, z3))) * R2D];
 }
-async function loadCheonsang() {
-  csLoaded = true; const f = await fetch('data/cheonsang.json').then(r => r.json()), NR = 96, ND = 72, pos = [], uv = [], idx = [], half = f.size / 2;
+async function loadCheonsang(ver) {
+  csLoaded = ver; csGroup.clear(); const f = await fetch(`data/${ver}.json`).then(r => r.json()), NR = 96, ND = 72, pos = [], uv = [], idx = [], half = f.size / 2;
   for (let j = 0; j <= ND; j++) for (let i = 0; i <= NR; i++) { const ra = i / NR * 360, dec = 90 - j / ND * 143, [pr, pdc] = precessDeg(ra, dec, f.years), pd = 90 - pdc, a = (f.mir * pr + f.rot) * D2R;
     const v = eqVec(ra, dec, R_SKY * 0.994); pos.push(v.x, v.y, v.z); uv.push((half + f.k * pd * Math.cos(a)) / f.size, 1 - (half - f.k * pd * Math.sin(a)) / f.size); }
   for (let j = 0; j < ND; j++) for (let i = 0; i < NR; i++) { const k = j * (NR + 1) + i; idx.push(k, k + 1, k + NR + 1, k + 1, k + NR + 2, k + NR + 1); }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx);
-  const tex = new THREE.TextureLoader().load('assets/cheonsang.webp'); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+  const tex = new THREE.TextureLoader().load(`assets/${ver}.webp`); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
   const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.6, depthTest: false, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending }));
   m.frustumCulled = false; m.renderOrder = 1; csGroup.add(m);
 }
 function updateArt() {
   const korean = $('skyculture').value === 'korean';
-  const kon = $('t-art').checked && korean && !s3d.far; csGroup.visible = kon; if (kon && !csLoaded) { loadCheonsang(); $('status').textContent = '천상열차분야지도 (조선 태조 4년 1395년 각석, 목판본 인쇄, 퍼블릭 도메인)를 겹칩니다. 고구려 시대 원본을 바탕으로 해서 별 위치가 서기 600년 무렵 하늘과 가장 잘 맞고, 지금 하늘과는 조금씩 어긋납니다.'; }
-  if (kon) csGroup.children.forEach(m => m.material.opacity = 0.38 * Math.max(0, Math.min(1, (view.fov - 4) / 16)));
+  $('csver').hidden = !korean;
+  const kon = $('t-art').checked && korean && !s3d.far, ver = $('csver').value; csGroup.visible = kon; if (kon && csLoaded !== ver) { loadCheonsang(ver); if (ver === 'cheonmundo') $('status').textContent = '채색 천문도 (조선 필사본, 퍼블릭 도메인, 인터넷 아카이브)를 겹칩니다. 먹선은 밝게, 붉은 별점은 그대로 바꿔 그렸습니다. 손으로 그린 지도라 별 위치가 군데군데 어긋납니다.'; else $('status').textContent = '천상열차분야지도 (조선 태조 4년 1395년 각석, 목판본 인쇄, 퍼블릭 도메인)를 겹칩니다. 고구려 시대 원본을 바탕으로 해서 별 위치가 서기 600년 무렵 하늘과 가장 잘 맞고, 지금 하늘과는 조금씩 어긋납니다.'; }
+  if (kon) csGroup.children.forEach(m => m.material.opacity = (ver === 'cheonmundo' ? 0.26 : 0.38) * Math.max(0, Math.min(1, (view.fov - 4) / 16)));
   const on = $('t-art').checked && !s3d.far && !korean; artGroup.visible = on; if (!on) return; if (!artLoaded) loadArt();
   const op = 0.3 * Math.max(0, Math.min(1, (view.fov - 6) / 20));
   for (const m of artGroup.children) m.material.uniforms.op.value = op;
@@ -2838,6 +2839,7 @@ startTranslator();
 updateSkyMatrix(); requestAnimationFrame(frame);
 (async () => {
   const st = $('status'); const parts = [];
+  new MutationObserver(() => { st.title = st.textContent; }).observe(st, { childList: true, characterData: true, subtree: true });
   const LOADING = ['우주를 당신에게 가져오는 중', '별 4만 1천 개를 하늘에 거는 중', '은하 1만 2천 개의 먼지를 터는 중', '보이저 1호에게 안부를 묻는 중',
     '달을 지구 쪽으로 돌려놓는 중', '토성 고리를 닦는 중', '외계행성 6천 개의 주소를 확인하는 중', '다누리와 교신하는 중', '화성 탐사차를 깨우는 중', '은하수를 펼치는 중'];
   let li = Math.floor(Math.random() * LOADING.length); $('loader-step').textContent = LOADING[li];
