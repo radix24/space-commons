@@ -1,19 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Space Commons">
   <title>Space Commons</title>
   <defs>
-    <linearGradient id="sc-dome-l" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#8B7CFF"/>
-      <stop offset="1" stop-color="#2B2F7A"/>
+    <linearGradient id="scw-sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1A1E5C"/>
+      <stop offset=".62" stop-color="#4B3FC4"/>
+      <stop offset="1" stop-color="#8B6CF2"/>
     </linearGradient>
+    <clipPath id="scw-win"><rect x="4" y="4" width="56" height="56" rx="17"/></clipPath>
   </defs>
-  <!-- orbit, far half: passes behind the dome -->
-  <path d="M5.69 43.58 A28 10 -20 0 1 58.31 24.42" fill="none" stroke="#4FE3C1" stroke-width="2.8" stroke-linecap="round" opacity=".5"/>
-  <!-- the sky dome seen from the ground -->
-  <path d="M12 42 A20 20 0 0 1 52 42 Z" fill="url(#sc-dome-l)"/>
-  <!-- shared horizon -->
-  <path d="M7 42 H57" stroke="#14183A" stroke-width="3.4" stroke-linecap="round"/>
-  <!-- orbit, near half: crosses in front of the dome and the horizon -->
-  <path d="M58.31 24.42 A28 10 -20 0 1 5.69 43.58" fill="none" stroke="#4FE3C1" stroke-width="2.8" stroke-linecap="round"/>
-  <!-- the traveller on the orbit -->
-  <circle cx="49.89" cy="36.21" r="3.6" fill="#14183A"/>
+  <g clip-path="url(#scw-win)">
+    <!-- night sky through the window, glowing toward the horizon -->
+    <rect x="4" y="4" width="56" height="56" fill="url(#scw-sky)"/>
+    <g fill="#EEF0FA">
+      <circle cx="16" cy="15" r="1"/><circle cx="25" cy="24" r=".8" opacity=".7"/><circle cx="51" cy="29" r=".9" opacity=".8"/><circle cx="12" cy="30" r=".7" opacity=".6"/>
+    </g>
+    <!-- an orbit crossing the sky, and the traveller on it -->
+    <path d="M1 34 Q30 6 63 20" fill="none" stroke="#4FE3C1" stroke-width="2.3" stroke-dasharray=".1 4.6" stroke-linecap="round"/>
+    <circle cx="43.5" cy="15.6" r="3.4" fill="#EEF0FA"/>
+    <!-- shared ground: far ridge, near hill -->
+    <path d="M0 45 Q13 36 27 42 T64 38 V64 H0Z" fill="#121538"/>
+    <path d="M0 52 Q22 43 42 49 T64 48 V64 H0Z" fill="#090B1A"/>
+  </g>
 </svg>
