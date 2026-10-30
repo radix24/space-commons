@@ -108,6 +108,15 @@ const ATMO_GLSL = `
   vec4 skyClip(vec3 p) { vec4 w = modelMatrix * vec4(p, 1.0); float r = length(w.xyz); w.xyz = refractDir(w.xyz / r) * r; return projectionMatrix * viewMatrix * w; }
   float airmass(vec3 p) { float s = max(normalize((modelMatrix * vec4(p, 1.0)).xyz).y, 0.0); return 1.0 / (s + 0.025 * exp(-11.0 * s)); }
 `;
+// sky lines (constellations, boundaries, grid) bend with the same refraction as the stars, or their corners miss the stars
+function skyLineMat(color, opacity) {
+  const m = new THREE.ShaderMaterial({ uniforms: { col: { value: new THREE.Color(color) }, ...atmoU },
+    vertexShader: `${ATMO_GLSL}
+ void main(){ gl_Position = skyClip(position); }`,
+    fragmentShader: `uniform vec3 col; uniform float opa; void main(){ gl_FragColor = vec4(col, opa); }`,
+    transparent: true, depthTest: false, depthWrite: false });
+  m.opacity = opacity; m.uniforms.opa = { get value() { return m.opacity; } }; return m;
+}
 function refractVec(d) { // JS twin of refractDir, for labels and picking
   const h = Math.asin(Math.max(-1, Math.min(1, d.y))) * R2D; if (h < -2) return d;
   const R = 1.02 / Math.tan((h + 10.3 / (h + 5.11)) * D2R) / 60, h2 = (h + R) * D2R, k = Math.hypot(d.x, d.z) || 1e-9;
@@ -211,7 +220,7 @@ async function loadLines() {
       pts.push(a.x, a.y, a.z, b.x, b.y, b.z);
     }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-  const l = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0x3a5a92, transparent: true, opacity: 0.55, depthTest: false }));
+  const l = new THREE.LineSegments(g, skyLineMat(0x3a5a92, 0.55));
   l.frustumCulled = false; l.renderOrder = 1; linesGroup.add(l);
   if (cj) for (const f of cj.features) {
     let [ra, dec] = f.geometry.coordinates; if (ra < 0) ra += 360;
@@ -229,7 +238,7 @@ async function loadLines() {
       }
     }
     const bg2 = new THREE.BufferGeometry(); bg2.setAttribute('position', new THREE.Float32BufferAttribute(bp, 3));
-    const bl = new THREE.LineSegments(bg2, new THREE.LineBasicMaterial({ color: 0x7a6a3a, transparent: true, opacity: 0.45, depthTest: false }));
+    const bl = new THREE.LineSegments(bg2, skyLineMat(0x7a6a3a, 0.45));
     bl.frustumCulled = false; bl.renderOrder = 1; boundsGroup.add(bl);
   } catch { /* boundaries are optional */ }
 }
@@ -266,7 +275,7 @@ async function loadKorean() { // 천상열차분야지도 (Stellarium "korean" s
     koreanLabels.push({ v, name: EN ? c.en : c.ko.replace(/\(.*\)/, ''), hanja: (c.ko.match(/\((.*)\)/) || [])[1] || '', n: used.length, mansion: big });
   }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-  const l = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0xc9925a, transparent: true, opacity: 0.6, depthTest: false }));
+  const l = new THREE.LineSegments(g, skyLineMat(0xc9925a, 0.6));
   l.frustumCulled = false; l.renderOrder = 1; koreanGroup.add(l);
   return koreanLabels.length;
 }
@@ -279,7 +288,7 @@ const gridGroup = new THREE.Group(); gridGroup.visible = false; sky.add(gridGrou
   for (let ra = 0; ra < 360; ra += 15) for (let dec = -88; dec < 88; dec += 2) {
     const a = eqVec(ra, dec, R_SKY), b = eqVec(ra, dec + 2, R_SKY); pts.push(a.x, a.y, a.z, b.x, b.y, b.z); }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-  const l = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0x2a5560, transparent: true, opacity: 0.5, depthTest: false }));
+  const l = new THREE.LineSegments(g, skyLineMat(0x2a5560, 0.5));
   l.frustumCulled = false; gridGroup.add(l);
 })();
 
@@ -2631,6 +2640,21 @@ function updateArt() {
   for (const m of artGroup.children) m.material.uniforms.op.value = op;
 }
 
+// ---------- 26. analemma: the Sun at this clock time on every day of the year ----------
+const anaGroup = new THREE.Group(); anaGroup.visible = false; scene.add(anaGroup); let anaKey = '';
+function updateAnalemma() {
+  const on = !mode.space && $('t-analemma').checked; anaGroup.visible = on; if (!on) return;
+  const d = new Date(state.time), key = `${d.getHours()}:${d.getMinutes()}|${state.lat.toFixed(2)},${state.lon.toFixed(2)}|${d.getFullYear()}`; if (key === anaKey) return; anaKey = key;
+  anaGroup.clear(); const pts = [], marks = [];
+  for (let k = 0; k <= 366; k++) { const t = new Date(d.getFullYear(), 0, 1 + k, d.getHours(), d.getMinutes()).getTime(), v = sunMoonAt(t).Sun, { ra, dec } = vecToRaDec(v);
+    const H = (lstDeg(t, state.lon) - ra) * D2R, de = dec * D2R, p = state.lat * D2R, alt = Math.asin(Math.sin(p) * Math.sin(de) + Math.cos(p) * Math.cos(de) * Math.cos(H));
+    const az = Math.atan2(-Math.cos(de) * Math.sin(H), Math.sin(de) * Math.cos(p) - Math.cos(de) * Math.cos(H) * Math.sin(p)) * R2D;
+    const w = viewDir((az + 360) % 360, alt * R2D).multiplyScalar(R_SKY * 0.99); pts.push(w); if (new Date(t).getDate() === 1) marks.push([w, new Date(t).getMonth() + 1]); }
+  anaGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0xffd27a, transparent: true, opacity: 0.8, depthTest: false })));
+  const g = new THREE.BufferGeometry().setFromPoints(marks.map(m => m[0])); anaGroup.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffd27a, size: 5, sizeAttenuation: false, depthTest: false })));
+  anaGroup.children.forEach(c => { c.renderOrder = 4; c.frustumCulled = false; }); anaGroup.userData.marks = marks;
+}
+
 // ---------- 11. observing list (kept in this browser) ----------
 const OBS_KEY = 'space-commons-obslist';
 const loadObs = () => { try { return JSON.parse(localStorage.getItem(OBS_KEY)) || []; } catch { return []; } };
@@ -2762,6 +2786,7 @@ function drawLabels() {
     for (const o of out) label(o.p[0], o.p[1], o.name && o.b.n ? `${o.name} 외 ${o.b.n}기` : o.name, 'sat' + (o.s.visible ? ' lit' : '') + (o.s.iss ? ' iss' : '') + (o.s.korea ? ' kr' : ''));
   }
   if (mode.space) starLabels();
+  if (anaGroup.visible && anaGroup.userData.marks) for (const [w, m] of anaGroup.userData.marks) { const sc = toScreen(w.clone().normalize()); if (sc && w.clone().normalize().dot(camFwd()) > 0) label(sc[0], sc[1], `${m}월`, 'planet'); }
   if (gOn) for (const c of cardinals) { const s = toScreen(c.w); if (s && c.w.dot(camFwd()) > 0) label(s[0], s[1], c.name, 'card'); }
   for (let i = used; i < pool.length; i++) pool[i].style.display = 'none';
   const ring = $('sel-ring');
@@ -2777,7 +2802,7 @@ function frame(now) {
   updateSkyMatrix();
   if (mode.space) { computeHelio(); stepSpaceFlight(now); spaceKeys(dt); }
   updatePlanets();   // positions for this frame first...
-  updateAsteroids(); updateLight(); updateStations(); updateNeo(); updateStars3d(); updateGaia(); updateHorizon(); updateArt(); updateSkyPhoto();
+  updateAsteroids(); updateLight(); updateStations(); updateNeo(); updateStars3d(); updateGaia(); updateHorizon(); updateArt(); updateAnalemma(); updateSkyPhoto();
   updateSats();
   stepFlight(now);   // ...then aim the camera at them (aiming at last frame's position made zoomed views shake)
   updateCamera();
@@ -2805,6 +2830,7 @@ function frame(now) {
   if (gOn && bortle > 3) bg.lerp(new THREE.Color(0x2a2620), (bortle - 3) / 6 * 0.35 * (1 - skyDayK)); renderer.setClearColor(bg); // skyglow
   starMat.uniforms.limit.value = Math.min(view.fov > 30 ? 8.5 : MOBILE ? 11 : 12.5, (gOn ? NELM[bortle - 1] : 6.4) + (view.fov > 30 ? 2.2 : 3) * zoom) - day * 5; // deeper when zoomed: Gaia tiles
   mwMat.uniforms.gain.value = 3.5 * dim * MWK[bortle - 1] / Math.max(1, Math.sqrt(70 / view.fov) * 0.6);
+  if (mwMat.uniforms.photo.value) mwMat.uniforms.gain.value *= Math.max(0, Math.min(1, (view.fov - 6) / 24)); // the photo's own stars smear into blobs when magnified: let the real stars take over
   starMat.uniforms.pr.value = renderer.getPixelRatio(); starMat.uniforms.dim.value = dim;
   starMat.uniforms.time.value = now / 1000; starMat.uniforms.twinkle.value = gOn && $('t-twinkle').checked && atmo ? (MOBILE ? 0.5 : 1) : 0;
   exoMat.uniforms.pr.value = renderer.getPixelRatio(); exoMat.uniforms.alpha.value = Math.min(1, Math.max(0, (30 - view.fov) / 20)) * (1 - day * 0.8);

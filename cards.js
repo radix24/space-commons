@@ -483,10 +483,10 @@ const MORE = [
 // Textbook order: chapters, and what each card builds on (prerequisites). "Next" links are derived from these.
 const CHAPTERS = [
   { title: '1. 하늘의 좌표와 시간', intro: '하늘을 지도처럼 읽는 법: 좌표, 시간, 계절, 달', ids: ['coords', 'eot', 'seasons', 'precession', 'moonphase'] },
-  { title: '2. 지구', intro: '우리가 선 행성의 자기장과 바다', ids: ['declination', 'paleomag', 'tides'] },
+  { title: '2. 지구와 우주 환경', intro: '지구의 자기장과 바다, 그리고 위성들이 사는 지구 둘레의 우주', ids: ['declination', 'paleomag', 'tides', 'spaceweather', 'vanallen', 'decay', 'debris', 'gps'] },
   { title: '3. 중력과 궤도', intro: '뉴턴의 중력에서 탐사선 궤도 설계까지', ids: ['gravity', 'keplerlaws', 'twobody', 'invariants', 'visviva', 'kepler', 'elements', 'rocket', 'hohmann', 'plane', 'oberth', 'soi', 'flyby', 'lambert', 'j2', 'cr3bp', 'cw'] },
   { title: '4. 행성과 위성', intro: '행성의 온도, 대기, 충돌, 위성, 그리고 다른 별의 행성', ids: ['roche', 'moon', 'teq', 'atmos', 'impact', 'hz', 'transit'] },
-  { title: '5. 별', intro: '빛으로 별을 재고, 별의 탄생부터 최후까지', ids: ['blackbody', 'parallax', 'magnitude', 'doppler', 'sun', 'starbirth', 'stellar', 'nucleo', 'remnants'] },
+  { title: '5. 별', intro: '빛으로 별을 재고, 별의 탄생부터 최후까지', ids: ['blackbody', 'parallax', 'magnitude', 'doppler', 'sun', 'starbirth', 'stellar', 'nucleo', 'remnants', 'gw'] },
   { title: '6. 은하와 우주', intro: '거리 사다리를 올라 우주의 역사까지', ids: ['distladder', 'hubble', 'darkmatter', 'cmb', 'galaxy'] },
 ];
 const PRE = { eot: ['coords', 'keplerlaws'], seasons: ['coords'], precession: ['coords', 'j2'], moonphase: ['coords'], paleomag: ['declination'], tides: ['gravity'],
@@ -494,7 +494,7 @@ const PRE = { eot: ['coords', 'keplerlaws'], seasons: ['coords'], precession: ['
   soi: ['twobody'], flyby: ['soi', 'hohmann'], lambert: ['kepler', 'hohmann'], j2: ['elements'], cr3bp: ['invariants'], cw: ['twobody', 'kepler'],
   roche: ['gravity', 'tides'], moon: ['roche', 'tides', 'impact'], teq: ['blackbody'], atmos: ['teq', 'visviva'], impact: ['visviva'], hz: ['teq', 'stellar'], transit: ['doppler', 'magnitude'],
   parallax: ['coords'], magnitude: ['blackbody', 'parallax'], doppler: ['blackbody'], sun: ['blackbody', 'gravity'], starbirth: ['gravity', 'blackbody'], stellar: ['sun', 'starbirth', 'magnitude'],
-  nucleo: ['stellar'], remnants: ['nucleo', 'visviva'], distladder: ['parallax', 'magnitude'], hubble: ['distladder', 'doppler'], darkmatter: ['keplerlaws', 'distladder'], cmb: ['blackbody', 'hubble'], galaxy: ['hubble', 'darkmatter', 'stellar'] };
+  nucleo: ['stellar'], remnants: ['nucleo', 'visviva'], distladder: ['parallax', 'magnitude'], hubble: ['distladder', 'doppler'], darkmatter: ['keplerlaws', 'distladder'], cmb: ['blackbody', 'hubble'], galaxy: ['hubble', 'darkmatter', 'stellar'], spaceweather: ['declination', 'sun'], vanallen: ['spaceweather'], decay: ['visviva', 'atmos'], debris: ['decay', 'elements'], gps: ['visviva', 'remnants'], gw: ['remnants', 'keplerlaws'] };
 
 // ---- more concepts: foundations, measuring the sky, planets, stars, galaxies ----
 const EXTRA = [
@@ -662,10 +662,79 @@ const QUIZ = {
   darkmatter: { q: '평평한 회전 곡선은 은하의 질량 분포가 어떻다는 뜻일까요?', opts: ['중심에 몰려 있다', '바깥까지 질량이 계속 늘어난다', '질량이 없다'], a: 1, why: 'v가 일정하면 M(&lt;r) ∝ r로 바깥까지 보이지 않는 질량이 늘어납니다.' },
   cmb: { q: '우주 배경 복사가 나올 때(z ≈ 1,100) 온도는 약 몇 K일까요?', a: 3000, tol: 100, unit: 'K', why: '2.7255 × 1,101 ≈ 3,000 K.' },
   galaxy: { q: '우주의 별 생성이 가장 활발했던 때는 약 몇십억 년 전일까요?', a: 10, tol: 1, unit: '십억 년 전', why: '적색편이 약 2(우주 나이 약 33억 년), 즉 약 100억 년 전입니다.' },
+  spaceweather: { q: '태양풍이 세지면 자기권계면은 지구에 어떻게 될까요?', opts: ['멀어진다', '가까워진다', '그대로다'], a: 1, why: '동압 ρv²가 커지면 균형점이 지구 쪽으로 밀려듭니다.' },
+  vanallen: { q: '국제우주정거장(약 420 km)은 밴앨런대의 어디에 있을까요?', opts: ['안쪽 대 속', '바깥 대 속', '두 대 아래'], a: 2, why: '안쪽 대는 약 1.2 지구 반지름(높이 1,000 km 남짓)부터라 ISS는 그 아래입니다. 남대서양 이상 지역에서만 잠깐 스칩니다.' },
+  decay: { q: '태양 활동이 활발할 때 저궤도 위성은?', opts: ['더 오래 머문다', '더 빨리 떨어진다', '영향 없다'], a: 1, why: '열을 받은 상층 대기가 부풀어 같은 높이의 밀도가 커지기 때문입니다.' },
+  debris: { q: '초속 10 km로 부딪히는 1 cm 알루미늄 조각의 위험이 큰 이유는?', opts: ['무거워서', '운동 에너지가 커서', '뜨거워서'], a: 1, why: '½mv²에서 속도가 매우 커서 작은 조각도 수류탄 정도의 에너지를 가집니다.' },
+  gps: { q: 'GPS 위성 시계는 지상보다 하루에 약 몇 마이크로초 빨리 갈까요?', a: 38, tol: 2, unit: 'μs', why: '중력 효과 +45.7 μs, 속도 효과 −7.2 μs로 합 약 +38.5 μs입니다.' },
+  gw: { q: '두 블랙홀이 합쳐지기 직전 중력파 주파수는?', opts: ['낮아진다', '높아진다', '일정하다'], a: 1, why: '가까워질수록 빨리 돌아 주파수가 치솟는 처프 신호가 됩니다.' },
 };
 
+// ---- near-Earth space: the environment satellites and astronauts live in ----
+const SPACEENV = [
+  { id: 'spaceweather', level: '교양', title: '우주 날씨: 태양풍과 지구 자기권', tag: '지구를 감싼 보이지 않는 방패',
+    eq: String.raw`r_{mp} \approx \left(\frac{B_0^2}{\mu_0\,\rho v^2}\right)^{1/6} R_\oplus`,
+    body: `태양은 초속 수백 km의 전하 입자 흐름(태양풍)을 끊임없이 내뿜습니다. 지구 자기장은 이를 밀어내 낮 쪽으로 약 10 지구 반지름 거리에 경계(자기권계면)를 만듭니다. 태양 폭발(코로나 질량 방출)로 태양풍이 세지면 경계가 정지궤도(6.6 지구 반지름) 안까지 밀려들어 위성이 태양풍에 그대로 노출되고, 오로라가 낮은 위도까지 내려옵니다.`,
+    deep: String.raw`경계는 태양풍의 동압 <span class="tex">\rho v^2</span>과 지구 자기 압력 <span class="tex">B^2/2\mu_0</span>(쌍극자라 <span class="tex">\propto r^{-6}</span>)이 같아지는 곳입니다. 1859년 캐링턴 사건 같은 큰 자기 폭풍은 전력망과 위성에 피해를 줄 수 있어, NOAA와 한국 우주전파센터가 우주 날씨를 예보합니다. 2024년 5월 폭풍 때는 한국에서도 오로라가 사진에 찍혔습니다.`,
+    widget(box) { const K = canvas(box, 340, 200), vs = slider(box, '태양풍 속도 (km/s)', 250, 1500, 10, 400), ns = slider(box, '태양풍 밀도 (개/cm³)', 1, 50, 0.5, 5), R = readout(box);
+      return () => { const g = K.g; clear(K); const rho = ns.value * 1e6 * 1.6726e-27, v = vs.value * 1e3, B0 = 3.1e-5, r = Math.pow(B0 * B0 / (4e-7 * Math.PI * rho * v * v), 1 / 6) * 1.4, cx = 230, cy = 100, S = 12;
+        dot(g, cx, cy, S, C.blue); g.strokeStyle = C.teal; g.lineWidth = 2; g.beginPath(); g.ellipse(cx + S * r * 0.6, cy, S * r * 1.6, S * r * 1.3, 0, Math.PI * 0.5, Math.PI * 1.5); g.stroke();
+        g.setLineDash([3, 4]); g.strokeStyle = C.amber; g.beginPath(); g.arc(cx, cy, S * 6.6, 0, 7); g.stroke(); g.setLineDash([]); text(g, '정지궤도 6.6 R', cx - 20, cy - S * 6.6 - 4, C.amber, 10);
+        for (let k = 0; k < 6; k++) arrow(g, 6, 30 + k * 28, 46, 30 + k * 28, C.mute, 1); text(g, '태양풍 →', 6, 20, C.mute, 10);
+        R([['자기권계면 거리 (낮 쪽)', `${fmt(r, 1)} 지구 반지름`], ['정지궤도 위성', r < 6.6 ? '태양풍에 직접 노출됨' : '자기권 안에서 보호됨'], ['참고', '평소 400 km/s, 5개/cm³ · 큰 폭풍 때 1,000 km/s 이상']]); }; } },
+  { id: 'vanallen', level: '교양', title: '밴앨런대', tag: '지구 자기장에 갇힌 방사선',
+    eq: String.raw`\text{안쪽 대 } 1.2\text{–}3\,R_\oplus\ (\text{양성자}),\quad \text{바깥 대 } 4\text{–}7\,R_\oplus\ (\text{전자})`,
+    body: `1958년 미국의 첫 인공위성 익스플로러 1호가 발견한 두 겹의 방사선대입니다. 지구 자기장에 붙잡힌 고에너지 입자가 남북 극 사이를 오가며 갇혀 있습니다. 국제우주정거장은 그 아래를 돌고, 아폴로 우주선은 빠르게 통과해 피폭을 줄였습니다. 전자 장비가 많이 상해서 위성들은 이 영역을 피해 궤도를 정합니다.`,
+    deep: String.raw`대전 입자는 자기력선을 감아 돌며(회전), 극 쪽에서 반사되며(거울점) 남북으로 오가고, 지구 둘레를 표류합니다. 남대서양 상공은 자기장이 약해 안쪽 대가 낮게 내려와(남대서양 이상 지역), 국제우주정거장도 그곳을 지날 때 방사선량이 늘어납니다.`,
+    widget(box) { const K = canvas(box, 340, 200), hs = slider(box, '궤도 높이 (km, 로그)', 2.3, 4.7, 0.01, 2.62, (x) => fmt(10 ** x, 0)), R = readout(box);
+      return () => { const g = K.g; clear(K); const cx = 70, cy = 100, S = 26;
+        for (const [a, b, c] of [[1.2, 3, 'rgba(255,122,162,.35)'], [4, 7, 'rgba(255,180,84,.3)']]) { g.fillStyle = c; g.beginPath(); g.ellipse(cx, cy, S * b, S * b * 0.55, 0, -1.2, 1.2); g.ellipse(cx, cy, S * a, S * a * 0.5, 0, 1.2, -1.2, true); g.fill(); }
+        dot(g, cx, cy, S, C.blue); const h = 10 ** hs.value, r = 1 + h / 6371; g.strokeStyle = C.teal; g.beginPath(); g.arc(cx, cy, S * r, -1.3, 1.3); g.stroke();
+        for (const [n, rr] of [['ISS', 1.065], ['GPS', 4.17], ['정지궤도', 6.62]]) { text(g, n, cx + S * rr + 2, cy + 4, C.mute, 9); }
+        const zone = r < 1.2 ? '방사선대 아래 (저궤도)' : r < 3 ? '안쪽 방사선대 (고에너지 양성자)' : r < 4 ? '두 대 사이의 틈 (슬롯)' : r < 7 ? '바깥 방사선대 (고에너지 전자)' : '방사선대 바깥';
+        R([['높이', `${fmt(h, 0)} km = ${fmt(r, 2)} 지구 반지름`], ['위치', zone]]); }; } },
+  { id: 'decay', level: '교양', title: '궤도 감쇠와 대기권 재진입', tag: '저궤도 위성은 언젠가 떨어진다',
+    eq: String.raw`\frac{da}{dt} = -\sqrt{\mu a}\;\rho(h)\,\frac{C_D A}{m}`,
+    body: `높이 수백 km에도 아주 옅은 공기가 있어, 위성은 조금씩 속도를 잃고 내려옵니다. 내려갈수록 공기가 짙어져 점점 빨리 떨어지다가 결국 대기권에 들어와 불탑니다. 국제우주정거장은 이 때문에 몇 달마다 엔진으로 고도를 올립니다. 태양 활동이 활발하면 대기가 부풀어 더 빨리 떨어집니다.`,
+    deep: String.raw`대기 밀도는 높이에 따라 대략 <span class="tex">\rho = \rho_0 e^{-(h-h_0)/H}</span>로 줄고, 규모 높이 H는 수십 km입니다. 2022년 2월 스타링크 위성 38기는 지자기 폭풍으로 대기가 부푼 날 발사되어 궤도에 오르지 못하고 떨어졌습니다. 고도가 1,000 km를 넘으면 수백~수천 년을 머무르기 때문에 다 쓴 위성을 내리는 규칙(25년 규정, 지금은 5년)이 생겼습니다.`,
+    widget(box) { const K = canvas(box), h0 = slider(box, '처음 높이 (km)', 250, 700, 5, 420), bc = slider(box, '면적 / 질량 (m²/kg, 로그)', -3, -1, 0.01, -2.3, (x) => (10 ** x).toPrecision(2)), sa = slider(box, '태양 활동 (0 조용 ~ 1 활발)', 0, 1, 0.05, 0.5, (x) => x.toFixed(2)), R = readout(box);
+      const rho = (h, k) => { const T = [[200, 2.5e-10, 37], [300, 1.9e-11, 53], [400, 2.8e-12, 59], [500, 5.2e-13, 70], [600, 1.1e-13, 80], [700, 3.1e-14, 90]]; let r = T[0]; for (const t of T) if (h >= t[0]) r = t; return r[1] * Math.exp(-(h - r[0]) / r[2]) * (0.4 + 1.6 * k); };
+      return () => { clear(K); const am = 10 ** bc.value * 2.2, k = +sa.value; let h = +h0.value, t = 0; const xs = [0], ys = [h], dt = 86400;
+        while (h > 150 && t < 3.15e7 * 30) { const a = (6371 + h) * 1e3, d = Math.sqrt(398600.4418e9 * a) * rho(h, k) * am * (h > 300 ? dt : dt / 24); h -= d / 1e3; t += h > 300 ? dt : dt / 24; if (xs.length < 4000 && (xs.length % 2 === 0 || h < 200)) { xs.push(t / 86400); ys.push(h); } }
+        plot(K, xs, [{ ys, col: C.amber, label: '높이' }], { x0: 0, x1: Math.max(1, t / 86400), y0: 100, y1: +h0.value + 20, xl: '일', yl: 'km', yd: 0 });
+        R([['떨어지기까지', t >= 3.15e7 * 30 ? '30년 이상' : t > 3.15e7 ? `${fmt(t / 3.15e7, 1)}년` : `${fmt(t / 86400, 0)}일`], ['참고', 'ISS 약 420 km (재가속 없이 1~2년), 허블 약 530 km']]); }; } },
+  { id: 'debris', level: '교양', title: '우주 쓰레기와 케슬러 증후군', tag: '부서진 조각이 또 부순다',
+    eq: String.raw`\text{충돌 빈도} \approx n\,\sigma\,v_\text{rel}\,N`,
+    body: `지구 둘레에는 추적되는 10 cm 이상 물체만 3만 개가 넘고, 1 cm 이상은 100만 개로 추정됩니다. 초속 10 km로 부딪히면 작은 조각도 위성을 부술 수 있고, 충돌로 생긴 파편이 또 다른 충돌을 부르는 연쇄(케슬러 증후군)가 일어나면 그 고도는 오랫동안 쓸 수 없게 됩니다. 2009년 이리듐 33과 코스모스 2251 충돌, 2007년 중국의 위성 요격 실험이 큰 파편 구름을 만들었습니다.`,
+    deep: String.raw`공간 밀도 n(개/km³), 단면적 σ, 상대 속도 v로 한 물체가 1년에 맞을 확률은 <span class="tex">n\sigma v\,t</span>입니다. 고도 800 km 근처가 가장 붐빕니다. 다 쓴 위성을 무덤 궤도로 올리거나 대기권으로 내리고, 파편을 잡아 내리는 기술(능동 제거)이 연구되고 있습니다.`,
+    widget(box) { const K = canvas(box, 340, 150), ns = slider(box, '파편 공간 밀도 (개/10⁸ km³, 로그)', 0, 3, 0.01, 1.3, (x) => fmt(10 ** x, 0)), Ns = slider(box, '그 고도의 위성 수', 10, 10000, 10, 2000), R = readout(box);
+      return () => { clear(K); const n = 10 ** ns.value / 1e8, sig = 10e-6, v = 10 * 3.156e7, rate = n * sig * v, sats = +Ns.value, g = K.g, per = rate * sats;
+        g.fillStyle = C.pink; g.fillRect(20, 40, Math.min(K.w - 40, (K.w - 40) * per / 2), 26); text(g, `1년에 예상 충돌 ${fmt(per, 3)}회`, 22, 34, C.text, 11); text(g, '막대 끝 = 2회/년', K.w - 20, 90, C.mute, 9, 'right');
+        R([['위성 하나가 1년에 맞을 확률', `${fmt(rate * 100, 4)}%`], ['평균 충돌 간격', per > 0 ? `${fmt(1 / per, 1)}년` : '-'], ['가정', '위성 단면적 10 m², 상대 속도 10 km/s']]); }; } },
+  { id: 'gps', level: '교양', title: 'GPS와 상대성 이론', tag: '시계를 고치지 않으면 하루 11 km 틀린다',
+    eq: String.raw`\frac{\Delta t}{t} \approx \frac{GM}{c^2}\left(\frac{1}{R_\oplus} - \frac{1}{r}\right) - \frac{v^2}{2c^2}`,
+    body: `GPS 위성(높이 2만 km)의 원자시계는 두 가지 상대론 효과를 받습니다. 빠르게 움직여서 느려지고(특수 상대론, 하루 −7 μs), 중력이 약한 곳에 있어서 빨라집니다(일반 상대론, 하루 +45 μs). 합치면 하루 약 38 μs 빨라지는데, 빛은 1 μs에 300 m를 가므로 고치지 않으면 위치가 하루에 약 11 km씩 틀어집니다. 그래서 GPS 시계는 발사 전부터 일부러 조금 느리게 맞춰 둡니다.`,
+    deep: String.raw`약한 중력장 근사에서 고유 시간의 비는 <span class="tex">d\tau/dt \approx 1 + \Phi/c^2 - v^2/2c^2</span>. 궤도 높이에 따라 두 효과가 같아져 상쇄되는 높이(약 3,200 km)가 있습니다. 한국형 위성항법시스템(KPS)도 같은 보정을 합니다.`,
+    widget(box) { const K = canvas(box), hs = slider(box, '궤도 높이 (km)', 200, 40000, 100, 20200), R = readout(box);
+      const eff = (h) => { const r = (6371 + h) * 1e3, c2 = 8.98755e16, GM = 3.986e14, v2 = GM / r, gr = GM / c2 * (1 / 6.371e6 - 1 / r) * 86400e6, sr = -v2 / (2 * c2) * 86400e6; return [gr, sr]; };
+      return () => { clear(K); const xs = []; for (let h = 200; h <= 40000; h += 200) xs.push(h);
+        const P = plot(K, xs, [{ ys: xs.map(h => eff(h)[0]), col: C.teal, label: '일반 상대론 (중력)' }, { ys: xs.map(h => eff(h)[1]), col: C.pink, label: '특수 상대론 (속도)' }, { ys: xs.map(h => eff(h)[0] + eff(h)[1]), col: C.amber, label: '합' }], { x0: 200, x1: 40000, y0: -30, y1: 55, xl: '높이 (km)', yl: 'μs/일', yd: 0 });
+        const [gr, sr] = eff(+hs.value); dot(K.g, P.X(+hs.value), P.Y(gr + sr), 4, C.amber);
+        R([['중력 효과', `${fmt(gr, 1)} μs/일`], ['속도 효과', `${fmt(sr, 1)} μs/일`], ['합', `${fmt(gr + sr, 1)} μs/일 → 하루 ${fmt(Math.abs(gr + sr) * 0.2998, 1)} km 오차`]]); }; } },
+  { id: 'gw', level: '전공', title: '중력파', tag: '시공간이 떨린다',
+    eq: String.raw`f(\tau) = \frac{1}{\pi}\left(\frac{5}{256\,\tau}\right)^{3/8}\left(\frac{G\mathcal{M}}{c^3}\right)^{-5/8}`,
+    body: `무거운 두 천체가 서로 돌면 시공간의 물결(중력파)을 내며 에너지를 잃고 점점 가까워집니다. 합쳐지기 직전에는 회전이 빨라져 주파수가 치솟는 '처프' 신호가 나옵니다. 2015년 LIGO가 13억 광년 밖 두 블랙홀(태양의 36배와 29배)의 충돌에서 처음 검출했고, 그 신호는 지구에서 4 km 팔의 길이를 양성자 지름의 1,000분의 1만큼 바꿨습니다.`,
+    deep: String.raw`처프 질량 <span class="tex">\mathcal M = (m_1m_2)^{3/5}/(m_1+m_2)^{1/5}</span>가 주파수 변화율을 정합니다: <span class="tex">\dot f = \frac{96}{5}\pi^{8/3}\left(\frac{G\mathcal M}{c^3}\right)^{5/3}f^{11/3}</span>. 1974년 발견된 쌍성 펄서(헐스-테일러)의 궤도 주기 감소가 일반 상대론 예측과 정확히 맞아 중력파의 간접 증거가 되었습니다. 2017년 중성자별 충돌에서는 빛(감마선, 킬로노바)도 함께 관측되었습니다.`,
+    widget(box) { const K = canvas(box), ms = slider(box, '처프 질량 (태양 = 1, 로그)', -0.2, 1.8, 0.01, 1.45, (x) => fmt(10 ** x, 1)), R = readout(box);
+      return () => { clear(K); const Mc = 10 ** ms.value * 4.925e-6, xs = [], ys = []; // G M_sun / c^3 in seconds
+        for (let lt = -3; lt <= 1.5; lt += 0.02) { const tau = 10 ** -lt; xs.push(-tau); ys.push(Math.log10((1 / Math.PI) * Math.pow(5 / (256 * tau), 3 / 8) * Math.pow(Mc, -5 / 8))); }
+        xs.reverse(); ys.reverse(); plot(K, xs.map(x => -Math.log10(-x)), [{ ys, col: C.teal, label: '주파수 (log Hz)' }], { x0: -1.5, x1: 3, y0: 0.5, y1: 3.5, xl: '합쳐지기 전 시간 (log 10⁻ˣ초, 오른쪽이 합쳐지는 순간)', yd: 1 });
+        const f01 = (1 / Math.PI) * Math.pow(5 / (256 * 0.1), 3 / 8) * Math.pow(Mc, -5 / 8);
+        R([['합쳐지기 0.1초 전 주파수', `${fmt(f01, 0)} Hz`], ['예', 'GW150914 처프 질량 약 28 · 중성자별 쌍 약 1.2']]); }; } },
+];
+
 // ---- textbook UI: chapters in order, prerequisite and follow-up links on every card ----
-const ALL = [...CARDS, ...SCIENCE, ...MORE, ...EXTRA], BYID = Object.fromEntries(ALL.map(c => [c.id, c]));
+const ALL = [...CARDS, ...SCIENCE, ...MORE, ...EXTRA, ...SPACEENV], BYID = Object.fromEntries(ALL.map(c => [c.id, c]));
 const NUM = {}; CHAPTERS.forEach((ch, i) => ch.ids.forEach((id, j) => { NUM[id] = `${i + 1}.${j + 1}`; }));
 const NEXT = {}; for (const [id, pre] of Object.entries(PRE)) for (const q of pre) (NEXT[q] ||= []).push(id);
 const chip = (id) => { const c = BYID[id]; const b = el('button', 'cc-chip', `${NUM[id] || ''} ${c.title}`); b.onclick = () => openCard(c); return b; };
