@@ -506,7 +506,7 @@ function skyPhotoMesh(tex, ra, dec, fovDeg) {
   m.renderOrder = 3; m.userData = { ra, dec, born: performance.now() }; scene.add(m); return m;
 }
 function updateSkyPhoto() {
-  const want = $('t-photo').checked && view.fov < 12 && !(groundOn() && camFwd().y < 0);
+  const want = $('t-photo').checked && view.fov < 12 && !(groundOn() && camFwd().y < 0) && ![...hips.tiles.values()].some(m => m.userData.ready && m.material.uniforms.op.value > 0.3);
   const now = performance.now();
   for (const m of skyPhotos) { // keep each image on its patch of sky; fade in new, fade out old
     const a = m.userData.ra * D2R, d = m.userData.dec * D2R;
@@ -3125,6 +3125,54 @@ $('landsel').onchange = () => {
   setMode(false); state.lat = L.lat; state.lon = L.lon; $('lat').value = L.lat; $('lon').value = L.lon; updateSkyMatrix();
   $('status').textContent = `${L.ko} · 실제 360° 사진 지평선 (${L.credit}, ${L.licence}) · 사진 속 방위는 대략입니다`;
 };
+// ---------- A2. zoomable survey tiles: DSS2 colour HiPS (ESA ESASky mirror of CDS) on HEALPix nested tiles, finer as you zoom ----------
+// Tile orientation was checked against bright stars (Betelgeuse 0.05 deg): image row runs along the HEALPix x axis, column along y.
+const HIPS = 'https://skies.esac.esa.int/DSSColor/', JRLL = [2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4], JPLL = [1, 3, 5, 7, 0, 2, 4, 6, 1, 3, 5, 7];
+const hips = { group: new THREE.Group(), tiles: new Map(), tex: new Map(), order: -1 }; sky.add(hips.group);
+const interleave = (ix, iy) => { let r = 0; for (let b = 0; b < 15; b++) r += (((ix >> b) & 1) + 2 * ((iy >> b) & 1)) * 4 ** b; return r; };
+function hpAng2Pix(order, v) { // v: unit vector in the equatorial frame
+  const ns = 1 << order, z = v.z, za = Math.abs(z), phi = Math.atan2(v.y, v.x), tt = ((phi * 2 / Math.PI) % 4 + 4) % 4; let face, ix, iy;
+  if (za <= 2 / 3) { const t1 = ns * (0.5 + tt), t2 = ns * z * 0.75, jp = Math.floor(t1 - t2), jm = Math.floor(t1 + t2), ifp = jp >> order, ifm = jm >> order;
+    face = ifp === ifm ? (ifp | 4) : ifp < ifm ? ifp : ifm + 8; ix = jm & (ns - 1); iy = ns - (jp & (ns - 1)) - 1; }
+  else { const ntt = Math.min(3, Math.floor(tt)), tp = tt - ntt, tmp = ns * Math.sqrt(3 * (1 - za)), jp = Math.min(Math.floor(tp * tmp), ns - 1), jm = Math.min(Math.floor((1 - tp) * tmp), ns - 1);
+    if (z >= 0) { face = ntt; ix = ns - jm - 1; iy = ns - jp - 1; } else { face = ntt + 8; ix = jp; iy = jm; } }
+  return face * ns * ns + interleave(ix, iy);
+}
+function hpFxy(face, x, y, R) { // HEALPix face coordinates to a point on the sky sphere
+  const jr = JRLL[face] - x - y; let nr, z;
+  if (jr < 1) { nr = jr; z = 1 - nr * nr / 3; } else if (jr > 3) { nr = 4 - jr; z = nr * nr / 3 - 1; } else { nr = 1; z = (2 - jr) * 2 / 3; }
+  const t = (((JPLL[face] * nr + x - y) % 8) + 8) % 8, phi = nr < 1e-15 ? 0 : (Math.PI / 4 * t) / nr, s = Math.sqrt(Math.max(0, 1 - z * z));
+  return new THREE.Vector3(R * s * Math.cos(phi), R * s * Math.sin(phi), R * z);
+}
+const hipsMat = (tex) => new THREE.ShaderMaterial({ uniforms: { map: { value: tex }, op: { value: 0 } },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `uniform sampler2D map; uniform float op; varying vec2 vUv; void main(){ gl_FragColor = vec4(texture2D(map, vUv).rgb * op, 1.0); }`,
+  transparent: true, depthTest: false, depthWrite: false, blending: THREE.AdditiveBlending });
+function hipsTile(order, pix) {
+  const key = order + '/' + pix; if (hips.tiles.has(key)) return hips.tiles.get(key);
+  const ns = 1 << order, face = Math.floor(pix / (ns * ns)), ipf = pix % (ns * ns); let ix = 0, iy = 0;
+  for (let b = 0; b < 15; b++) { ix |= ((Math.floor(ipf / 4 ** b) & 1) << b); iy |= ((Math.floor(ipf / (2 * 4 ** b)) & 1) << b); }
+  const N = 8, pos = [], uv = [], idx = [], R = R_DSO - 10;
+  for (let i = 0; i <= N; i++) for (let j = 0; j <= N; j++) { const a = i / N, b = j / N, v = hpFxy(face, (ix + a) / ns, (iy + b) / ns, R); pos.push(v.x, v.y, v.z); uv.push(b, 1 - a); }
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) { const k = i * (N + 1) + j; idx.push(k, k + 1, k + N + 1, k + 1, k + N + 2, k + N + 1); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx);
+  const m = new THREE.Mesh(g, hipsMat(null)); m.frustumCulled = false; m.renderOrder = 3; m.userData = { order, used: 0, ready: false }; hips.tiles.set(key, m); hips.group.add(m);
+  new THREE.TextureLoader().load(`${HIPS}Norder${order}/Dir${Math.floor(pix / 10000) * 10000}/Npix${pix}.jpg`, (t) => { t.colorSpace = THREE.SRGBColorSpace; m.material.uniforms.map.value = t; m.userData.ready = true; }, undefined, () => { m.userData.failed = true; });
+  return m;
+}
+let hipsLast = 0;
+function updateHips() {
+  const on = $('t-photo').checked && view.fov < 20 && groundOn() !== null && !mode.space; hips.group.visible = on;
+  const now = performance.now(); if (!on) return;
+  const order = Math.max(3, Math.min(9, Math.round(Math.log2(innerHeight / view.fov * 58.6 / 512))));
+  if (now - hipsLast > 250) { hipsLast = now; const inv = new THREE.Matrix4().copy(sky.matrixWorld).invert(), want = new Set();
+    for (let sx = -1; sx <= 1.001; sx += 0.25) for (let sy = -1; sy <= 1.001; sy += 0.25) { const d = new THREE.Vector3(sx, sy, 0.5).unproject(camera).normalize().applyMatrix4(inv).normalize(); want.add(hpAng2Pix(order, d)); }
+    for (const p of want) hipsTile(order, p).userData.used = now; }
+  const fade = Math.max(0, Math.min(1, (20 - view.fov) / 8));
+  for (const [key, m] of hips.tiles) { const cur = m.userData.order === order && now - m.userData.used < 1500, target = cur && m.userData.ready ? 0.9 * fade : 0;
+    m.material.uniforms.op.value += (target - m.material.uniforms.op.value) * 0.1;
+    if (!cur && m.material.uniforms.op.value < 0.01 && now - m.userData.used > 8000) { hips.group.remove(m); m.geometry.dispose(); m.material.uniforms.map.value?.dispose(); hips.tiles.delete(key); } }
+}
 // ---------- 22. whole spacecraft journeys (S7) ----------
 function journeyTimeline(p) {
   const box = $('info-exo'), ev = JOURNEYS[p.name], e = probeEph[p.name]; box.innerHTML = ''; box.hidden = false;
@@ -3505,7 +3553,7 @@ function frame(now) {
   updateSkyMatrix();
   if (mode.space) { computeHelio(); stepSpaceFlight(now); spaceKeys(dt); }
   updatePlanets();   // positions for this frame first...
-  updateAsteroids(); updateSmallBodies(); updateComets3d(); updateAurora(); updateStanding(); updateProperMotion(); updateLight(); updateStations(); updateNeo(); updateStars3d(); updateGalaxy(); updateGaia(); updateHorizon(); updateArt(); updateAnalemma(); updateSkyPhoto();
+  updateAsteroids(); updateSmallBodies(); updateComets3d(); updateAurora(); updateStanding(); updateProperMotion(); updateLight(); updateStations(); updateNeo(); updateStars3d(); updateGalaxy(); updateGaia(); updateHorizon(); updateArt(); updateAnalemma(); updateSkyPhoto(); updateHips();
   updateSats();
   stepFlight(now);   // ...then aim the camera at them (aiming at last frame's position made zoomed views shake)
   updateCamera();
