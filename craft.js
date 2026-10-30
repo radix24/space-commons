@@ -149,5 +149,27 @@ const BUILDERS = {
     boom(g, 2.2, new THREE.Vector3(0, 1, 0.2), new THREE.Vector3(0.8, 1.6, 0));
     return g;
   },
+  // Danuri (KPLO): ~1.8 m box bus, a single 2-panel solar wing, 0.9 m high-gain dish, cameras on the Moon-facing side
+  'Danuri'() {
+    const g = new THREE.Group();
+    box(g, 1.82, 2.14, 2.29, M.gold());
+    wing(g, 2, 1.4, 1.6, 1, 1.0, 0.3, 0, 0.06);
+    dish(g, 0.9, 0.14, M.white(), -0.4, 1.3, 0.9);
+    cyl(g, 0.22, 0.5, M.dark(), 'y', 0.3, -1.3, 0.4); cyl(g, 0.12, 0.4, M.dark(), 'y', -0.35, -1.25, 0.5);
+    thrusters(g, 1.7, 2.0, 2.2);
+    return g;
+  },
+  // generic lander for sites without a public model: deck, four legs with pads, antenna mast
+  'lander'() {
+    const g = new THREE.Group();
+    cyl(g, 0.9, 0.5, M.gold(), 'y', 0, 1.0, 0, 8);
+    for (let k = 0; k < 4; k++) {
+      const a = k * Math.PI / 2 + 0.785, leg = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.4, 6), M.frame());
+      leg.position.set(Math.cos(a) * 0.9, 0.5, Math.sin(a) * 0.9); leg.rotation.set(Math.sin(a) * 0.5, 0, -Math.cos(a) * 0.5); g.add(leg);
+      const pad = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.05, 12), M.frame()); pad.position.set(Math.cos(a) * 1.25, 0.03, Math.sin(a) * 1.25); g.add(pad);
+    }
+    cyl(g, 0.03, 1.0, M.frame(), 'y', 0.3, 1.75, 0); dish(g, 0.6, 0.1, M.white(), 0.3, 2.25, 0, new THREE.Vector3(0.3, 1, 0.2));
+    return g;
+  },
 };
 export function buildCraft(name) { const b = BUILDERS[name]; return b ? b() : null; }

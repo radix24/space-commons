@@ -1,8 +1,8 @@
 // Space Commons service worker: keeps the app and its catalogs for offline use.
 // App files: cache first, refreshed in the background. Live data (satellites, Wikipedia, sky images): network first, cache as fallback.
-const CACHE = 'space-commons-v3';
-const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'craft.js', 'content.js', 'manifest.webmanifest', 'assets/sc-mark.svg', 'assets/favicon.svg',
-  'assets/icon-192.png', 'data/probes.json', 'data/exoplanets.json', 'data/flybys.json'];
+const CACHE = 'space-commons-v4';
+const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'craft.js', 'content.js', 'content-missions.js', 'manifest.webmanifest', 'assets/sc-mark.svg', 'assets/favicon.svg',
+  'assets/icon-192.png', 'data/probes.json', 'data/exoplanets.json', 'data/flybys.json', 'data/orbiters.json', 'data/korea.tle'];
 const LIVE = /celestrak\.org|wikipedia\.org|alasky|hips2fits/;
 
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())); });
