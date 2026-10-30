@@ -21,7 +21,7 @@ const URLS = {
   ngc: CDN + 'mattiaverga/OpenNGC@master/database_files/NGC.csv',
 };
 const $ = (id) => document.getElementById(id);
-export const VERSION = 'Alpha 0.0.2a'; // bump the letter with every feature batch
+export const VERSION = 'Alpha 0.0.2b'; // bump the letter with every feature batch
 for (const el of document.querySelectorAll('[data-version]')) el.textContent = el.dataset.version.replace('{v}', VERSION);
 
 function eqVec(raDeg, decDeg, r = 1) {
@@ -705,11 +705,16 @@ function fitUnit(obj) { // center the model and scale it to a unit bounding sphe
   const g = new THREE.Group(); obj.position.sub(c); g.add(obj); g.scale.setScalar(1 / r); return g;
 }
 function swapModel(model, obj) {
-  const ps = PROBES.filter(p => p.model === model);
+  const ps = PROBES.filter(p => p.model === model || p.hd === model);
   ps.forEach((p, i) => { p.mesh.clear(); p.mesh.add(i ? obj.clone(true) : obj); });
 }
 const gltfLoader = new GLTFLoader(); // NASA's .glb files are Draco-compressed
+// detailed models, fetched only when you fly close (NASA 3D Resources, NASA Science, ESA SciFleet; converted by tools/convert-models.html)
 const HD_MODELS = { juno: ['models/juno-hd.glb'] };
+const HD_BY_NAME = { 'Solar Orbiter': 'solar-orbiter', BepiColombo: 'bepicolombo', Juice: 'juice', 'Europa Clipper': 'europa-clipper',
+  MAVEN: 'maven', 'Mars Odyssey': 'mars-odyssey', 'Mars Express': 'mars-express', TGO: 'tgo' };
+for (const k of Object.values(HD_BY_NAME)) HD_MODELS[k] = [`models/${k}.glb`];
+for (const p of PROBES) if (HD_BY_NAME[p.name]) p.hd = HD_BY_NAME[p.name];
 const hdState = {}; // model key -> 'loading' | 'done'
 function loadHD(model) { // swap in NASA's detailed version (1.7-9 MB) only when someone flies close
   if (!HD_MODELS[model] || hdState[model]) return; hdState[model] = 'loading';
@@ -787,7 +792,7 @@ function updateTrails(jdNow) {
 }
 function placeProbe(p, rel, earthRel, sunRel, minScale) { // rel: camera->probe in world units
   const d = rel.length();
-  if (p.model && (sp.target === p || sp.flight?.p === p || d < 2e-6)) loadHD(p.model); // within 2 km or on the way there
+  const hd = p.hd || p.model; if (hd && (sp.target === p || sp.flight?.p === p || d < 2e-6)) loadHD(hd); // within 2 km or on the way there
   p.world = rel.clone().divideScalar(d); p.camDist = d;
   p.mesh.position.copy(rel);
   p.mesh.scale.setScalar(Math.max(p.R / 1e6, minScale)); // true size: invisible until you are close

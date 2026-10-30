@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Model converter</title>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
+</script>
+</head>
+<body style="font:13px monospace;background:#111;color:#ddd">
+<pre id="log"></pre>
+<script type="module">
+// Developer tool: converts large source models (ESA FBX, NASA GLB) into compact GLB for the app.
+// Textures are capped at 1024 px; geometry is kept. Results are POSTed to tools/save_server.py.
+import * as THREE from 'three';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+const log = (t) => { document.getElementById('log').textContent += t + '\n'; };
+const gl = new GLTFLoader(); gl.setDRACOLoader(new DRACOLoader().setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/gltf/'));
+async function load(src, texDir) { // FBX files reference textures by the author's local paths: redirect to the extracted folder
+  const mgr = new THREE.LoadingManager();
+  if (texDir) mgr.setURLModifier((u) => /\.(png|jpe?g|tga|tif)$/i.test(u) ? `${texDir}/${decodeURIComponent(u).split(/[\/]/).pop()}` : u);
+  let pending = 0; const done = new Promise(res => { mgr.onLoad = res; });
+  mgr.onStart = () => pending++;
+  const obj = src.endsWith('.fbx') ? await new FBXLoader(mgr).loadAsync(src) : (await gl.loadAsync(src)).scene;
+  await Promise.race([done, new Promise(r => setTimeout(r, 20000))]); // wait for the textures (they load after the model)
+  return obj;
+}
+function stats(o) { let v = 0, m = 0; o.traverse(x => { if (x.isMesh) { m++; v += x.geometry.attributes.position.count; } }); return `${m} meshes, ${v.toLocaleString()} vertices`; }
+async function convert(src, out, texDir) {
+  log(`loading ${src}`);
+  const obj = await load(src, texDir); log(`  ${stats(obj)}`);
+  obj.traverse(x => { if (x.isMesh) for (const mt of [].concat(x.material)) { if (mt.isMeshPhongMaterial || mt.isMeshLambertMaterial) { // FBX gives Phong; convert to PBR for the app's lighting
+    const s = new THREE.MeshStandardMaterial({ color: mt.color, map: mt.map, normalMap: mt.normalMap, emissive: mt.emissive, emissiveMap: mt.emissiveMap, transparent: mt.transparent, opacity: mt.opacity, side: THREE.DoubleSide,
+      metalness: 0.4, roughness: Math.max(0.25, 1 - (mt.shininess || 30) / 100) }); s.name = mt.name;
+    if (Array.isArray(x.material)) x.material[x.material.indexOf(mt)] = s; else x.material = s; } } });
+  obj.traverse(x => { if (x.isMesh) for (const mt of [].concat(x.material)) for (const k of ['map', 'normalMap', 'emissiveMap', 'roughnessMap', 'metalnessMap', 'aoMap', 'bumpMap', 'alphaMap', 'specularMap'])
+    if (mt[k] && !(mt[k].image && (mt[k].image.width || mt[k].image.data))) mt[k] = null; }); // textures that never arrived
+  // one texture object per image file (FBX gives every part its own copy), stored as JPEG unless it needs alpha
+  const shared = new Map();
+  obj.traverse(x => { if (x.isMesh) for (const mt of [].concat(x.material)) for (const k of ['map', 'normalMap', 'emissiveMap', 'roughnessMap', 'metalnessMap', 'aoMap'])
+    if (mt[k]) { const key = (mt[k].image && (mt[k].image.currentSrc || mt[k].image.src)) || mt[k].uuid;
+      if (!shared.has(key)) { mt[k].userData.mimeType = (k === 'map' && mt.transparent) ? 'image/png' : 'image/jpeg'; shared.set(key, mt[k]); }
+      mt[k] = shared.get(key); } });
+  log(`  ${shared.size} distinct textures`);
+  const glb = await new GLTFExporter().parseAsync(obj, { binary: true, maxTextureSize: 1024, onlyVisible: true });
+  log(`  -> ${(glb.byteLength / 1e6).toFixed(1)} MB`);
+  const r = await fetch(`http://127.0.0.1:8766/save?name=${out}`, { method: 'POST', body: glb }); log(`  saved: ${await r.text()}`);
+}
+const jobs = new URLSearchParams(location.search).get('jobs').split(',').map(j => j.split('>'));
+for (const [src, out, tex] of jobs) { try { await convert(src, out, tex); } catch (e) { log(`  FAILED: ${e.message}`); } }
+log('done');
+</script>
+</body>
+</html>
