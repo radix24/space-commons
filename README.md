@@ -7,7 +7,7 @@
 | 항목 | 내용 |
 |---|---|
 | 서비스 | https://radix24.github.io/space-commons/ |
-| 버전 | Alpha 0.0.2b |
+| 버전 | Alpha 0.0.2c |
 | 언어 | 한국어, English (상단 버튼 또는 `?lang=en`) |
 | 브랜드 | [BRAND.md](BRAND.md) |
 
@@ -66,6 +66,7 @@
 | 외계행성 | NASA Exoplanet Archive |
 | 탐사선·위성·소천체 궤도 | NASA JPL Horizons, JPL SBDB |
 | 인공위성 | CelesTrak |
+| 한국 전통 별자리 | Stellarium "korean" 별자리 문화 (GPL v2.0, `data/LICENSE-korean-constellations.txt`) |
 | 3D 모델 | NASA 3D Resources, NASA Science (Europa Clipper), ESA SciFleet (Juice, BepiColombo, Solar Orbiter, Mars Express, ExoMars TGO), 공개 제원으로 만든 자체 모델 |
 | 행성 텍스처, 은하수 | Solar System Scope (CC BY 4.0) |
 
@@ -83,6 +84,7 @@
 
 | 버전 | 내용 |
 |---|---|
+| 0.0.2c | 확대하면 실사 하늘(DSS2), 별의 반짝임, 한국 전통 별자리(천상열차분야지도 312개), 소행성대·카이퍼대 1만 6천 개, 대기 테두리·지구 구름·토성 고리 그림자·위성 그림자, ISS·톈궁 3D와 한국 위성 궤도, 빛의 속도 보기 |
 | 0.0.2b | 탐사선 공식 3D 모델 확대: 유로파 클리퍼, 주스, 베피콜롬보, 솔라 오비터, 마스 익스프레스, 엑소마스 TGO, 메이븐, 마스 오디세이 (가까이 갈 때 불러옴) |
 | 0.0.2a | 착륙 지점 땅 흔들림 수정, 주노 고해상도 모델, 탐사선 단열재 질감, 오프라인 저장이 옛 버전을 보여 주던 문제 수정 |
 | 0.0.1e | 영어 버전, 착륙 지점 지형, 행성에 다가가면 착륙선 표시 |

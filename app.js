@@ -21,7 +21,8 @@ const URLS = {
   ngc: CDN + 'mattiaverga/OpenNGC@master/database_files/NGC.csv',
 };
 const $ = (id) => document.getElementById(id);
-export const VERSION = 'Alpha 0.0.2b'; // bump the letter with every feature batch
+export const VERSION = 'Alpha 0.0.2c';
+const MOBILE = matchMedia('(max-width: 640px), (pointer: coarse)').matches; // phones get lighter versions of heavy features // bump the letter with every feature batch
 for (const el of document.querySelectorAll('[data-version]')) el.textContent = el.dataset.version.replace('{v}', VERSION);
 
 function eqVec(raDeg, decDeg, r = 1) {
@@ -117,16 +118,19 @@ const airmassJS = (y) => { const s = Math.max(y, 0); return 1 / (s + 0.025 * Mat
 const starData = { pos: [], mag: [], name: [], id: [], bv: [] };
 let starPoints = null;
 const starMat = new THREE.ShaderMaterial({
-  uniforms: { limit: { value: 6.5 }, pr: { value: 1 }, dim: { value: 1 }, ...atmoU },
+  uniforms: { limit: { value: 6.5 }, pr: { value: 1 }, dim: { value: 1 }, time: { value: 0 }, twinkle: { value: 0 }, ...atmoU },
   vertexShader: `
     attribute float mag; attribute vec3 color; varying vec3 vC; varying float vA;
-    uniform float limit, pr, dim;
+    uniform float limit, pr, dim, time, twinkle;
     ${ATMO_GLSL}
     void main(){
       gl_Position = skyClip(position);
       float X = airmass(position);
       float d = limit - (mag + extK * (X - 1.0));
       vA = clamp(d * 0.6 + 0.25, 0.0, 1.0) * dim;
+      // scintillation: stronger through more air (low altitude); two incommensurate waves per star
+      float h = fract(sin(dot(position.xy, vec2(12.9898, 78.233))) * 43758.5453), tw = twinkle * clamp((X - 1.0) / 8.0, 0.1, 0.85);
+      vA *= 1.0 + tw * sin(time * 13.0 + h * 60.0) * sin(time * 7.3 + h * 31.0);
       if (d < 0.0) vA = 0.0;
       gl_PointSize = clamp(2.0 + d * 1.25, 1.5, 16.0) * pr;
       vC = mix(color, color * vec3(1.0, 0.72, 0.45), extK > 0.0 ? clamp((X - 1.0) / 12.0, 0.0, 1.0) : 0.0); // reddening near the horizon
@@ -235,6 +239,28 @@ function constAt(dirEq) { // stereographic projection about the click point, the
   }
   return null;
 }
+const koreanGroup = new THREE.Group(); koreanGroup.visible = false; sky.add(koreanGroup);
+const koreanLabels = [];
+async function loadKorean() { // 천상열차분야지도 (Stellarium "korean" sky culture, GPL v2.0: data/LICENSE-korean-constellations.txt)
+  const js = await fetch('data/korean-constellations.json').then(r => r.json());
+  const byHip = new Map(); starData.id.forEach((id, i) => byHip.set(+id, starData.pos[i]));
+  const pts = [], mansion = new Set(js.mansions.stars);
+  for (const c of js.constellations) {
+    const used = [];
+    for (const line of c.lines) for (let i = 0; i < line.length - 1; i++) { const a = byHip.get(line[i]), b = byHip.get(line[i + 1]); if (!a || !b) continue;
+      pts.push(a.x * R_SKY, a.y * R_SKY, a.z * R_SKY, b.x * R_SKY, b.y * R_SKY, b.z * R_SKY); used.push(a, b); }
+    for (const line of c.lines) if (line.length === 1 || line[0] === line[1]) { const a = byHip.get(line[0]); if (a) used.push(a); }
+    if (!used.length) continue;
+    const v = used.reduce((s, x) => s.add(x), new THREE.Vector3()).normalize();
+    const big = c.lines.flat().some(h => mansion.has(h));
+    koreanLabels.push({ v, name: EN ? c.en : c.ko.replace(/\(.*\)/, ''), hanja: (c.ko.match(/\((.*)\)/) || [])[1] || '', n: used.length, mansion: big });
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  const l = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0xc9925a, transparent: true, opacity: 0.6, depthTest: false }));
+  l.frustumCulled = false; l.renderOrder = 1; koreanGroup.add(l);
+  return koreanLabels.length;
+}
+function applySkyCulture() { const k = $('skyculture').value === 'korean'; koreanGroup.visible = k && $('t-lines').checked; linesGroup.visible = !k && $('t-lines').checked; }
 const gridGroup = new THREE.Group(); gridGroup.visible = false; sky.add(gridGroup);
 (function buildGrid() {
   const pts = [];
@@ -426,6 +452,42 @@ function placePhoto() {
   photo.position.copy(p); photo.up.copy(north); photo.lookAt(0, 0, 0);
 }
 
+// ---------- photo sky: real telescope imagery (CDS hips2fits, DSS2 colour) of whatever you are zoomed into ----------
+const skyPhotos = []; let skyReq = null, skyTimer = 0;
+function skyPhotoMesh(tex, ra, dec, fovDeg) {
+  const sz = 2 * (R_DSO - 8) * Math.tan(fovDeg / 2 * D2R);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(sz, sz), new THREE.ShaderMaterial({
+    uniforms: { map: { value: tex }, op: { value: 0 } },
+    vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+    fragmentShader: `uniform sampler2D map; uniform float op; varying vec2 vUv; void main(){
+      vec2 q = abs(vUv - 0.5) * 2.0; float e = smoothstep(1.0, 0.75, max(q.x, q.y));
+      gl_FragColor = vec4(texture2D(map, vUv).rgb * e * op, 1.0); }`,
+    transparent: true, depthTest: false, depthWrite: false, blending: THREE.AdditiveBlending }));
+  m.renderOrder = 3; m.userData = { ra, dec, born: performance.now() }; scene.add(m); return m;
+}
+function updateSkyPhoto() {
+  const want = $('t-photo').checked && view.fov < 12 && !(groundOn() && camFwd().y < 0);
+  const now = performance.now();
+  for (const m of skyPhotos) { // keep each image on its patch of sky; fade in new, fade out old
+    const a = m.userData.ra * D2R, d = m.userData.dec * D2R;
+    m.position.copy(eqVec(m.userData.ra, m.userData.dec).applyMatrix4(sky.matrixWorld).normalize().multiplyScalar(R_DSO - 8));
+    m.up.copy(new THREE.Vector3(-Math.sin(d) * Math.cos(a), -Math.sin(d) * Math.sin(a), Math.cos(d)).transformDirection(sky.matrixWorld)); m.lookAt(0, 0, 0);
+    const target = want && m === skyPhotos[skyPhotos.length - 1] ? 1 : 0; m.material.uniforms.op.value += (target * 0.85 - m.material.uniforms.op.value) * 0.08;
+  }
+  while (skyPhotos.length > 1 && skyPhotos[0].material.uniforms.op.value < 0.02) { const m = skyPhotos.shift(); scene.remove(m); m.material.uniforms.map.value?.dispose(); m.geometry.dispose(); }
+  if (!want) return;
+  const c = vecToRaDec(camFwd().applyMatrix4(new THREE.Matrix4().copy(sky.matrixWorld).invert()));
+  const last = skyPhotos[skyPhotos.length - 1]?.userData, fovImg = Math.min(15, view.fov * 1.6);
+  const moved = !last || Math.acos(Math.min(1, eqVec(c.ra, c.dec).dot(eqVec(last.ra, last.dec)))) * R2D > view.fov * 0.3 || Math.abs(Math.log(last.fov / fovImg)) > 0.4;
+  if (!moved || skyReq) { skyTimer = now; return; }
+  if (now - skyTimer < 450) return; // wait until the view settles
+  const px = MOBILE ? 512 : 1024;
+  const url = `https://alasky.cds.unistra.fr/hips-image-services/hips2fits?hips=CDS%2FP%2FDSS2%2Fcolor&width=${px}&height=${px}&fov=${fovImg.toFixed(5)}&projection=TAN&coordsys=icrs&ra=${c.ra.toFixed(5)}&dec=${c.dec.toFixed(5)}&format=jpg`;
+  skyReq = url; const loader = new THREE.TextureLoader(); loader.setCrossOrigin('anonymous');
+  loader.load(url, (t) => { t.colorSpace = THREE.SRGBColorSpace; const m = skyPhotoMesh(t, c.ra, c.dec, fovImg); m.userData.fov = fovImg; skyPhotos.push(m); skyReq = null; },
+    undefined, () => { skyReq = null; skyTimer = now + 5000; });
+}
+
 // ---------- solar system ----------
 const ELEM = { // JPL approximate elements (J2000 + per-century rates): a e I L varpi Omega
   Mercury: [0.38709927, 0.20563593, 7.00497902, 252.25032350, 77.45779628, 48.33076593, 0.00000037, 0.00001906, -0.00594749, 149472.67411175, 0.16047689, -0.12534081],
@@ -544,7 +606,8 @@ const PLANETS = [
 const KM_AU = 149597870.7;
 const eclU = { on: { value: 0 }, shadowDir: { value: new THREE.Vector3(0, 0, 1) }, umbR: { value: 0.012 }, penR: { value: 0.022 } };
 const planetMat = (tex, emissive) => new THREE.ShaderMaterial({
-  uniforms: { ...eclU, isMoon: { value: 0 }, map: { value: tex }, ambient: { value: 0.025 }, night: { value: null }, hasNight: { value: 0 }, sunDir: { value: new THREE.Vector3(1, 0, 0) }, emissive: { value: emissive ? 1 : 0 } },
+  uniforms: { ...eclU, isMoon: { value: 0 }, occ: { value: [0, 1, 2, 3].map(() => new THREE.Vector4()) }, occN: { value: 0 },
+    ringOn: { value: 0 }, ringN: { value: new THREE.Vector3(0, 1, 0) }, ringC: { value: new THREE.Vector3() }, ringR: { value: 1 }, ringMap: { value: null }, map: { value: tex }, ambient: { value: 0.025 }, night: { value: null }, hasNight: { value: 0 }, sunDir: { value: new THREE.Vector3(1, 0, 0) }, emissive: { value: emissive ? 1 : 0 } },
   vertexShader: `#include <common>
     #include <logdepthbuf_pars_vertex>
     varying vec2 vUv; varying vec3 vN; varying vec3 vW; void main(){ vUv = uv; vN = normalize(mat3(modelMatrix) * normal); vW = (modelMatrix * vec4(position, 1.0)).xyz;
@@ -552,6 +615,7 @@ const planetMat = (tex, emissive) => new THREE.ShaderMaterial({
     #include <logdepthbuf_vertex>
     }`,
   fragmentShader: `#include <logdepthbuf_pars_fragment>
+    uniform vec4 occ[4]; uniform int occN; uniform float ringOn, ringR; uniform vec3 ringN, ringC; uniform sampler2D ringMap;
     uniform sampler2D map, night; uniform float hasNight, ambient, on, umbR, penR, isMoon; uniform vec3 shadowDir; varying vec3 vW; uniform vec3 sunDir; uniform float emissive; varying vec2 vUv; varying vec3 vN;
     void main(){
       #include <logdepthbuf_fragment>
@@ -566,6 +630,14 @@ const planetMat = (tex, emissive) => new THREE.ShaderMaterial({
         col *= 1.0 - 0.55 * pe * (1.0 - um);
         float lum = dot(c, vec3(0.3, 0.59, 0.11)); col = mix(col, lum * vec3(0.62, 0.2, 0.09) * 0.55, um);
       }
+      // shadows cast on this body: moons (round, soft-edged) and Saturn's rings (their own transparency)
+      for (int i = 0; i < 4; i++) { if (i >= occN) break;
+        vec3 toC = occ[i].xyz - vW; float t = dot(toC, sunDir);
+        if (t > 0.0) col *= mix(0.06, 1.0, smoothstep(occ[i].w * 0.8, occ[i].w * 1.25, length(toC - sunDir * t))); }
+      if (ringOn > 0.5) { float dn = dot(sunDir, ringN);
+        if (abs(dn) > 1e-4) { float t = dot(ringC - vW, ringN) / dn;
+          if (t > 0.0) { float rr = length(vW + sunDir * t - ringC) / ringR;
+            if (rr > 1.11 && rr < 2.33) col *= 1.0 - 0.85 * texture2D(ringMap, vec2((rr - 1.11) / 1.22, 0.5)).a; } } }
       if (hasNight > 0.5) col += texture2D(night, vUv).rgb * (1.0 - smoothstep(-0.12, 0.08, ndl)) * 1.3; // city lights on the night side
       gl_FragColor = vec4(col, 1.0); }`,
   depthTest: true, depthWrite: true,
@@ -585,19 +657,54 @@ for (const p of PLANETS) {
     for (let i = 0; i < pos.count; i++) { const r = Math.hypot(pos.getX(i), pos.getY(i)); uv.setXY(i, (r - 1.11) / 1.22, 0.5); }
     const rt = noiseTex(512, 4, (c, w) => { const r = rnd(5); for (let x = 0; x < w; x++) { const t = x / w;
       const a = (t > 0.52 && t < 0.57) ? 0.05 : (0.35 + r() * 0.5) * (t < 0.15 ? 0.4 : 1); c.fillStyle = `rgba(${215 + r() * 30},${190 + r() * 30},${150 + r() * 30},${a})`; c.fillRect(x, 0, 1, 4); } });
-    const ringMat = new THREE.ShaderMaterial({ uniforms: { map: { value: rt }, sunDir: { value: new THREE.Vector3() } },
+    const ringMat = new THREE.ShaderMaterial({ uniforms: { map: { value: rt }, sunDir: { value: new THREE.Vector3() }, C: { value: new THREE.Vector3() }, R: { value: 1 } },
       vertexShader: `#include <common>
         #include <logdepthbuf_pars_vertex>
-        varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+        varying vec2 vUv; varying vec3 vW; void main(){ vUv = uv; vW = (modelMatrix * vec4(position, 1.0)).xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
         #include <logdepthbuf_vertex>
         }`,
       fragmentShader: `#include <logdepthbuf_pars_fragment>
-        uniform sampler2D map; varying vec2 vUv; void main(){
+        uniform sampler2D map; uniform vec3 sunDir, C; uniform float R; varying vec2 vUv; varying vec3 vW; void main(){
         #include <logdepthbuf_fragment>
-        vec4 t = texture2D(map, vUv); gl_FragColor = vec4(t.rgb*0.9, t.a); }`,
+        vec3 d = vW - C; float along = dot(d, sunDir); // behind the planet as seen from the Sun -> in its shadow
+        float lit = along < 0.0 ? smoothstep(R * 0.97, R * 1.03, length(d - sunDir * along)) : 1.0;
+        vec4 t = texture2D(map, vUv); gl_FragColor = vec4(t.rgb * 0.9 * mix(0.12, 1.0, lit), t.a); }`,
       side: THREE.DoubleSide, transparent: true, depthWrite: false });
     texLoader.load('textures/2k_saturn_ring_alpha.png', (t) => { t.colorSpace = THREE.SRGBColorSpace; ringMat.uniforms.map.value = t; });
-    const ring = new THREE.Mesh(rg, ringMat); ring.rotation.x = -Math.PI / 2; ring.renderOrder = 6; p.mesh.add(ring);
+    const ring = new THREE.Mesh(rg, ringMat); ring.rotation.x = -Math.PI / 2; ring.renderOrder = 6; p.mesh.add(ring); p.ringMesh = ring;
+  }
+  const ATMO = { Earth: [1.025, [0.35, 0.62, 1.0], 1.2], Venus: [1.035, [1.0, 0.92, 0.7], 1.0], Mars: [1.012, [0.95, 0.62, 0.42], 0.7], Titan: [1.12, [1.0, 0.68, 0.3], 1.1] }[p.name];
+  if (ATMO) { // a lit rim of atmosphere (Fresnel glow), brightest at the limb on the day side
+    const am = new THREE.ShaderMaterial({ uniforms: { sunDir: p.mesh.material.uniforms.sunDir, col: { value: new THREE.Vector3(...ATMO[1]) }, k: { value: ATMO[2] } },
+      vertexShader: `#include <common>
+        #include <logdepthbuf_pars_vertex>
+        varying vec3 vN, vW; void main(){ vN = normalize(mat3(modelMatrix) * normal); vW = (modelMatrix * vec4(position, 1.0)).xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        #include <logdepthbuf_vertex>
+        }`,
+      fragmentShader: `#include <logdepthbuf_pars_fragment>
+        uniform vec3 sunDir, col; uniform float k; varying vec3 vN, vW; void main(){
+        #include <logdepthbuf_fragment>
+        vec3 n = normalize(vN), v = normalize(-vW); float rim = pow(1.0 - abs(dot(n, v)), 3.0);
+        float day = smoothstep(-0.35, 0.45, dot(n, sunDir));
+        gl_FragColor = vec4(col * rim * day * k, 1.0); }`,
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+    const atm = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 24), am); atm.scale.setScalar(ATMO[0]); atm.renderOrder = 7; p.mesh.add(atm);
+  }
+  if (p.name === 'Earth') { // cloud layer, lit by the Sun, drifting slowly against the surface
+    const cm = new THREE.ShaderMaterial({ uniforms: { map: { value: null }, sunDir: p.mesh.material.uniforms.sunDir },
+      vertexShader: `#include <common>
+        #include <logdepthbuf_pars_vertex>
+        varying vec2 vUv; varying vec3 vN; void main(){ vUv = uv; vN = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        #include <logdepthbuf_vertex>
+        }`,
+      fragmentShader: `#include <logdepthbuf_pars_fragment>
+        uniform sampler2D map; uniform vec3 sunDir; varying vec2 vUv; varying vec3 vN; void main(){
+        #include <logdepthbuf_fragment>
+        float a = texture2D(map, vUv).r; float l = max(dot(normalize(vN), sunDir), 0.0) * 1.1 + 0.015;
+        gl_FragColor = vec4(vec3(l), a * 0.9); }`,
+      transparent: true, depthWrite: false });
+    texLoader.load(MOBILE ? 'textures/2k_earth_clouds.jpg' : 'textures/2k_earth_clouds.jpg', (t) => { cm.uniforms.map.value = t; });
+    const clouds = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 32), cm); clouds.scale.setScalar(1.006); clouds.renderOrder = 6; p.mesh.add(clouds); p.clouds = clouds;
   }
   if (p.emissive) {
     const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: noiseTex(256, 256, (c, w, h) => { const g = c.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2);
@@ -655,6 +762,67 @@ function orientBody(p) {
   p.mesh.rotateY(((jd(state.time) / p.period) % 1) * Math.PI * 2);
 }
 function moonToEarthEq() { const T = (jd(state.time) - 2451545.0) / 36525; return ecl2eq(moonGeo(T)).negate().normalize(); }
+// ---------- asteroid belt and Kuiper belt: Kepler orbits solved per vertex on the GPU ----------
+const asteroidMat = new THREE.ShaderMaterial({
+  uniforms: { tDays: { value: 0 }, camPos: { value: new THREE.Vector3() }, pr: { value: 1 } },
+  vertexShader: `#include <common>
+    #include <logdepthbuf_pars_vertex>
+    attribute vec4 el1; attribute vec3 el2; uniform float tDays, pr; uniform vec3 camPos; varying float vT;
+    void main() {
+      float a = el1.x, e = el1.y, I = el1.z, O = el1.w, w = el2.x;
+      float n = 0.9856076686 / (a * sqrt(a)), M = radians(mod(el2.y + n * (tDays - el2.z), 360.0));
+      float E = M + e * sin(M); for (int k = 0; k < 6; k++) E -= (E - e * sin(E) - M) / (1.0 - e * cos(E));
+      float xp = a * (cos(E) - e), yp = a * sqrt(1.0 - e * e) * sin(E);
+      float cO = cos(O), sO = sin(O), ci = cos(I), si = sin(I), cw = cos(w), sw = sin(w);
+      vec3 ecl = vec3((cw * cO - sw * sO * ci) * xp + (-sw * cO - cw * sO * ci) * yp, (cw * sO + sw * cO * ci) * xp + (-sw * sO + cw * cO * ci) * yp, sw * si * xp + cw * si * yp);
+      const float OB = 0.4090928;
+      vec3 p = vec3(ecl.x, ecl.y * cos(OB) - ecl.z * sin(OB), ecl.y * sin(OB) + ecl.z * cos(OB)) * 149.5978707 - camPos;
+      vT = a > 30.0 ? 1.0 : 0.0;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0); gl_PointSize = (vT > 0.5 ? 2.2 : 1.5) * pr;
+      #include <logdepthbuf_vertex>
+    }`,
+  fragmentShader: `#include <logdepthbuf_pars_fragment>
+    varying float vT; void main() {
+    #include <logdepthbuf_fragment>
+    vec2 q = gl_PointCoord * 2.0 - 1.0; if (dot(q, q) > 1.0) discard;
+    gl_FragColor = vec4(vT > 0.5 ? vec3(0.45, 0.62, 1.0) : vec3(0.62, 0.55, 0.44), 1.0); }`,
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+});
+let asteroidPts = null;
+fetch('data/asteroids.json').then(r => r.json()).then(js => {
+  const rows = MOBILE ? js.rows.filter((_, i) => i % 3 === 0) : js.rows; // phones: every third
+  const e1 = new Float32Array(rows.length * 4), e2 = new Float32Array(rows.length * 3), pos = new Float32Array(rows.length * 3);
+  rows.forEach((r, i) => { e1.set([r[0], r[1], r[2] * D2R, r[3] * D2R], i * 4); e2.set([r[4] * D2R, r[5], r[6] - 2451545.0], i * 3); });
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('el1', new THREE.BufferAttribute(e1, 4)); g.setAttribute('el2', new THREE.BufferAttribute(e2, 3));
+  asteroidPts = new THREE.Points(g, asteroidMat); asteroidPts.frustumCulled = false; asteroidPts.renderOrder = 2; planetGroup.add(asteroidPts);
+}).catch(() => {});
+function updateAsteroids() {
+  if (!asteroidPts) return;
+  asteroidPts.visible = mode.space && $('t-asteroids').checked;
+  asteroidMat.uniforms.tDays.value = jd(state.time) - 2451545.0; asteroidMat.uniforms.camPos.value.copy(sp.pos); asteroidMat.uniforms.pr.value = renderer.getPixelRatio();
+}
+
+// ---------- shadows cast between bodies (moons on planets, planets on moons' parents, Saturn's rings) ----------
+const _w = new THREE.Vector3(), _q = new THREE.Quaternion(), _s = new THREE.Vector3();
+function updateShadows() {
+  planetScene.updateMatrixWorld();
+  const R = (b) => b.mesh.getWorldScale(_s).x;
+  for (const p of PLANETS) {
+    if (p.probe || !p.mesh.visible) continue;
+    const u = p.mesh.material.uniforms; if (!u.occ) continue;
+    const occl = PLANETS.filter(m => !m.probe && m.mesh.visible && ((m.parent === p.name) || (p.name === 'Earth' && m.name === 'Moon') || (m.name === p.parent) || (p.name === 'Moon' && m.name === 'Earth')))
+      .sort((a, b) => b.R - a.R).slice(0, 4);
+    occl.forEach((m, i) => { m.mesh.getWorldPosition(_w); u.occ.value[i].set(_w.x, _w.y, _w.z, R(m)); });
+    u.occN.value = occl.length;
+    if (p.ringMesh) {
+      p.mesh.getWorldPosition(_w); u.ringOn.value = 1; u.ringC.value.copy(_w); u.ringR.value = R(p); u.ringMap.value = p.ringMesh.material.uniforms.map.value;
+      u.ringN.value.set(0, 1, 0).applyQuaternion(p.mesh.getWorldQuaternion(_q));
+      const ru = p.ringMesh.material.uniforms; ru.sunDir.value.copy(u.sunDir.value); ru.C.value.copy(_w); ru.R.value = R(p);
+    }
+    if (p.clouds) p.clouds.rotation.y = ((state.time / 86400000) * 0.35) % (Math.PI * 2); // clouds drift a little against the ground
+  }
+}
+
 // ---------- spacecraft ----------
 // Positions come from JPL Horizons (data/probes.json, built by tools/fetch_probes.py): Sun-centred ICRF vectors
 // sampled every few hours to days, linearly interpolated. Models are drawn at true size (half-extent in metres).
@@ -788,6 +956,10 @@ function updateTrails(jdNow) {
   for (const l of trails.children) {
     const e = probeEph[l.userData.name], n = e.xyz.length / 3;
     l.geometry.setDrawRange(0, Math.max(0, Math.min(n, Math.floor((jdNow - e.jd0) / e.step) + 1)));
+    // a craft circling a planet (Juno) traces loops along the planet's orbit that look like a crumpled orbit line: show only when selected
+    // looping trails (Juno around Jupiter, Parker/Solar Orbiter/BepiColombo around the inner planets) look like crumpled orbits:
+    // show a trail when its craft is selected, or all of them with the toggle
+    l.visible = $('t-trails').checked || sp.target?.name === l.userData.name || selected?.p?.name === l.userData.name;
   }
 }
 function placeProbe(p, rel, earthRel, sunRel, minScale) { // rel: camera->probe in world units
@@ -1429,6 +1601,7 @@ function setMode(space) {
 $('lang').textContent = EN ? '한국어' : 'EN'; $('lang').onclick = () => setLang(EN ? 'ko' : 'en');
 document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { setMode(b.dataset.mode === 'space'); $('tonight').hidden = true; });
 $('t-orbits').onchange = (e) => orbits.visible = mode.space && e.target.checked;
+$('light-btn').onclick = startLight;
 $('sp-free').onclick = () => { sp.target = null; sp.flight = null; $('sp-target').textContent = '자유 비행'; };
 
 // ---------- search ----------
@@ -1510,6 +1683,8 @@ $('lat').onchange = (e) => state.lat = Math.max(-90, Math.min(90, +e.target.valu
 $('lon').onchange = (e) => state.lon = +e.target.value || 0;
 $('t-lines').onchange = (e) => linesGroup.visible = e.target.checked;
 $('t-mw').onchange = (e) => milkyWay.visible = e.target.checked && !!mwMat.uniforms.map.value;
+$('skyculture').onchange = applySkyCulture;
+$('t-lines').addEventListener('change', applySkyCulture);
 $('t-bounds').onchange = (e) => boundsGroup.visible = e.target.checked;
 $('t-grid').onchange = (e) => gridGroup.visible = e.target.checked;
 $('t-exo').onchange = (e) => { if (exoPoints) exoPoints.visible = e.target.checked; };
@@ -1761,6 +1936,34 @@ function satState(s, ms, sunEqU) {
   const r = new THREE.Vector3(pv.position.x, pv.position.y, pv.position.z), d = r.dot(sunEqU), lit = d > 0 || r.clone().addScaledVector(sunEqU, -d).length() > 6371;
   return { az: la.azimuth * R2D, el: la.elevation * R2D, lit, h: satellite.eciToGeodetic(pv.position, gmst).height, v: Math.hypot(pv.velocity.x, pv.velocity.y, pv.velocity.z) };
 }
+const stations = {}; // NORAD id -> model group
+function stationModel(id) {
+  if (stations[id]) return stations[id];
+  const g = new THREE.Group(); stations[id] = g; planetGroup.add(g);
+  if (id === 25544) gltfLoader.load('models/iss.glb', (m) => { g.add(fitUnit(m.scene)); }, undefined, () => g.add(fitUnit(buildCraft('Tiangong'))));
+  else g.add(fitUnit(buildCraft('Tiangong')));
+  return g;
+}
+const krOrbits = new THREE.Group(); krOrbits.visible = false; planetGroup.add(krOrbits); let krOrbitsAt = -1e15;
+function updateStations() { // space mode near Earth: station models at their real place, Korean satellites' orbits
+  const E = helioPos.Earth, near = mode.space && E && E.distanceTo(sp.pos) < 0.3 && $('t-sats').checked;
+  for (const s of sats) if (s.star && stations[s.id]) stations[s.id].visible = false;
+  krOrbits.visible = near; if (!near) return;
+  const date = new Date(state.time);
+  for (const s of sats) { if (!s.star) continue;
+    const pv = satellite.propagate(s.rec, date); if (!pv || !pv.position) continue;
+    const g = stationModel(s.id), rel = E.clone().add(new THREE.Vector3(pv.position.x, pv.position.y, pv.position.z).divideScalar(1e6)).sub(sp.pos), d = rel.length();
+    g.visible = true; g.position.copy(rel); g.scale.setScalar(Math.max((s.iss ? 55 : 27) / 1e9, d * Math.tan(view.fov * D2R * 0.012)));
+    g.lookAt(rel.clone().add(new THREE.Vector3(pv.velocity.x, pv.velocity.y, pv.velocity.z)));
+  }
+  if (Math.abs(state.time - krOrbitsAt) > 600e3) { // redraw one revolution of each Korean satellite every 10 simulated minutes
+    krOrbitsAt = state.time; krOrbits.clear();
+    for (const s of sats) { if (!s.korea) continue; const P = 2 * Math.PI / s.rec.no * 60e3, pts = [];
+      for (let i = 0; i <= 96; i++) { const pv = satellite.propagate(s.rec, new Date(state.time + P * i / 96)); if (pv?.position) pts.push(new THREE.Vector3(pv.position.x, pv.position.y, pv.position.z).divideScalar(1e6)); }
+      const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0xff7aa2, transparent: true, opacity: 0.28 })); l.frustumCulled = false; krOrbits.add(l); }
+  }
+  krOrbits.position.copy(E).sub(sp.pos);
+}
 function updateSats() {
   if (!sats.length || !$('t-sats').checked) { for (const s of sats) s.world = null; return; }
   if (mode.space) { // Korean satellites and the space stations, in true positions around Earth
@@ -1882,6 +2085,27 @@ function loadSiteModel(s) {
   else place(buildCraft('lander'));
 }
 
+// ---------- speed of light: a sphere of light leaving a body, growing at c ----------
+const C_MKM = 0.299792458; // 10^6 km per second
+const lightSphere = new THREE.LineSegments(new THREE.WireframeGeometry(new THREE.SphereGeometry(1, 36, 18)), new THREE.LineBasicMaterial({ color: 0xffe08a, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false }));
+lightSphere.visible = false; lightSphere.frustumCulled = false; planetGroup.add(lightSphere);
+let light = null; // { from: helio point, t0, name, reached: Set }
+function startLight() {
+  if (light) { light = null; lightSphere.visible = false; $('light-btn').textContent = '빛 출발'; return; }
+  const o = sp.target && !sp.target.kindName ? sp.target : PLANETS[0];
+  light = { from: (helioPos[o.name] || new THREE.Vector3()).clone(), t0: state.time, name: o.ko, reached: new Set([o.name]) };
+  $('light-btn').textContent = '빛 지우기'; $('status').textContent = `${o.ko}에서 빛이 출발했습니다. 시간을 빠르게 하면 퍼지는 모습이 잘 보입니다.`;
+}
+function updateLight() {
+  if (!light || !mode.space) { lightSphere.visible = false; return; }
+  const r = C_MKM * (state.time - light.t0) / 1000; lightSphere.visible = r > 0;
+  lightSphere.position.copy(light.from).sub(sp.pos); lightSphere.scale.setScalar(Math.max(r, 1e-6));
+  for (const p of PLANETS) { if (light.reached.has(p.name) || p.parent || !helioPos[p.name] || (p.probe && !['Voyager 1', 'New Horizons', 'JWST', 'Parker Solar Probe'].includes(p.name))) continue;
+    if (helioPos[p.name].distanceTo(light.from) <= r) { light.reached.add(p.name);
+      const sec = (state.time - light.t0) / 1000, t = sec < 120 ? `${sec.toFixed(1)}초` : sec < 7200 ? `${(sec / 60).toFixed(1)}분` : `${(sec / 3600).toFixed(1)}시간`;
+      $('status').textContent = `${light.name}의 빛이 ${p.ko}에 닿았습니다 (${t})`; } }
+}
+
 // ---------- 13. spacecraft encounter replays ----------
 function renderFlybys() {
   const ul = $('flyby-list'); ul.innerHTML = '';
@@ -1987,7 +2211,10 @@ function drawLabels() {
       const w = starData.pos[i].clone().applyMatrix4(sky.matrixWorld); if (!vis(w)) continue;
       const s = toScreen(w); if (s) { label(s[0], s[1], starData.proper[i] || starData.name[i], 'star'); n++; }
     }
-    if (dark && $('t-lines').checked && view.fov > 15) for (const c of constLabels) {
+    if (dark && $('t-lines').checked && $('skyculture').value === 'korean') { let kn = 0; // Korean names; small asterisms only when zoomed in
+      for (const c of koreanLabels) { if (kn > 90 || (c.n < 3 && view.fov > 35 && !c.mansion)) continue; const w = c.v.clone().applyMatrix4(sky.matrixWorld); if (!vis(w)) continue;
+        const s = toScreen(w); if (s) { label(s[0], s[1], view.fov < 30 && c.hanja && !EN ? `${c.name} ${c.hanja}` : c.name, c.mansion ? 'const kr mansion' : 'const kr'); kn++; } } }
+    else if (dark && $('t-lines').checked && view.fov > 15) for (const c of constLabels) {
       const w = c.v.clone().applyMatrix4(sky.matrixWorld); if (!vis(w)) continue; const s = toScreen(w); if (s) label(s[0], s[1], c.name, 'const'); }
     if (dark && $('t-dso').checked) {
       const ppd = innerHeight / view.fov, dLim = dsoMat.uniforms.limit.value; let m = 0;
@@ -2037,6 +2264,7 @@ function frame(now) {
   updateSkyMatrix();
   if (mode.space) { computeHelio(); stepSpaceFlight(now); spaceKeys(dt); }
   updatePlanets();   // positions for this frame first...
+  updateAsteroids(); updateLight(); updateStations(); updateSkyPhoto();
   updateSats();
   stepFlight(now);   // ...then aim the camera at them (aiming at last frame's position made zoomed views shake)
   updateCamera();
@@ -2065,6 +2293,7 @@ function frame(now) {
   starMat.uniforms.limit.value = Math.min(8.5, (gOn ? NELM[bortle - 1] : 6.4) + 2.2 * zoom) - day * 5;
   mwMat.uniforms.gain.value = 3.5 * dim * MWK[bortle - 1] / Math.max(1, Math.sqrt(70 / view.fov) * 0.6);
   starMat.uniforms.pr.value = renderer.getPixelRatio(); starMat.uniforms.dim.value = dim;
+  starMat.uniforms.time.value = now / 1000; starMat.uniforms.twinkle.value = gOn && $('t-twinkle').checked && atmo ? (MOBILE ? 0.5 : 1) : 0;
   exoMat.uniforms.pr.value = renderer.getPixelRatio(); exoMat.uniforms.alpha.value = Math.min(1, Math.max(0, (30 - view.fov) / 20)) * (1 - day * 0.8);
   dsoMat.uniforms.pxPerDeg.value = innerHeight / view.fov; dsoMat.uniforms.pr.value = renderer.getPixelRatio();
   dsoMat.uniforms.limit.value = 7 - (gOn ? (bortle - 1) * 0.45 : 0) + 3.2 * zoom; dsoMat.uniforms.dim.value = Math.max(0.05, dim);
@@ -2078,6 +2307,7 @@ function frame(now) {
   else { planetScene.scale.setScalar(1); pcam.near = camera.near; pcam.far = camera.far; }
   pcam.updateProjectionMatrix(); pcam.updateMatrixWorld();
   renderer.clearDepth();
+  updateShadows();
   renderer.render(planetScene, pcam);
   drawLabels(); drawEyepiece();
   $('clock').textContent = new Date(state.time).toLocaleString(LOCALE, { hour12: false }) + (state.speed !== 1 ? `  (×${state.speed})` : '');
@@ -2111,5 +2341,6 @@ updateSkyMatrix(); requestAnimationFrame(frame);
   document.body.classList.add('ready');
   buildSearch();
   readHash();
+  loadKorean().then(applySkyCulture).catch(() => {});
 })();
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});

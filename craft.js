@@ -174,6 +174,16 @@ const BUILDERS = {
     thrusters(g, 1.7, 2.0, 2.2);
     return g;
   },
+  // Tiangong: T-shaped station (Tianhe core with Wentian and Mengtian labs), large solar wings on the labs, ~55 m across
+  'Tiangong'() {
+    const g = new THREE.Group();
+    cyl(g, 2.1, 16.6, M.white(), 'z', 0, 0, 0, 20);                    // Tianhe core
+    cyl(g, 2.1, 17.9, M.white(), 'x', 9.5, 0, -8, 20); cyl(g, 2.1, 17.9, M.white(), 'x', -9.5, 0, -8, 20); // Wentian, Mengtian
+    cyl(g, 1.5, 3, M.gold(), 'z', 0, 0, -9, 16);                        // node
+    for (const s of [-1, 1]) { const w = wing(g, 4, 6.5, 3.2, s, 18.5, 0, -8, 0.15); w.rotation.x = Math.PI / 2; }
+    for (const s of [-1, 1]) wing(g, 2, 4.5, 2.5, s, 2.3, 0, 6, 0.1);   // core's own smaller wings
+    return g;
+  },
   // generic lander for sites without a public model: deck, four legs with pads, antenna mast
   'lander'() {
     const g = new THREE.Group();

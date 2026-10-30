@@ -1,0 +1,4 @@
+data/korean-constellations.json is derived from the Stellarium "korean" sky culture
+(https://github.com/Stellarium/stellarium/tree/master/skycultures/korean),
+distributed under the GNU General Public License v2.0 (https://www.gnu.org/licenses/old-licenses/gpl-2.0.html).
+It remains under that licence; it is loaded by the app as separate data.
