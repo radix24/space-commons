@@ -1489,6 +1489,10 @@ function select(o) {
     if (o.comet) { row('근일점 거리', `${o.el[0].toFixed(2)} AU`); row('근일점 통과', new Date((o.el[5] - 2440587.5) * 86400e3).toLocaleDateString(LOCALE)); row('이심률', o.el[1].toFixed(3) + (o.el[1] >= 1 ? ' (다시 돌아오지 않는 궤도)' : ''));
       row('참고', '혜성 밝기는 예측과 크게 다를 수 있습니다'); }
     else { row('절대 등급 H', o.H.toFixed(1)); row('궤도 긴반지름', `${o.el[0].toFixed(3)} AU`); row('공전 주기', `${(o.el[0] ** 1.5).toFixed(2)}년`); }
+  } else if (o.kindName === 'coord') {
+    ra = o.ra; dec = o.dec; $('info-title').textContent = '좌표 지점'; $('info-sub').textContent = '검색창에 적은 적경·적위 (J2000)';
+    { let near = null, bd = 9; for (let i = 0; i < starData.pos.length; i++) { if (starData.mag[i] > 6 || !starData.name[i]) continue; const d = sepDeg(o.v, starData.pos[i]); if (d < bd) { bd = d; near = i; } }
+      if (near != null) row('가까운 밝은 별', `${starData.proper[near] || starData.name[near]} (${bd.toFixed(1)}°)`); }
   } else if (o.kindName === 'hist') {
     ra = o.ra; dec = o.dec; $('info-title').textContent = o.name; $('info-sub').textContent = '역사 기록 속의 천체 · 위치는 지금 남은 잔해';
     row('그때의 밝기 (추정)', `약 ${o.mag}등급`); row('설명', o.note);
@@ -1829,7 +1833,19 @@ function buildSearch() {
   for (let i = 0; i < starData.pos.length; i++) { const n = starData.proper[i]; if (n) add(n, () => starObj(i), n); add('HIP' + starData.id[i], () => starObj(i)); }
   dl.innerHTML = opts.map(s => `<option value="${s.replace(/"/g, '&quot;')}">`).join('');
 }
+// coordinates typed into search: "05h35m17s -05d23m28s", "5:35:17 -5:23:28", "05 35 17 -05 23 28" or degrees "83.82 -5.39"
+function parseCoords(s) {
+  const t = s.trim().replace(/[°′″'"]/g, ' ').replace(/[hmsd]/gi, ' ').replace(/:/g, ' ').replace(/\s+/g, ' ').trim(), n = t.split(' ');
+  if (n.some(x => isNaN(parseFloat(x)))) return null;
+  const sign = (x) => x.trim().startsWith('-') ? -1 : 1, f = n.map(parseFloat);
+  if (n.length === 2 && /\./.test(s) && !/[hm:]/i.test(s)) return f[0] >= 0 && f[0] < 360 && Math.abs(f[1]) <= 90 ? { ra: f[0], dec: f[1] } : null;
+  if (n.length === 6 || n.length === 4) { const k = n.length / 2, ra = (f[0] + f[1] / 60 + (k === 3 ? f[2] / 3600 : 0)) * 15, sg = sign(n[k]), dec = sg * (Math.abs(f[k]) + f[k + 1] / 60 + (k === 3 ? f[k + 2] / 3600 : 0));
+    return ra >= 0 && ra < 360 && Math.abs(dec) <= 90 ? { ra, dec } : null; }
+  return null;
+}
 $('search').addEventListener('change', (e) => {
+  const cc = /\d/.test(e.target.value) && !/^\s*(m|ngc|ic|hip|hd)\s*\d/i.test(e.target.value) ? parseCoords(e.target.value) : null;
+  if (cc) { const o = { kindName: 'coord', name: `${fmtRA(cc.ra)} ${fmtDec(cc.dec)}`, ra: cc.ra, dec: cc.dec, v: eqVec(cc.ra, cc.dec) }; if (mode.space) setMode(false); select(o); flyTo(o); return; }
   let q = e.target.value.toLowerCase().replace(/\s+/g, '');
   const m = /^m(\d+)/.exec(q); if (m) q = 'm' + m[1];
   const n = /^(ngc|ic)0*(\d+)$/.exec(q); if (n) q = n[1] + n[2];
