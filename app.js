@@ -1250,9 +1250,9 @@ const skyDome = new THREE.Mesh(new THREE.SphereGeometry(1150, 64, 32), skyDomeMa
 // night sky light: airglow brightening toward the horizon (van Rhijn), the warm light-pollution dome, and zodiacal light
 // rising along the ecliptic from the Sun's side after dusk and before dawn
 const nightGlowMat = new THREE.ShaderMaterial({
-  uniforms: { sunDir: { value: new THREE.Vector3(0, -1, 0) }, eclPole: { value: new THREE.Vector3(0, 1, 0) }, lp: { value: 0 }, k: { value: 1 } },
+  uniforms: { sunDir: { value: new THREE.Vector3(0, -1, 0) }, eclPole: { value: new THREE.Vector3(0, 1, 0) }, lp: { value: 0 }, k: { value: 1 }, aurK: { value: 0 }, aurDir: { value: new THREE.Vector3(0, 0, -1) }, aurH: { value: 0.1 } },
   vertexShader: `varying vec3 vP; void main(){ vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
-  fragmentShader: `uniform vec3 sunDir, eclPole; uniform float lp, k; varying vec3 vP;
+  fragmentShader: `uniform vec3 sunDir, eclPole, aurDir; uniform float lp, k, aurK, aurH; varying vec3 vP;
     void main(){
       vec3 d = normalize(vP); float h = max(d.y, 0.0);
       float vr = 1.0 / sqrt(1.0 - 0.96 * (1.0 - h * h));
@@ -1262,6 +1262,9 @@ const nightGlowMat = new THREE.ShaderMaterial({
       float el = abs(dot(d, eclPole)), along = dot(d, sp);
       float zl = exp(-el * el * 30.0) * pow(max(along, 0.0), 3.0) * smoothstep(-0.38, -0.30, sunDir.y) * (1.0 - smoothstep(-0.22, -0.16, sunDir.y));
       vec3 col = air + dome + vec3(0.07, 0.065, 0.05) * zl * (1.0 - lp);
+      // aurora: green oxygen light low toward the oval, red oxygen light above it, with a little curtain ripple
+      vec2 hz = normalize(d.xz + 1e-5); float face = pow(max(0.0, dot(hz, normalize(aurDir.xz))), 3.0), rip = 0.75 + 0.25 * sin(atan(d.x, -d.z) * 40.0);
+      col += aurK * face * rip * (vec3(0.1, 0.85, 0.35) * exp(-pow((h - aurH * 0.5) / (aurH * 0.6), 2.0)) + vec3(0.6, 0.08, 0.1) * 0.5 * exp(-pow((h - aurH * 1.4) / aurH, 2.0)));
       gl_FragColor = vec4(col * k * step(-0.02, d.y), 1.0);
     }`,
   side: THREE.BackSide, depthTest: false, depthWrite: false, blending: THREE.AdditiveBlending, transparent: true,
@@ -2666,6 +2669,51 @@ async function setLiveEarth(on) {
   $('status').textContent = `오늘의 지구: ${liveEarthDate} VIIRS 위성 사진 (NASA GIBS) · 구름이 실제 그날의 모습`;
 }
 $('t-live').onchange = () => setLiveEarth($('t-live').checked);
+// ---------- A5. aurora from NOAA's OVATION forecast (30-90 min ahead, public domain): an oval on the night side of the Earth, a glow in the ground sky ----------
+const aurora = { grid: null, t: 0, mesh: null, tex: null, best: null };
+async function fetchAurora() {
+  if (aurora.loading || Date.now() - aurora.t < 30 * 60e3) return; aurora.loading = true;
+  try { const js = await fetch('https://services.swpc.noaa.gov/json/ovation_aurora_latest.json').then(r => r.json());
+    const g = new Float32Array(360 * 181); for (const [lo, la, v] of js.coordinates) g[(la + 90) * 360 + lo] = v; aurora.grid = g; aurora.t = Date.now(); aurora.when = js['Forecast Time'];
+    const cv = document.createElement('canvas'); cv.width = 360; cv.height = 181; const x = cv.getContext('2d'), im = x.createImageData(360, 181);
+    for (let la = -90; la <= 90; la++) for (let lo = 0; lo < 360; lo++) { const v = Math.min(1, g[(la + 90) * 360 + lo] / 40), px = ((90 - la) * 360 + (lo + 180) % 360) * 4;
+      im.data[px] = 60 + 195 * Math.max(0, v - 0.7) / 0.3; im.data[px + 1] = 255; im.data[px + 2] = 120; im.data[px + 3] = 255 * v; }
+    x.putImageData(im, 0, 0);
+    if (aurora.tex) aurora.tex.dispose(); aurora.tex = new THREE.CanvasTexture(cv); aurora.tex.colorSpace = THREE.SRGBColorSpace;
+    if (aurora.mesh) aurora.mesh.material.uniforms.map.value = aurora.tex;
+  } catch {} aurora.loading = false;
+}
+function updateAurora() {
+  const on = $('t-aurora').checked; if (on) fetchAurora();
+  const earth = PLANETS.find(p => p.name === 'Earth'); if (!earth?.mesh) return;
+  if (on && aurora.tex && !aurora.mesh) {
+    const m = new THREE.ShaderMaterial({ uniforms: { map: { value: aurora.tex }, sunDir: earth.mesh.material.uniforms.sunDir },
+      vertexShader: `#include <common>
+        #include <logdepthbuf_pars_vertex>
+        varying vec2 vUv; varying vec3 vN; void main(){ vUv = uv; vN = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        #include <logdepthbuf_vertex>
+        }`,
+      fragmentShader: `#include <logdepthbuf_pars_fragment>
+        uniform sampler2D map; uniform vec3 sunDir; varying vec2 vUv; varying vec3 vN; void main(){
+        #include <logdepthbuf_fragment>
+        vec4 t = texture2D(map, vUv); float night = smoothstep(0.15, -0.25, dot(normalize(vN), sunDir)); gl_FragColor = vec4(t.rgb * t.a * night * 1.4, 1.0); }`,
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+    aurora.mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 96, 48), m); aurora.mesh.scale.setScalar(1.018); aurora.mesh.renderOrder = 7; earth.mesh.add(aurora.mesh);
+  }
+  if (aurora.mesh) aurora.mesh.visible = on && mode.space;
+}
+function updateAuroraGround(u) { // strongest aurora within ~1,100 km: how high above which horizon it shows
+  u.aurK.value = 0; if (!$('t-aurora').checked || !aurora.grid) return;
+  const la0 = state.lat * D2R, lo0 = state.lon * D2R; let best = 0, bd = 0, baz = 0;
+  for (let la = Math.max(-90, Math.round(state.lat) - 12); la <= Math.min(90, Math.round(state.lat) + 12); la++) for (let dl = -25; dl <= 25; dl++) {
+    const lo = ((Math.round(state.lon) + dl) % 360 + 360) % 360, v = aurora.grid[(la + 90) * 360 + lo]; if (v < 4) continue;
+    const la1 = la * D2R, lo1 = lo * D2R, cd = Math.sin(la0) * Math.sin(la1) + Math.cos(la0) * Math.cos(la1) * Math.cos(lo1 - lo0), d = Math.acos(Math.min(1, cd)) * 6371;
+    if (d > 1100) continue; const s = v * (1 - d / 1100); if (s > best) { best = s; bd = d;
+      baz = Math.atan2(Math.sin(lo1 - lo0) * Math.cos(la1), Math.cos(la0) * Math.sin(la1) - Math.sin(la0) * Math.cos(la1) * Math.cos(lo1 - lo0)); } }
+  if (!best) return;
+  const elev = Math.max(0.03, Math.atan2(150, Math.max(1, bd)) - bd / (2 * 6371));  // curtain at ~150 km seen from bd km away
+  u.aurK.value = Math.min(1, best / 25) * 0.35; u.aurH.value = Math.min(1.2, elev + 0.05); u.aurDir.value.set(Math.sin(baz), 0, -Math.cos(baz));
+}
 // ---------- 22. whole spacecraft journeys (S7) ----------
 function journeyTimeline(p) {
   const box = $('info-exo'), ev = JOURNEYS[p.name], e = probeEph[p.name]; box.innerHTML = ''; box.hidden = false;
@@ -3036,7 +3084,7 @@ function frame(now) {
   updateSkyMatrix();
   if (mode.space) { computeHelio(); stepSpaceFlight(now); spaceKeys(dt); }
   updatePlanets();   // positions for this frame first...
-  updateAsteroids(); updateSmallBodies(); updateLight(); updateStations(); updateNeo(); updateStars3d(); updateGalaxy(); updateGaia(); updateHorizon(); updateArt(); updateAnalemma(); updateSkyPhoto();
+  updateAsteroids(); updateSmallBodies(); updateAurora(); updateLight(); updateStations(); updateNeo(); updateStars3d(); updateGalaxy(); updateGaia(); updateHorizon(); updateArt(); updateAnalemma(); updateSkyPhoto();
   updateSats();
   stepFlight(now);   // ...then aim the camera at them (aiming at last frame's position made zoomed views shake)
   updateCamera();
@@ -3062,7 +3110,7 @@ function frame(now) {
   const NELM = [7.6, 7.1, 6.6, 6.2, 5.7, 5.2, 4.7, 4.2, 3.8], MWK = [1, 0.95, 0.8, 0.55, 0.3, 0.12, 0.04, 0, 0];
   nightGlow.visible = gOn && !!PLANETS[0].world && $('t-refr').checked;
   if (nightGlow.visible) { const u = nightGlowMat.uniforms; u.sunDir.value.copy(PLANETS[0].world); u.eclPole.value.copy(eqVec(270, 66.56, 1)).transformDirection(sky.matrixWorld);
-    u.lp.value = (bortle - 1) / 8; u.k.value = 1 - skyDayK; }
+    u.lp.value = (bortle - 1) / 8; u.k.value = 1 - skyDayK; updateAuroraGround(u); }
   const atmo = gOn && $('t-refr').checked; atmoU.refractOn.value = atmo ? 1 : 0; atmoU.extK.value = atmo ? 0.25 : 0;
   if (gOn && bortle > 3) bg.lerp(new THREE.Color(0x2a2620), (bortle - 3) / 6 * 0.35 * (1 - skyDayK)); renderer.setClearColor(bg); // skyglow
   starMat.uniforms.limit.value = Math.min(view.fov > 30 ? 8.5 : MOBILE ? 11 : 12.5, (gOn ? NELM[bortle - 1] : 6.4) + (view.fov > 30 ? 2.2 : 3) * zoom) - day * 5; // deeper when zoomed: Gaia tiles

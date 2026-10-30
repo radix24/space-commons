@@ -90,6 +90,7 @@
 | 행성 텍스처, 은하수 | Solar System Scope (CC BY 4.0) |
 | 위성·왜행성 표면 지도 | 이오·유로파·타이탄·명왕성·세레스·베스타: NASA/JPL/USGS (퍼블릭 도메인), 가니메데·칼리스토: Askaniy (CC BY-SA 3.0), Wikimedia Commons |
 | 오늘의 지구 | NASA GIBS, VIIRS SNPP 보정 반사율 실제 색 (퍼블릭 도메인) |
+| 오로라 예보 | NOAA SWPC OVATION 오로라 예보 (퍼블릭 도메인) |
 
 자료 갱신 스크립트는 `tools/` 폴더에 있습니다.
 
