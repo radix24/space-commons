@@ -2593,10 +2593,29 @@ async function loadArt() {
     const m = new THREE.Mesh(g, artMat(loader.load('assets/constellations/' + a.file))); m.frustumCulled = false; m.renderOrder = 1; artGroup.add(m);
   }
 }
+// Korean sky culture: the Cheonsang Yeolcha Bunyajido itself (woodcut print, public domain), laid on the sky.
+// The chart is a polar equidistant map of the sky some 1,400 years before J2000 (tools/make_cheonsang.py fitted it).
+const csGroup = new THREE.Group(); csGroup.visible = false; sky.add(csGroup); let csLoaded = false;
+function precessDeg(ra, dec, years) { // rotation about the ecliptic pole by general precession in longitude
+  const e = 23.44 * D2R, r = ra * D2R, d = dec * D2R, x = Math.cos(d) * Math.cos(r), y = Math.cos(d) * Math.sin(r), z = Math.sin(d);
+  const ye = y * Math.cos(e) + z * Math.sin(e), ze = -y * Math.sin(e) + z * Math.cos(e), L = 50.29 / 3600 * years * D2R;
+  const x2 = x * Math.cos(L) - ye * Math.sin(L), y2 = x * Math.sin(L) + ye * Math.cos(L), y3 = y2 * Math.cos(e) - ze * Math.sin(e), z3 = y2 * Math.sin(e) + ze * Math.cos(e);
+  return [(Math.atan2(y3, x2) * R2D + 360) % 360, Math.asin(Math.max(-1, Math.min(1, z3))) * R2D];
+}
+async function loadCheonsang() {
+  csLoaded = true; const f = await fetch('data/cheonsang.json').then(r => r.json()), NR = 96, ND = 72, pos = [], uv = [], idx = [], half = f.size / 2;
+  for (let j = 0; j <= ND; j++) for (let i = 0; i <= NR; i++) { const ra = i / NR * 360, dec = 90 - j / ND * 143, [pr, pdc] = precessDeg(ra, dec, f.years), pd = 90 - pdc, a = (f.mir * pr + f.rot) * D2R;
+    const v = eqVec(ra, dec, R_SKY * 0.994); pos.push(v.x, v.y, v.z); uv.push((half + f.k * pd * Math.cos(a)) / f.size, 1 - (half - f.k * pd * Math.sin(a)) / f.size); }
+  for (let j = 0; j < ND; j++) for (let i = 0; i < NR; i++) { const k = j * (NR + 1) + i; idx.push(k, k + 1, k + NR + 1, k + 1, k + NR + 2, k + NR + 1); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx);
+  const tex = new THREE.TextureLoader().load('assets/cheonsang.webp'); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+  const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.6, depthTest: false, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending }));
+  m.frustumCulled = false; m.renderOrder = 1; csGroup.add(m);
+}
 function updateArt() {
   const korean = $('skyculture').value === 'korean';
-  if ($('t-art').checked && korean && !updateArt.told) { updateArt.told = true; $('status').textContent = '한국 전통 별자리는 공개된 그림 자료가 없어 선과 이름만 표시합니다'; }
-  if (!korean) updateArt.told = false;
+  const kon = $('t-art').checked && korean && !s3d.far; csGroup.visible = kon; if (kon && !csLoaded) { loadCheonsang(); $('status').textContent = '천상열차분야지도 (목판본, 퍼블릭 도메인)를 겹칩니다. 1,400여 년 전 하늘 기준이라 별 위치가 조금씩 어긋납니다.'; }
+  if (kon) csGroup.children.forEach(m => m.material.opacity = 0.38 * Math.max(0, Math.min(1, (view.fov - 4) / 16)));
   const on = $('t-art').checked && !s3d.far && !korean; artGroup.visible = on; if (!on) return; if (!artLoaded) loadArt();
   const op = 0.3 * Math.max(0, Math.min(1, (view.fov - 6) / 20));
   for (const m of artGroup.children) m.material.uniforms.op.value = op;
