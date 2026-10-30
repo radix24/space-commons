@@ -772,14 +772,14 @@ const asteroidMat = new THREE.ShaderMaterial({
       vec3 ecl = vec3((cw * cO - sw * sO * ci) * xp + (-sw * cO - cw * sO * ci) * yp, (cw * sO + sw * cO * ci) * xp + (-sw * sO + cw * cO * ci) * yp, sw * si * xp + cw * si * yp);
       const float OB = 0.4090928;
       vec3 p = vec3(ecl.x, ecl.y * cos(OB) - ecl.z * sin(OB), ecl.y * sin(OB) + ecl.z * cos(OB)) * 149.5978707 - camPos;
-      vT = a > 30.0 ? 1.0 : 0.0;
+      vT = a > 30.0 ? 1.0 : beltK > 0.0 ? 0.0 : -1.0; // -1: faded out (a zero point size still draws 1 px)
       gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0); gl_PointSize = (vT > 0.5 ? 2.2 : 1.5 * beltK) * pr;
       #include <logdepthbuf_vertex>
     }`,
   fragmentShader: `#include <logdepthbuf_pars_fragment>
     varying float vT; void main() {
     #include <logdepthbuf_fragment>
-    vec2 q = gl_PointCoord * 2.0 - 1.0; if (dot(q, q) > 1.0) discard;
+    vec2 q = gl_PointCoord * 2.0 - 1.0; if (dot(q, q) > 1.0 || vT < -0.5) discard;
     gl_FragColor = vec4(vT > 0.5 ? vec3(0.45, 0.62, 1.0) : vec3(0.62, 0.55, 0.44), 1.0); }`,
   transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
 });
@@ -1468,7 +1468,7 @@ function updateSpace() {
       nearestAll = Math.min(nearestAll, d - bodyR(p));
       const gq = hp.clone().sub(earth); p.dist = gq.length() / MKM_AU; const rd = vecToRaDec(gq); p.ra = rd.ra; p.dec = rd.dec; p.helioAU = hp.length() / MKM_AU;
       placeProbe(p, rel, earth.clone().sub(sp.pos), sp.pos.clone().negate(), sp.replay === p ? d * Math.tan(view.fov * D2R * 0.03) : 0); p.mesh.visible = true;
-      if (p !== sp.target && PLANETS[0].world && Math.acos(Math.min(1, p.world.dot(PLANETS[0].world))) / (view.fov * D2R) * innerHeight < Math.max(10, PLANETS[0].rpx * 3)) p.mesh.visible = false; // don't blot the Sun
+      if (p !== sp.target && PLANETS[0].world && Math.acos(Math.min(1, p.world.dot(PLANETS[0].world))) / (view.fov * D2R) * innerHeight < Math.max(30, PLANETS[0].rpx * 4)) p.mesh.visible = false; // don't blot the Sun
       continue;
     }
     nearest = Math.min(nearest, Math.max(d - bodyR(p) * 0.995, 1e-10)); // 0.995: the faceted sphere's flat faces sit slightly inside the true radius
@@ -1489,12 +1489,15 @@ function updateSpace() {
     }
     if (p.name !== 'Sun' && p.mesh.scale.x > bodyR(p) * 1.01 && PLANETS[0].world) { // an enlarged marker disc over the Sun's glow bites a dark notch out of it
       const sepPx = Math.acos(Math.min(1, p.world.dot(PLANETS[0].world))) / (view.fov * D2R) * innerHeight;
-      if (sepPx < Math.max(10, PLANETS[0].rpx * 3)) p.mesh.visible = false; }
+      if (sepPx < Math.max(30, PLANETS[0].rpx * 4)) p.mesh.visible = false; }
     if (p.glow) p.glow.scale.setScalar(Math.max(8, 0.15 * view.fov * D2R * d / p.mesh.scale.x));
     p.rpx = Math.atan(p.mesh.scale.x / d) / (view.fov / 2 * D2R) * innerHeight / 2;
   }
   orbits.position.copy(sp.pos).negate(); trails.position.copy(orbits.position); updateTrails(jd(state.time));
   orbits.visible = $('t-orbits').checked && nearest > 2; trails.visible = orbits.visible; // orbit lines only clutter close-ups
+  // orbits smaller than a few dozen pixels (inner planets seen from the outer solar system) collapse into a bright smudge beside the Sun
+  { const dS = sp.pos.length(); for (const l of orbits.children) { const px = Math.atan(l.userData.r / Math.max(dS, 1e-9)) / (view.fov * D2R) * innerHeight;
+    l.material.opacity = l.userData.op * Math.max(0, Math.min(1, (px - 15) / 25)); l.visible = px > 15; } }
   sp.nearest = nearest; sp.nearestAll = Math.min(nearest, nearestAll);
   updateSites();
   if (sp.target?.kindName === 'site') { const s = sp.target; sp.nearestAll = Math.min(sp.nearestAll, sp.dist * 0.6);
@@ -1509,13 +1512,13 @@ const orbits = new THREE.Group(); orbits.visible = false; planetScene.add(orbits
     const pts = []; for (let i = 0; i <= 360; i++) pts.push(ecl2eq(helio(n, T, i - 180)).multiplyScalar(MKM_AU));
     const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
       new THREE.LineBasicMaterial({ color: n === 'Earth' ? 0x8ea2ff : 0x4a5a82, transparent: true, opacity: 0.55 }));
-    l.frustumCulled = false; orbits.add(l);
+    l.frustumCulled = false; l.userData.r = Math.max(...pts.map(v => v.length())); l.userData.op = l.material.opacity; orbits.add(l);
   }
   for (const p of PLANETS) if (p.sb) {
     const pts = []; for (let i = 0; i <= 720; i++) pts.push(ecl2eq(sbHelio(p.sb, 0, i / 2)).multiplyScalar(MKM_AU));
     const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
       new THREE.LineBasicMaterial({ color: p.name === 'Halley' ? 0x7fd8ff : 0x8a6f9e, transparent: true, opacity: 0.45 }));
-    l.frustumCulled = false; orbits.add(l);
+    l.frustumCulled = false; l.userData.r = Math.max(...pts.map(v => v.length())); l.userData.op = l.material.opacity; orbits.add(l);
   }
 })();
 // Halley's tail: a soft additive cone pointing away from the Sun, growing as the comet nears perihelion
