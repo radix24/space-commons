@@ -22,3 +22,8 @@
 로컬 실행: `python -m http.server 8765` → http://localhost:8765
 
 브랜드 가이드: [BRAND.md](BRAND.md) · 브랜드 시트: https://radix24.github.io/space-commons/brand.html · 은하수 파노라마·행성 텍스처 © Solar System Scope (CC BY 4.0)
+
+## 버전
+기능 묶음(batch) 하나를 마칠 때마다 마지막 글자를 올립니다 (`app.js`의 `VERSION`).
+- Alpha 0.0.1a: 지상·우주 모드, 탐사선, 외계행성, 실제 밝기
+- Alpha 0.0.1b: 대기 굴절·소광, 광공해 단계, 달 지구조, 오늘의 천문 정보, 유성우, 관측 목록, 주제별 투어 6개, 휴대폰 화면·하늘 비추기, 낮 하늘 3가지 보기
