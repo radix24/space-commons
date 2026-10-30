@@ -1,6 +1,6 @@
 # Space Commons
 
-브라우저에서 보는 플라네타리움 — https://radix24.github.io/web-planetarium/
+브라우저에서 보는 플라네타리움 — https://radix24.github.io/space-commons/
 
 - 별: Hipparcos 기반 8등급까지 약 4만 개 (d3-celestial 데이터), 별 이름·별자리선
 - 딥스카이: [OpenNGC](https://github.com/mattiaverga/OpenNGC) 전체 NGC/IC (~1.25만 개), 확대할수록 어두운 천체 표시
