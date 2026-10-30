@@ -229,6 +229,14 @@
   <div id="plan" hidden></div>
   <div class="row"><button id="log-btn">관측 일지 열기</button></div>
 </div>
+<div id="ecl" class="side wide" hidden>
+  <button class="x" id="ecl-close">×</button>
+  <h2 id="ecl-title">일식</h2>
+  <canvas id="ecl-map" style="width:100%;display:block"></canvas>
+  <div class="small">어두울수록 태양이 많이 가려지는 곳 · 붉은 띠: 개기식(또는 금환식)이 보이는 길 · 흰 원: 지금 관측지</div>
+  <p id="ecl-sub" class="small"></p>
+  <button id="ecl-go">여기서 최대일 때 하늘 보기</button>
+</div>
 <div id="log" class="side" hidden>
   <button class="x" id="log-close">×</button>
   <h2>관측 일지</h2>

@@ -2114,7 +2114,8 @@ function renderCalendar() {
     const h = document.createElement('li'); h.className = 'day'; h.textContent = '다가오는 일식·월식'; ul.append(h);
     for (const e of ECLIPSES.filter(e => Date.parse(e.date) > state.time - 86400e3).slice(0, 8)) {
       const li = document.createElement('li'), b = document.createElement('button'), k = document.createElement('span');
-      b.textContent = `${e.date} ${e.kind}`; k.textContent = e.place ? e.place[2] : '달이 떠 있는 곳 어디서나'; b.onclick = () => goEclipse(e); li.append(b, k); ul.append(li);
+      b.textContent = `${e.date} ${e.kind}`; k.textContent = e.place ? e.place[2] : '달이 떠 있는 곳 어디서나'; b.onclick = () => goEclipse(e); li.append(b, k);
+      if (e.type === 'solar') { const mb = document.createElement('button'); mb.textContent = '그림자 지도'; mb.onclick = () => eclipseMap(e); li.append(mb); } ul.append(li);
     }
   }, 30);
 }
@@ -2813,6 +2814,42 @@ function varStarBox(o) { // shown in the star panel when the star is a known var
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: 'text/plain' })); a.download = 'aavso-visual.txt'; a.click(); };
   show(); return box;
 }
+// ---------- A6. solar eclipse map: the Moon's shadow swept over the Earth, the path of totality, and the eclipse seen from here ----------
+const R_SUN_AU = 695700 / KM_AU, R_MOON_AU = 1737.4 / KM_AU;
+function obscAt(ms, g, lat, lon) { // fraction of the Sun covered, seen from (lat, lon) at time ms (g = geoAt(ms)); -1 if the Sun is below the horizon
+  const ob = observerEcl(ms, lat, lon), s = g.Sun.clone().sub(ob), m = g.Moon.clone().sub(ob);
+  if (s.dot(ob) <= 0) return -1;
+  const sep = Math.acos(Math.max(-1, Math.min(1, s.clone().normalize().dot(m.clone().normalize()))));
+  return diskOverlap(sep, Math.asin(R_SUN_AU / s.length()), Math.asin(R_MOON_AU / m.length()));
+}
+function greatestEclipse(dateStr) { // geocentric minimum of Sun-Moon separation within the day
+  let best = 0, bs = 9; const t0 = Date.parse(dateStr + 'T00:00:00Z') - 6 * 3600e3;
+  for (let t = t0; t < t0 + 36 * 3600e3; t += 5 * 60e3) { const g = geoAt(t), s = sepDeg(g.Sun, g.Moon); if (s < bs) { bs = s; best = t; } }
+  return best;
+}
+async function eclipseMap(e) {
+  const box = $('ecl'); box.hidden = false; $('ecl-title').textContent = `${e.date} ${e.kind}`; $('ecl-sub').textContent = '달 그림자를 계산하는 중…';
+  await new Promise(r => setTimeout(r, 30));
+  const tg = greatestEclipse(e.date), W = 360, H = 180, cv = $('ecl-map'), g2 = cv.getContext('2d'); cv.width = W * 2; cv.height = H * 2;
+  const base = await new Promise((ok) => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => ok(null); im.src = 'textures/2k_earth_daymap.jpg'; });
+  const maxO = new Float32Array(W / 2 * H / 2), total = new Uint8Array(W / 2 * H / 2), steps = [];
+  for (let t = tg - 3.5 * 3600e3; t <= tg + 3.5 * 3600e3; t += 6 * 60e3) steps.push([t, geoAt(t)]);
+  for (let j = 0; j < H / 2; j++) for (let i = 0; i < W / 2; i++) { const lat = 89 - j * 2, lon = -179 + i * 2; let m = 0;
+    for (const [t, g] of steps) { const o = obscAt(t, g, lat, lon); if (o > m) m = o; } maxO[j * W / 2 + i] = m; if (m > 0.995) total[j * W / 2 + i] = 1; }
+  if (base) g2.drawImage(base, 0, 0, W * 2, H * 2); g2.fillStyle = 'rgba(0,0,0,.12)'; g2.fillRect(0, 0, W * 2, H * 2);
+  for (let j = 0; j < H / 2; j++) for (let i = 0; i < W / 2; i++) { const m = maxO[j * W / 2 + i]; if (m <= 0) continue;
+    g2.fillStyle = total[j * W / 2 + i] ? 'rgba(226,87,63,.95)' : `rgba(8,8,30,${0.25 + 0.65 * m})`; g2.fillRect(i * 4, j * 4, 4, 4); }
+    const ox = (state.lon + 180) * 2, oy = (90 - state.lat) * 2; g2.strokeStyle = '#fff'; g2.beginPath(); g2.arc(ox, oy, 5, 0, 7); g2.stroke();
+  // the eclipse from here: contacts, maximum and how much of the Sun is covered
+  let first = null, last = null, mx = 0, tmx = 0;
+  for (let t = tg - 4 * 3600e3; t <= tg + 4 * 3600e3; t += 60e3) { const o = obscAt(t, geoAt(t), state.lat, state.lon); if (o > 0) { first ??= t; last = t; if (o > mx) { mx = o; tmx = t; } } }
+  const hm = (t) => new Date(t).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit', hour12: false });
+  $('ecl-sub').textContent = first ? `여기(${state.lat.toFixed(1)}°, ${state.lon.toFixed(1)}°)에서: ${hm(first)} 시작 · ${hm(tmx)} 최대, 태양의 ${(mx * 100).toFixed(0)}% 가려짐${mx > 0.995 ? ' (개기)' : ''} · ${hm(last)} 끝`
+    : `여기(${state.lat.toFixed(1)}°, ${state.lon.toFixed(1)}°)에서는 보이지 않습니다. 지도의 어두운 곳에서 부분식, 붉은 띠에서 ${e.kind === '금환일식' ? '금환식' : '개기식'}이 보입니다.`;
+  $('ecl-go').onclick = () => { if (first) { state.time = tmx; $('ecl').hidden = true; select(planetObj(PLANETS[0])); flyTo(planetObj(PLANETS[0])); } };
+  $('ecl-go').hidden = !first;
+}
+$('ecl-close').onclick = () => $('ecl').hidden = true;
 // ---------- 22. whole spacecraft journeys (S7) ----------
 function journeyTimeline(p) {
   const box = $('info-exo'), ev = JOURNEYS[p.name], e = probeEph[p.name]; box.innerHTML = ''; box.hidden = false;
