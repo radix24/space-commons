@@ -1833,9 +1833,12 @@ const patchMat = new THREE.ShaderMaterial({
     void main() {
       #include <logdepthbuf_fragment>
       float d = n2(vXZ / 0.6) * 0.25 + n2(vXZ / 4.0) * 0.35 + n2(vXZ / 30.0) * 0.4;   // rocks, ripples, patches
-      float pebble = step(0.93, h1(floor(vXZ / 0.35))) * 0.35;
-      vec3 col = texture2D(map, vUv).rgb * (0.7 + 0.55 * d) * (1.0 - pebble);
-      float l = max(dot(normalize(vN), sunDir), 0.0) * 1.15 + 0.07; // starlight/skyglow so night ground is not pure black
+      vec2 cell = floor(vXZ / 0.5), f = fract(vXZ / 0.5) - 0.5 + (vec2(h1(cell + 7.0), h1(cell + 3.0)) - 0.5) * 0.5;
+      float pebble = step(0.965, h1(cell)) * (1.0 - smoothstep(0.08, 0.16 + 0.1 * h1(cell + 11.0), length(f))) * 0.45;
+      vec3 t = texture2D(map, vUv).rgb; float lum = dot(t, vec3(0.3, 0.59, 0.11));
+      vec3 base = t / max(lum, 0.03) * mix(lum, 0.42, 0.7); // keep the map's colour, lift very dark regions (e.g. Syrtis Major) so the ground reads
+      vec3 col = base * (0.7 + 0.55 * d) * (1.0 - pebble);
+      float l = max(dot(normalize(vN), sunDir), 0.0) * 0.95 + 0.38; // night side stays readable (as if lit by starlight / a dark-adapted eye)
       gl_FragColor = vec4(col * l, 1.0);
     }`,
 });
@@ -1983,7 +1986,7 @@ function drawLabels() {
         label(s[0] + Math.min(px / 2, 80) * 0.7, s[1], o.messier ? (view.fov < 20 && o.common ? `${o.messier} ${o.common}` : o.messier) : o.name, 'dso'); m++;
       }
     }
-    for (const p of PLANETS) if (p.world && p.mesh.visible && p.world.dot(fwd) > 0) { const s = toScreen(p.world); if (s) label(s[0] + p.rpx, s[1], p.ko, 'planet'); }
+    for (const p of PLANETS) if (p.world && p.mesh.visible && p.world.dot(fwd) > 0 && !(siteUp && p.world.dot(siteUp) < 0)) { const s = toScreen(p.world); if (s) label(s[0] + p.rpx, s[1], p.ko, 'planet'); }
   }
   if ($('t-labels').checked && washout < 0.6 && exoPoints?.visible && view.fov < 40) {
     const fwd = camFwd(), cosLim = Math.cos(Math.min(85, view.fov * 0.75) * D2R); let m = 0;

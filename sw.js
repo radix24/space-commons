@@ -1,6 +1,6 @@
 // Space Commons service worker: keeps the app and its catalogs for offline use.
 // App files: cache first, refreshed in the background. Live data (satellites, Wikipedia, sky images): network first, cache as fallback.
-const CACHE = 'space-commons-v5';
+const CACHE = 'space-commons-v6';
 const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'i18n.js', 'craft.js', 'content.js', 'content-missions.js', 'manifest.webmanifest', 'assets/sc-mark.svg', 'assets/favicon.svg',
   'assets/icon-192.png', 'data/probes.json', 'data/exoplanets.json', 'data/flybys.json', 'data/orbiters.json', 'data/korea.tle'];
 const LIVE = /celestrak\.org|wikipedia\.org|alasky|hips2fits/;
@@ -15,8 +15,8 @@ self.addEventListener('fetch', (e) => {
     e.respondWith(fetch(req).then((r) => { const c = r.clone(); caches.open(CACHE).then((cc) => cc.put(req, c)); return r; }).catch(() => caches.match(req)));
     return;
   }
-  e.respondWith(caches.match(req).then((hit) => {
-    const net = fetch(req).then((r) => { if (r.ok || r.type === 'opaque') { const c = r.clone(); caches.open(CACHE).then((cc) => cc.put(req, c)); } return r; }).catch(() => hit);
-    return hit || net;
-  }));
+  // our own files: newest first so an update shows on the next load; the cache only covers being offline
+  const own = new URL(req.url).origin === location.origin;
+  if (own) { e.respondWith(fetch(req).then((r) => { if (r.ok) { const c = r.clone(); caches.open(CACHE).then((cc) => cc.put(req, c)); } return r; }).catch(() => caches.match(req))); return; }
+  e.respondWith(caches.match(req).then((hit) => hit || fetch(req).then((r) => { if (r.ok || r.type === 'opaque') { const c = r.clone(); caches.open(CACHE).then((cc) => cc.put(req, c)); } return r; })));
 });
