@@ -89,6 +89,7 @@
 | 그 밖의 별자리 문화 10종 | Stellarium 별자리 문화: 일본·인도·하와이·마오리·북유럽·몽골·티베트 (CC BY-SA 4.0), 이누이트·나바호·아즈텍 (GPL v2.0). 변형 금지(ND) 자료는 쓰지 않음 (`data/LICENSE-skycultures.txt`) |
 | 은하 사진 | DSS2 컬러 (STScI/NASA, Caltech/Palomar), CDS HiPS의 ESA ESASky 미러에서 잘라 냄 (`tools/make_galaxy_cutouts.py`) |
 | 가까운 우주의 은하 4만 3천여 개 | 2MASS Redshift Survey v2.4 (Huchra et al. 2012, ApJS 199, 26; 이용 시 인용 조건) · 거리 = 후퇴 속도 / H₀(70) · `tools/make_galaxy_catalog.py` |
+| 3D로 날아다니는 별 10만 7천여 개 | AT-HYG v3.2 (astronexus/HYG-Database, CC BY-SA 4.0) · `tools/make_stars3d_ext.py` |
 | 3D 모델 | NASA 3D Resources, NASA Science (Europa Clipper), ESA SciFleet (Juice, BepiColombo, Solar Orbiter, Mars Express, ExoMars TGO), 공개 제원으로 만든 자체 모델 |
 | 행성 텍스처, 은하수 | Solar System Scope (CC BY 4.0) |
 | 위성·왜행성 표면 지도 | 이오·유로파·타이탄·명왕성·세레스·베스타: NASA/JPL/USGS (퍼블릭 도메인), 가니메데·칼리스토: Askaniy (CC BY-SA 3.0), Wikimedia Commons |

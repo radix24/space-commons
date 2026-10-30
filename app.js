@@ -2705,35 +2705,40 @@ fetch('data/stars3d.json').then(r => r.json()).then(js => {
   const col = new Float32Array(N * 3);
   rows.forEach((r, i) => { s3d.pos.set([r[1] * PC, r[2] * PC, r[3] * PC], i * 3); s3d.absmag[i] = r[4]; col.set(ciRGB(r[5]), i * 3);
     if (i) s3dByName.set(r[0], { name: r[0], pos: new THREE.Vector3(r[1] * PC, r[2] * PC, r[3] * PC), M: r[4], ci: r[5], con: r[6], planets: [] }); });
-  // the Local Group: each galaxy a cloud of points at its real direction and distance (disc tilted by its catalogued inclination)
-  let i = N0; for (const [name, ra, dec, kpc, rk, inc, n, pa] of LOCAL_GROUP) {
-    const cen = eqVec(ra, dec, kpc * KPC), up = new THREE.Vector3(0, 0, 1), e1 = new THREE.Vector3().crossVectors(up, cen).normalize(), e2 = new THREE.Vector3().crossVectors(cen.clone().normalize(), e1);
-    const a1 = e1.clone().multiplyScalar(Math.cos(pa * D2R)).addScaledVector(e2, Math.sin(pa * D2R)), a2 = e2.clone().multiplyScalar(Math.cos(pa * D2R)).addScaledVector(e1, -Math.sin(pa * D2R)), nrm = cen.clone().normalize();
-    const b2 = a2.clone().multiplyScalar(Math.cos(inc * D2R)).addScaledVector(nrm, Math.sin(inc * D2R)), sph = inc < 0;
-    for (let k = 0; k < n; k++, i++) { const r = rk * Math.min(3, -Math.log(1 - rnd() * 0.95) * 0.6), th = rnd() * 2 * Math.PI, v = cen.clone();
-      if (sph) v.addScaledVector(e1, gau() * rk * 0.5 * KPC).addScaledVector(e2, gau() * rk * 0.5 * KPC).addScaledVector(nrm, gau() * rk * 0.5 * KPC);
-      else v.addScaledVector(a1, r * Math.cos(th) * KPC).addScaledVector(b2, r * Math.sin(th) * KPC).addScaledVector(nrm, gau() * rk * 0.04 * KPC);
-      pos.set([v.x, v.y, v.z], i * 3); const core = r < rk * 0.3; col.set(core ? [1, 0.88, 0.7] : [0.75, 0.82, 1], i * 3); w[i] = 25 * Math.min(4, kpc / 50) ** 1.2; }
-    galaxy.labels.push({ name, v: cen }); }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(N * 3), 3));
   g.setAttribute('mag', new THREE.Float32BufferAttribute(new Float32Array(N), 1)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
   s3dPts = new THREE.Points(g, s3dMat); s3dPts.frustumCulled = false; s3dPts.renderOrder = -1; s3dPts.visible = false; planetScene.add(s3dPts);
 }).catch(() => {});
+// 107,000 more stars with distances (AT-HYG, CC BY-SA 4.0) for flying among them, loaded the first time we leave the solar system
+const s3x = { pts: null, pos: null, abs: null, loading: false };
+async function loadStarsExt() { s3x.loading = true;
+  const buf = await fetch('data/stars3d-ext.bin').then(r => r.arrayBuffer()), dv = new DataView(buf), N = buf.byteLength / 14, col = new Float32Array(N * 3);
+  s3x.pos = new Float64Array(N * 3); s3x.abs = new Float32Array(N);
+  for (let i = 0; i < N; i++) { const o = i * 14; s3x.pos[3 * i] = dv.getFloat32(o, true) * PC; s3x.pos[3 * i + 1] = dv.getFloat32(o + 4, true) * PC; s3x.pos[3 * i + 2] = dv.getFloat32(o + 8, true) * PC;
+    s3x.abs[i] = dv.getUint8(o + 12) / 10 - 10; col.set(ciRGB(dv.getUint8(o + 13) / 80 - 0.5), 3 * i); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(N * 3), 3)); g.setAttribute('mag', new THREE.Float32BufferAttribute(new Float32Array(N), 1)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  s3x.pts = new THREE.Points(g, s3dMat); s3x.pts.frustumCulled = false; s3x.pts.renderOrder = -1; s3x.pts.visible = false; planetScene.add(s3x.pts); }
 function updateStars3d() {
   // beyond ~0.03 light-years the sky backdrop (stars fixed at infinity) is replaced by stars at their real 3D places
   const far = mode.space && sp.pos.length() > 2.8e5 && !!s3dPts;
   if (far !== s3d.far) { s3d.far = far;
     if (starPoints) starPoints.visible = !far; if (exoPoints) exoPoints.visible = !far && $('t-exo').checked; if (dsoPoints) dsoPoints.visible = !far && $('t-dso').checked;
     boundsGroup.visible = !far && $('t-bounds').checked; if (far) { linesGroup.visible = false; koreanGroup.visible = false; } else applySkyCulture(); }
-  if (s3dPts) s3dPts.visible = far;
+  if (s3dPts) s3dPts.visible = far; if (s3x.pts) s3x.pts.visible = far && !galaxy.pts?.visible;
+  if (far && sp.pos.length() > 3e6 && !galaxy.pts?.visible) planetGroup.visible = false; else if (!galaxy.pts?.visible) planetGroup.visible = true; // past ~0.1 pc the Sun is one of the 3D stars, not a glowing disc
   updateSystem();
   if (!far) return;
+  if (!s3x.loading) loadStarsExt().catch(() => {});
   const P = s3dPts.geometry.attributes.position, Mg = s3dPts.geometry.attributes.mag, k = 1 / Math.max(1e-12, sp.nearestAll || 1), R = 1e5 / k;
   const cx = sp.pos.x, cy = sp.pos.y, cz = sp.pos.z, a = P.array, m = Mg.array, sp3 = s3d.pos;
   for (let i = 0, n = s3d.absmag.length; i < n; i++) { const x = sp3[3 * i] - cx, y = sp3[3 * i + 1] - cy, z = sp3[3 * i + 2] - cz, d = Math.hypot(x, y, z) || 1e-9;
     a[3 * i] = x / d * R; a[3 * i + 1] = y / d * R; a[3 * i + 2] = z / d * R; m[i] = s3d.absmag[i] + 5 * Math.log10(d / PC) - 5;
     if (sysNow && Math.abs(x + cx - sysNow.pos.x) < 1 && Math.abs(y + cy - sysNow.pos.y) < 1) m[i] = 99; } // the visited star is drawn as a sphere
   P.needsUpdate = true; Mg.needsUpdate = true; s3dMat.uniforms.pr.value = renderer.getPixelRatio();
+  if (s3x.pts?.visible) { const P2 = s3x.pts.geometry.attributes.position, M2 = s3x.pts.geometry.attributes.mag, a2 = P2.array, m2 = M2.array, q = s3x.pos;
+    for (let i = 0, n = s3x.abs.length; i < n; i++) { const x = q[3 * i] - cx, y = q[3 * i + 1] - cy, z = q[3 * i + 2] - cz, d = Math.hypot(x, y, z) || 1e-9;
+      a2[3 * i] = x / d * R; a2[3 * i + 1] = y / d * R; a2[3 * i + 2] = z / d * R; m2[i] = s3x.abs[i] + 5 * Math.log10(d / PC) - 5; }
+    P2.needsUpdate = true; M2.needsUpdate = true; }
 }
 function starLabels() {
   galaxyLabels(); if (sky.visible) cometLabels();
@@ -2842,6 +2847,16 @@ function buildGalaxy() {
       X = r * Math.cos(th); Y = r * Math.sin(th); Z = gau() * (arm ? 0.1 : 0.22);
       const hii = arm && rnd() < 0.04; [cr, cg, cb] = hii ? [1, 0.45, 0.55] : arm ? [0.66, 0.76, 1] : [0.96, 0.88, 0.74]; wt = hii ? 1.4 : arm ? 1 : 0.6; }
     const e = galToEq((X + 8.2) * KPC, Y * KPC, (Z - 0.02) * KPC); pos.set([e.x, e.y, e.z], i * 3); col.set([cr, cg, cb], i * 3); w[i] = wt; }
+  // the Local Group: each galaxy a cloud of points at its real direction and distance (disc tilted by its catalogued inclination)
+  let i = N0; for (const [name, ra, dec, kpc, rk, inc, n, pa] of LOCAL_GROUP) {
+    const cen = eqVec(ra, dec, kpc * KPC), up = new THREE.Vector3(0, 0, 1), e1 = new THREE.Vector3().crossVectors(up, cen).normalize(), e2 = new THREE.Vector3().crossVectors(cen.clone().normalize(), e1);
+    const a1 = e1.clone().multiplyScalar(Math.cos(pa * D2R)).addScaledVector(e2, Math.sin(pa * D2R)), a2 = e2.clone().multiplyScalar(Math.cos(pa * D2R)).addScaledVector(e1, -Math.sin(pa * D2R)), nrm = cen.clone().normalize();
+    const b2 = a2.clone().multiplyScalar(Math.cos(inc * D2R)).addScaledVector(nrm, Math.sin(inc * D2R)), sph = inc < 0;
+    for (let k = 0; k < n; k++, i++) { const r = rk * Math.min(3, -Math.log(1 - rnd() * 0.95) * 0.6), th = rnd() * 2 * Math.PI, v = cen.clone();
+      if (sph) v.addScaledVector(e1, gau() * rk * 0.5 * KPC).addScaledVector(e2, gau() * rk * 0.5 * KPC).addScaledVector(nrm, gau() * rk * 0.5 * KPC);
+      else v.addScaledVector(a1, r * Math.cos(th) * KPC).addScaledVector(b2, r * Math.sin(th) * KPC).addScaledVector(nrm, gau() * rk * 0.04 * KPC);
+      pos.set([v.x, v.y, v.z], i * 3); const core = r < rk * 0.3; col.set(core ? [1, 0.88, 0.7] : [0.75, 0.82, 1], i * 3); w[i] = 25 * Math.min(4, kpc / 50) ** 1.2; }
+    galaxy.labels.push({ name, v: cen }); }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(N * 3), 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setAttribute('a', new THREE.Float32BufferAttribute(new Float32Array(N), 1));
   const m = new THREE.ShaderMaterial({ uniforms: { pr: { value: 1 } },
     vertexShader: `attribute vec3 color; attribute float a; varying vec3 vC; varying float vA; uniform float pr; void main(){ gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); vC = color; vA = a; gl_PointSize = clamp(1.6 + a * 2.5, 1.2, 5.0) * pr; }`,
