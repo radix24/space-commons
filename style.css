@@ -34,5 +34,5 @@ button.on { background: #2d4f8a; }
 #info td:first-child { color: #8fa3c4; width: 40%; }
 #info-img { width: 100%; margin-top: 8px; border-radius: 6px; background: #000; aspect-ratio: 1; }
 #info-close { position: absolute; top: 8px; right: 8px; padding: 0 7px; }
-#help { position: fixed; right: 12px; bottom: 12px; color: #6f82a3; font-size: 11px; text-shadow: 0 0 3px #000; }
+#help { text-align: right; position: fixed; right: 12px; bottom: 12px; color: #6f82a3; font-size: 11px; text-shadow: 0 0 3px #000; }
 @media (max-width: 640px) { #help { display: none; } #info { top: auto; bottom: 200px; max-height: 40vh; } }

@@ -355,18 +355,18 @@ function rocky(base, spots, seed, craters = 0) {
   });
 }
 const PLANETS = [
-  { name: 'Sun', ko: '태양', R: 696000, pole: [286.13, 63.87], tex: () => noiseTex(512, 256, (c, w, h) => { const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#ffcf6a'); g.addColorStop(.5, '#fff1b0'); g.addColorStop(1, '#ffcf6a'); c.fillStyle = g; c.fillRect(0, 0, w, h); const r = rnd(3); for (let i = 0; i < 40; i++) { c.fillStyle = 'rgba(120,60,0,.5)'; c.beginPath(); c.arc(r() * w, h * (.35 + r() * .3), 1 + r() * 3, 0, 7); c.fill(); } }), emissive: true, period: 25.4 },
-  { name: 'Moon', ko: '달', R: 1737, pole: [270, 66.5], tex: () => rocky('#9a9a98', ['#5d5d5d', '#bdbdb8', '#4a4a4a'], 7, 500), period: 27.32 },
-  { name: 'Mercury', ko: '수성', R: 2440, pole: [281.01, 61.41], tex: () => rocky('#8d8378', ['#5a524a', '#b0a798'], 11, 300), period: 58.6 },
-  { name: 'Venus', ko: '금성', R: 6052, pole: [272.76, 67.16], tex: () => banded(['#e8d29c', '#f1e1b5', '#d9bd80', '#f6ebc9'], 13, 3), period: -243 },
-  { name: 'Mars', ko: '화성', R: 3390, pole: [317.68, 52.89], tex: () => noiseTex(1024, 512, (c, w, h) => { const r = rnd(17); c.fillStyle = '#b5532c'; c.fillRect(0, 0, w, h);
+  { name: 'Sun', img: 'textures/2k_sun.jpg', ko: '태양', R: 696000, pole: [286.13, 63.87], tex: () => noiseTex(512, 256, (c, w, h) => { const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#ffcf6a'); g.addColorStop(.5, '#fff1b0'); g.addColorStop(1, '#ffcf6a'); c.fillStyle = g; c.fillRect(0, 0, w, h); const r = rnd(3); for (let i = 0; i < 40; i++) { c.fillStyle = 'rgba(120,60,0,.5)'; c.beginPath(); c.arc(r() * w, h * (.35 + r() * .3), 1 + r() * 3, 0, 7); c.fill(); } }), emissive: true, period: 25.4 },
+  { name: 'Moon', img: 'textures/2k_moon.jpg', ko: '달', R: 1737, pole: [270, 66.5], tex: () => rocky('#9a9a98', ['#5d5d5d', '#bdbdb8', '#4a4a4a'], 7, 500), period: 27.32 },
+  { name: 'Mercury', img: 'textures/2k_mercury.jpg', ko: '수성', R: 2440, pole: [281.01, 61.41], tex: () => rocky('#8d8378', ['#5a524a', '#b0a798'], 11, 300), period: 58.6 },
+  { name: 'Venus', img: 'textures/2k_venus_atmosphere.jpg', ko: '금성', R: 6052, pole: [272.76, 67.16], tex: () => banded(['#e8d29c', '#f1e1b5', '#d9bd80', '#f6ebc9'], 13, 3), period: -243 },
+  { name: 'Mars', img: 'textures/2k_mars.jpg', ko: '화성', R: 3390, pole: [317.68, 52.89], tex: () => noiseTex(1024, 512, (c, w, h) => { const r = rnd(17); c.fillStyle = '#b5532c'; c.fillRect(0, 0, w, h);
       for (let i = 0; i < 1800; i++) { c.globalAlpha = .08 + r() * .15; c.fillStyle = r() < .5 ? '#5e2a17' : '#d27a4a'; c.beginPath(); c.ellipse(r() * w, h * (.2 + r() * .6), 10 + r() * 60, 5 + r() * 25, r() * 3, 0, 7); c.fill(); }
       c.globalAlpha = .9; c.fillStyle = '#f4efe8'; c.fillRect(0, 0, w, h * .05); c.fillRect(0, h * .95, w, h * .05); c.globalAlpha = 1; }), period: 1.026 },
-  { name: 'Jupiter', ko: '목성', R: 71492, pole: [268.06, 64.5], tex: () => { const t = banded(['#c99e74', '#efe2c8', '#a8724c', '#e3cfae', '#8c5a3c', '#f2e7d2'], 19, 14);
+  { name: 'Jupiter', img: 'textures/2k_jupiter.jpg', ko: '목성', R: 71492, pole: [268.06, 64.5], tex: () => { const t = banded(['#c99e74', '#efe2c8', '#a8724c', '#e3cfae', '#8c5a3c', '#f2e7d2'], 19, 14);
       const c = t.image.getContext('2d'); c.fillStyle = '#b5532c'; c.globalAlpha = .8; c.beginPath(); c.ellipse(620, 330, 40, 18, 0, 0, 7); c.fill(); t.needsUpdate = true; return t; }, period: 0.41 },
-  { name: 'Saturn', ko: '토성', R: 60268, pole: [40.59, 83.54], tex: () => banded(['#d9c08c', '#e9d9b0', '#c4a56e', '#f0e4c4'], 23, 10), ring: true, period: 0.44 },
-  { name: 'Uranus', ko: '천왕성', R: 25559, pole: [257.31, -15.18], tex: () => banded(['#a6dbe0', '#b5e4e8', '#9ad0d6'], 29, 4), period: -0.72 },
-  { name: 'Neptune', ko: '해왕성', R: 24764, pole: [299.36, 43.46], tex: () => banded(['#3f66c8', '#5379d6', '#3456b0', '#6a8fe0'], 31, 6), period: 0.67 },
+  { name: 'Saturn', img: 'textures/2k_saturn.jpg', ko: '토성', R: 60268, pole: [40.59, 83.54], tex: () => banded(['#d9c08c', '#e9d9b0', '#c4a56e', '#f0e4c4'], 23, 10), ring: true, period: 0.44 },
+  { name: 'Uranus', img: 'textures/2k_uranus.jpg', ko: '천왕성', R: 25559, pole: [257.31, -15.18], tex: () => banded(['#a6dbe0', '#b5e4e8', '#9ad0d6'], 29, 4), period: -0.72 },
+  { name: 'Neptune', img: 'textures/2k_neptune.jpg', ko: '해왕성', R: 24764, pole: [299.36, 43.46], tex: () => banded(['#3f66c8', '#5379d6', '#3456b0', '#6a8fe0'], 31, 6), period: 0.67 },
 ];
 const KM_AU = 149597870.7;
 const planetMat = (tex, emissive) => new THREE.ShaderMaterial({
@@ -378,20 +378,24 @@ const planetMat = (tex, emissive) => new THREE.ShaderMaterial({
       gl_FragColor = vec4(c * l, 1.0); }`,
   depthTest: true, depthWrite: true,
 });
+const texLoader = new THREE.TextureLoader();
 const planetGroup = new THREE.Group(); scene.add(planetGroup);
 for (const p of PLANETS) {
   p.mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 32), planetMat(p.tex(), p.emissive));
   p.mesh.renderOrder = 5;
+  // real texture maps (Solar System Scope, CC BY 4.0); procedural map stays as fallback
+  texLoader.load(p.img, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; p.mesh.material.uniforms.map.value = t; });
   if (p.ring) {
-    const rg = new THREE.RingGeometry(1.24, 2.27, 128, 1);
+    const rg = new THREE.RingGeometry(1.11, 2.33, 128, 1);
     const pos = rg.attributes.position, uv = rg.attributes.uv;
-    for (let i = 0; i < pos.count; i++) { const r = Math.hypot(pos.getX(i), pos.getY(i)); uv.setXY(i, (r - 1.24) / 1.03, 0.5); }
+    for (let i = 0; i < pos.count; i++) { const r = Math.hypot(pos.getX(i), pos.getY(i)); uv.setXY(i, (r - 1.11) / 1.22, 0.5); }
     const rt = noiseTex(512, 4, (c, w) => { const r = rnd(5); for (let x = 0; x < w; x++) { const t = x / w;
       const a = (t > 0.52 && t < 0.57) ? 0.05 : (0.35 + r() * 0.5) * (t < 0.15 ? 0.4 : 1); c.fillStyle = `rgba(${215 + r() * 30},${190 + r() * 30},${150 + r() * 30},${a})`; c.fillRect(x, 0, 1, 4); } });
     const ringMat = new THREE.ShaderMaterial({ uniforms: { map: { value: rt }, sunDir: { value: new THREE.Vector3() } },
       vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
       fragmentShader: `uniform sampler2D map; varying vec2 vUv; void main(){ vec4 t = texture2D(map, vUv); gl_FragColor = vec4(t.rgb*0.9, t.a); }`,
       side: THREE.DoubleSide, transparent: true, depthWrite: false });
+    texLoader.load('textures/2k_saturn_ring_alpha.png', (t) => { t.colorSpace = THREE.SRGBColorSpace; ringMat.uniforms.map.value = t; });
     const ring = new THREE.Mesh(rg, ringMat); ring.rotation.x = -Math.PI / 2; ring.renderOrder = 6; p.mesh.add(ring);
   }
   if (p.emissive) {
@@ -418,6 +422,7 @@ function updatePlanets() {
     const world = p.eq.clone().applyMatrix4(sky.matrixWorld).normalize();
     const R = R_PLANET * (p.name === 'Moon' ? 0.9 : p.name === 'Sun' ? 0.95 : 1); // keep Moon in front of Sun for eclipses
     p.world = world;
+    p.phase = (1 + sunEq.dot(p.eq.clone().negate())) / 2; // illuminated fraction
     p.mesh.position.copy(world).multiplyScalar(R);
     p.mesh.scale.setScalar(R * Math.tan(Math.max(p.angR, minAng)));
     const pole = eqVec(p.pole[0], p.pole[1]).transformDirection(sky.matrixWorld);
@@ -525,7 +530,7 @@ function select(o) {
     const p = o.p; ra = p.ra; dec = p.dec;
     $('info-title').textContent = `${p.ko} (${p.name})`; $('info-sub').textContent = p.name === 'Sun' ? '항성' : p.name === 'Moon' ? '위성' : '행성';
     row('지구로부터 거리', p.name === 'Moon' ? `${(p.dist * KM_AU).toFixed(0)} km` : `${p.dist.toFixed(3)} AU`);
-    row('시직경', fmtAng(p.angR * 2 * R2D)); row('반지름', `${p.R.toLocaleString()} km`);
+    row('시직경', fmtAng(p.angR * 2 * R2D)); if (p.name !== 'Sun') row('위상 (밝은 면)', (p.phase * 100).toFixed(1) + '%'); row('반지름', `${p.R.toLocaleString()} km`);
   } else if (o.kindName === 'star') {
     ({ ra, dec } = vecToRaDec(o.v));
     $('info-title').textContent = o.name; $('info-sub').textContent = '항성 · ' + (starData.desig[o.i] || `HIP ${starData.id[o.i]}`);
