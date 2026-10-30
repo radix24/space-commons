@@ -1,3 +1,4 @@
+import { tr } from './i18n.js';
 // Stage-3 sandbox labs that run their own small simulations on a canvas inside the lab panel:
 // D1 Earth-orbit design, D2 launch to orbit, D3 galaxy collision, D4 the Sun's life, D5 black-hole lensing, D6 impact debris.
 // h = helpers from sandbox.js: { labBox, steps, field, num, btn, results, deeper, el, fmt }
@@ -5,7 +6,7 @@ const MU = 398600.4418, RE = 6378.137, J2 = 1.08263e-3, WE = 7.2921159e-5; // Ea
 const D2R = Math.PI / 180, R2D = 180 / Math.PI;
 function canvas(h, box, w = 340, hh = 200) { const c = h.el('canvas', 'sb-vec'); const r = Math.min(2, devicePixelRatio || 1); c.width = w * r; c.height = hh * r; c.style.width = '100%'; c.style.aspectRatio = `${w} / ${hh}`; box.append(c); const g = c.getContext('2d'); g.scale(r, r); return { c, g, w, h: hh }; }
 function loop(cv, f) { let last = performance.now(); const step = (t) => { if (!cv.c.isConnected) return; f(Math.min(0.05, (t - last) / 1000)); last = t; requestAnimationFrame(step); }; requestAnimationFrame(step); }
-const txt = (g, s, x, y, col = '#d8d2c6', size = 10, al = 'left') => { g.fillStyle = col; g.font = `${size}px "Pretendard Variable", "Malgun Gothic", sans-serif`; g.textAlign = al; g.fillText(s, x, y); g.textAlign = 'left'; };
+const txt = (g, s, x, y, col = '#d8d2c6', size = 10, al = 'left') => { g.fillStyle = col; g.font = `${size}px "Pretendard Variable", "Malgun Gothic", sans-serif`; g.textAlign = al; g.fillText(tr(s), x, y); g.textAlign = 'left'; };
 
 // ---- D1: design an Earth orbit, see its ground track and how long a Korean ground station can talk to it ----
 const PRESETS = { iss: ['국제우주정거장', 420, 51.6, 0, 0], sso: ['다목적실용위성 3호 (태양동기)', 685, 98.1, 0, 0], geo: ['천리안 2A (정지궤도)', 35786, 0.05, 0, 128.2], molniya: ['몰니야 궤도', 0, 63.4, 0.74, 0], gps: ['GPS', 20200, 55, 0, 0] };

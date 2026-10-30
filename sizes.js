@@ -1,3 +1,4 @@
+import { tr } from './i18n.js';
 // Size comparison: planets, moons, dwarf planets and stars side by side at true relative size.
 // Textured bodies are drawn as orthographic spheres from their surface maps; stars as limb-darkened discs coloured by temperature.
 const KM_RSUN = 695700;
@@ -67,8 +68,8 @@ async function draw(i) {
     if (b.ring) { g.strokeStyle = 'rgba(214,196,150,.55)'; g.lineWidth = Math.max(1, (b.ring[1] - b.ring[0]) * k * 0.35); g.beginPath(); g.ellipse(cx, yy, (b.ring[0] + b.ring[1]) / 2 * k, (b.ring[0] + b.ring[1]) / 2 * k * 0.22, -0.12, 0, 7); g.stroke(); }
     sphere(g, cx, yy, R, R > 700 ? null : texs[j], b.T ? starRGB(b.T) : null);
     g.fillStyle = '#d8d2c6'; g.font = '12px "Pretendard Variable", "Malgun Gothic", sans-serif'; g.textAlign = 'center';
-    const lx = Math.min(cx, W - 70); g.fillText(b.n, lx, H - 22); g.fillStyle = '#8e887d'; g.font = '11px "Pretendard Variable", "Malgun Gothic", sans-serif';
-    g.fillText(b.r >= 0.05 * KM_RSUN && b.T ? `반지름 태양의 ${(b.r / KM_RSUN).toLocaleString('ko-KR', { maximumFractionDigits: b.r < KM_RSUN ? 3 : 0 })}배` : `반지름 ${Math.round(b.r).toLocaleString('ko-KR')} km`, lx, H - 8);
+    const lx = Math.min(cx, W - 70); g.fillText(tr(b.n), lx, H - 22); g.fillStyle = '#8e887d'; g.font = '11px "Pretendard Variable", "Malgun Gothic", sans-serif';
+    g.fillText(tr(b.r >= 0.05 * KM_RSUN && b.T ? `반지름 태양의 ${(b.r / KM_RSUN).toLocaleString('ko-KR', { maximumFractionDigits: b.r < KM_RSUN ? 3 : 0 })}배` : `반지름 ${Math.round(b.r).toLocaleString('ko-KR')} km`), lx, H - 8);
     x += 2 * slot + 14; });
   g.textAlign = 'left';
   const a = list[0], z = big; root.querySelector('.sz-info').textContent = `${z.n}의 반지름은 ${a.n}의 ${(z.r / a.r).toLocaleString('ko-KR', { maximumFractionDigits: 1 })}배, 부피로는 ${((z.r / a.r) ** 3).toLocaleString('ko-KR', { maximumFractionDigits: 0 })}배입니다. ${clipBig ? '가장 큰 천체는 화면에 다 담기지 않아 일부만 보입니다.' : ''}`;

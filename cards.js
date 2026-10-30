@@ -1,4 +1,4 @@
-import { EN } from './i18n.js';
+import { EN, tr } from './i18n.js';
 import { CARD_EN, CHAPTERS_EN, INTROS_EN } from './cards-en.js';
 import { QUIZ2 } from './quiz2.js';
 // Space Commons concept cards: astrodynamics from the two-body problem to relative motion, each with a live widget.
@@ -33,7 +33,7 @@ const C = { bg: '#101011', grid: '#2a2927', mute: '#8e887d', text: '#d8d2c6', te
 function clear(K) { K.g.fillStyle = C.bg; K.g.fillRect(0, 0, K.w, K.h); }
 function arrow(g, x1, y1, x2, y2, col, lw = 2) { g.strokeStyle = col; g.fillStyle = col; g.lineWidth = lw; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
   const a = Math.atan2(y2 - y1, x2 - x1); g.beginPath(); g.moveTo(x2, y2); g.lineTo(x2 - 8 * Math.cos(a - 0.4), y2 - 8 * Math.sin(a - 0.4)); g.lineTo(x2 - 8 * Math.cos(a + 0.4), y2 - 8 * Math.sin(a + 0.4)); g.fill(); }
-const text = (g, s, x, y, col = C.text, size = 11, align = 'left') => { g.fillStyle = col; g.font = `${size}px "Pretendard Variable", "Malgun Gothic", sans-serif`; g.textAlign = align; g.fillText(s, x, y); g.textAlign = 'left'; };
+const text = (g, s, x, y, col = C.text, size = 11, align = 'left') => { g.fillStyle = col; g.font = `${size}px "Pretendard Variable", "Malgun Gothic", sans-serif`; g.textAlign = align; g.fillText(tr(s), x, y); g.textAlign = 'left'; };
 function dot(g, x, y, r, col) { g.fillStyle = col; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); }
 function conic(g, cx, cy, S, p, e, rot = 0, col = C.teal, lw = 2) { // focus at (cx, cy), screen y up
   g.strokeStyle = col; g.lineWidth = lw; g.beginPath(); const lim = e < 1 ? Math.PI : Math.acos(-1 / e) - 0.02; let first = true;

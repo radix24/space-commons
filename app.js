@@ -3102,6 +3102,21 @@ function cometLabels() {
   for (const id of ['mwstyle', 'wavelen', 'skyculture', 'csver']) { const s = $(id); if (s && !box.contains(s) && s.closest('#panel')) box.append(s); }
   host.parentElement.insertBefore(det, host.nextSibling);
 })();
+// ---------- first visit: a four-step guide, shown once (and again from the help line) ----------
+const GUIDE = [['#c', '하늘 둘러보기', '끌어서 둘러보고, 휠이나 두 손가락으로 확대합니다. 별이나 행성을 누르면 설명이 나옵니다.'],
+  ['#search', '찾기', '천체 이름(목성, M31, 시리우스)이나 좌표를 적으면 그쪽으로 갑니다.'],
+  ['#modes', '세 가지 모드', '지상: 내가 선 곳의 밤하늘 · 우주: 태양계와 은하를 날아다니기 · 샌드박스: 행성과 별을 직접 만들어 보는 실험실'],
+  ['#cards-btn', '배우기', '우주 알아보기에서 개념 카드와 확인 문제로 차근차근 배울 수 있습니다. 관측·배우기 메뉴에 더 많은 도구가 있습니다.']];
+function showGuide(k = 0) {
+  document.querySelector('.guide')?.remove(); if (k >= GUIDE.length) { try { localStorage.setItem('space-commons-guided', '1'); } catch {} return; }
+  const [sel, t, d] = GUIDE[k], tgt = document.querySelector(sel), r = tgt?.getBoundingClientRect(), g = document.createElement('div'); g.className = 'guide';
+  g.innerHTML = `<div class="guide-box"><b>${t}</b><p>${d}</p><div class="row"><span class="small">${k + 1} / ${GUIDE.length}</span><button class="g-skip">건너뛰기</button><button class="g-next">${k < GUIDE.length - 1 ? '다음' : '시작하기'}</button></div></div>`;
+  document.body.append(g); const box = g.querySelector('.guide-box');
+  if (r && sel !== '#c') { box.style.left = Math.max(8, Math.min(innerWidth - 300, r.left)) + 'px'; box.style.top = Math.min(innerHeight - 160, r.bottom + 10) + 'px'; tgt.classList.add('guide-hl'); setTimeout(() => tgt.classList.remove('guide-hl'), 4000); }
+  g.querySelector('.g-next').onclick = () => showGuide(k + 1); g.querySelector('.g-skip').onclick = () => showGuide(GUIDE.length);
+}
+{ let seen = false; try { seen = !!localStorage.getItem('space-commons-guided'); } catch {} if (!seen && !location.hash.includes('lesson=')) setTimeout(() => showGuide(0), 2500); }
+$('help')?.addEventListener('dblclick', () => showGuide(0));
 // ---------- 22. whole spacecraft journeys (S7) ----------
 function journeyTimeline(p) {
   const box = $('info-exo'), ev = JOURNEYS[p.name], e = probeEph[p.name]; box.innerHTML = ''; box.hidden = false;

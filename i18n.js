@@ -344,6 +344,20 @@ const PH = [
   ['샌드박스에서 해 보기', 'Try it in the sandbox'], ['읽은 개념', 'Concepts read'], ['맞힌 확인 문제', 'Questions answered'], ['문제 맞힘 ✓', 'answered ✓'], ['먼저: ', 'First: '],
   ['카드마다 직접 조작하는 그림, 먼저 볼 것과 이어서 볼 것', 'each card has a live diagram, what to read first and what to read next'], ['개 개념', ' concepts'], ['단원', ' chapters'], [' 읽음', ' read'], [' 맞힘', ' answered'],
   ['교양', 'General'], ['기초', 'Basic'], ['전공', 'Advanced'], ['답: ', 'Answer: '],
+  // grouped menus, first-run guide, canvas captions
+  ['저장·공유', 'Save & share'], ['배우기', 'Learn'], ['관측', 'Observe'], ['더 많은 표시 설정', 'More display options'],
+  ['하늘 둘러보기', 'Look around the sky'], ['끌어서 둘러보고, 휠이나 두 손가락으로 확대합니다. 별이나 행성을 누르면 설명이 나옵니다.', 'Drag to look around; scroll or pinch to zoom. Tap a star or planet to read about it.'],
+  ['천체 이름(목성, M31, 시리우스)이나 좌표를 적으면 그쪽으로 갑니다.', 'Type a name (Jupiter, M31, Sirius) or coordinates to go there.'],
+  ['세 가지 모드', 'Three modes'], ['지상: 내가 선 곳의 밤하늘 · 우주: 태양계와 은하를 날아다니기 · 샌드박스: 행성과 별을 직접 만들어 보는 실험실', 'Ground: the night sky where you stand · Space: fly through the solar system and the galaxy · Sandbox: a lab where you build planets and stars'],
+  ['우주 알아보기에서 개념 카드와 확인 문제로 차근차근 배울 수 있습니다. 관측·배우기 메뉴에 더 많은 도구가 있습니다.', 'Learn step by step with concept cards and check questions. The Observe and Learn menus hold more tools.'],
+  ['건너뛰기', 'Skip'], ['시작하기', 'Start'], ['다음', 'Next'], ['찾기', 'Search'],
+  ['두 번 누르면 처음 사용 안내를 다시 봅니다', 'Double-click to see the first-time guide again'],
+  ['반지름 태양의 ', 'radius '], ['반지름 ', 'radius '], ['실제 모습 (모형)', 'True shape (model)'], ['이 망원경으로 찍은 사진', 'Through this telescope'],
+  ['고리와 가운데 그림자가 보임', 'Ring and shadow resolved'], ['고리가 뿌옇게 겹쳐 보임', 'Ring blurred'], ['한 점으로 뭉개짐', 'A single blur'], ['가로 ', 'width '],
+  ['수평 거리 (km) →', 'Downrange (km) →'], ['고도 1000 km', 'altitude 1000 km'], ['시간 (일) →', 'Time (days) →'], ['주기로 접은 위상 →', 'Phase folded at the trial period →'],
+  ['← 파랗고 뜨거움   색 (BP−RP)   붉고 차가움 →', '← blue, hot   colour (BP−RP)   red, cool →'], ['밝음', 'bright'], ['어두움', 'faint'], ['주계열', 'Main sequence'], ['백색왜성', 'White dwarfs'], ['거성', 'Giants'],
+  ['← 뜨거움   표면 온도   차가움 →', '← hot   surface temperature   cool →'], ['광도 (태양=1)', 'Luminosity (Sun = 1)'], ['초거성', 'Supergiants'],
+  ['대전 지상국', 'Daejeon station'], ['← 동쪽    별자리 사이    서쪽 →', '← east    among the stars    west →'], ['시간 ↓', 'time ↓'],
 ].sort((a, b) => b[0].length - a[0].length);
 const RX = [
   [/(\d[\d,.]*)만 km/g, (m, n) => `${Math.round(parseFloat(n.replace(/,/g, '')) * 1e4).toLocaleString('en-US')} km`],

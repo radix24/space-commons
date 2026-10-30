@@ -436,3 +436,8 @@ body.calm .loader-mark, body.calm .loader-bar i { animation: none; }
 .menu-pop[hidden] { display: none; } .menu-pop button { text-align: left; border: 0; padding: 8px 10px; } .menu-pop button:hover { background: rgba(76,141,246,.12); }
 body.space .menu-pop .ground-only, body:not(.space) .menu-pop .space-only { display: none; }
 .more-toggles summary { cursor: pointer; color: var(--mute); font-size: 12.5px; margin: 4px 0; } .more-toggles .row { flex-wrap: wrap; }
+
+.guide { position: fixed; inset: 0; z-index: 40; pointer-events: none; }
+.guide-box { pointer-events: auto; position: fixed; left: 50%; top: 40%; transform: none; width: min(300px, 92vw); padding: 12px 14px; background: var(--panel-solid); border: 1px solid var(--orbit); }
+.guide-box p { margin: 6px 0 10px; line-height: 1.55; font-size: 13.5px; } .guide-box .row { justify-content: flex-end; gap: 8px; align-items: center; } .guide-box .small { margin-right: auto; }
+.guide-hl { outline: 2px solid var(--orbit); outline-offset: 3px; }
