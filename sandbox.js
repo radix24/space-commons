@@ -167,7 +167,7 @@ const bhTex = (() => { const c = document.createElement('canvas'); c.width = c.h
 const MSUN_KG = 1.98847e30;
 const RS_KM = (m) => 2.9532 * m;                              // Schwarzschild radius, km, m in solar masses
 const starRadiusKm = (m) => 696000 * Math.pow(Math.max(m, 0.08), m > 1 ? 0.57 : 0.8); // main-sequence mass-radius
-const lum = (b) => b.kind !== 'star' ? 0 : b.m < 0.43 ? 0.23 * Math.pow(b.m, 2.3) : b.m < 2 ? Math.pow(b.m, 4) : 1.4 * Math.pow(b.m, 3.5); // L in suns
+const lum = (b) => b.kind !== 'star' ? 0 : (b.lumK ?? 1) * (b.m < 0.43 ? 0.23 * Math.pow(b.m, 2.3) : b.m < 2 ? Math.pow(b.m, 4) : 1.4 * Math.pow(b.m, 3.5)); // L in suns (x evolution factor)
 function starColor(m) { const T = 5772 * Math.pow(Math.max(m, 0.08), 0.54); return T > 9000 ? 0xaabfff : T > 7000 ? 0xd8e2ff : T > 5500 ? 0xffe6a6 : T > 4000 ? 0xffc27a : 0xff8a5c; }
 const captureKm = (o) => o.kind === 'bh' ? 3 * RS_KM(o.m) : o.Rkm; // inside 3 r_s (the innermost stable orbit) material plunges
 function encounters(ms) {
@@ -520,7 +520,7 @@ function draw() {
     if (_v.z > 1 || Math.abs(_v.x) > 1.1 || Math.abs(_v.y) > 1.1) lb.style.display = 'none';
     else { lb.style.display = ''; lb.style.transform = `translate(${(_v.x + 1) / 2 * W + 8}px, ${(1 - _v.y) / 2 * H - 8}px)`; } }
   const lamp = sim.bodies.filter(x => x.kind === 'star' && !x.dead).sort((x, y) => y.m - x.m)[0]; if (lamp) starLight.position.set(...lamp.r); starLight.intensity = lamp ? 2.2 : 0;
-  drawSwarm(); renderer.render(scene, camera);
+  updateBary(); updateRuler(); drawSwarm(); renderer.render(scene, camera);
   // status
   const E = energy(), dE = sim.E0 ? Math.abs((E - sim.E0) / sim.E0) : 0;
   root.querySelector('.sb-date').textContent = `${fmtDate(sim.t)} · ${sim.playing ? (sim.speed < 0 ? '역재생 ' : '') + speedLabel(Math.abs(sim.speed)) : '정지'}${sim.slow ? ' · 근접 통과 계산 중 (느려짐)' : ''}`;
@@ -548,10 +548,42 @@ function planePoint(ev) {
 }
 let selected = null, drag = null;
 function showNums() { const b = selected; if (!b) return; const q = (s) => root.querySelector(s), u = +q('.sb-munit').value;
+  root.querySelectorAll('.sb-agerow').forEach(r => r.hidden = b.kind !== 'star'); root.querySelectorAll('.sb-burnrow').forEach(r => r.hidden = b.kind === 'star' || b.kind === 'bh');
+  if (b.kind === 'star') { const life = 100 * Math.pow(b.base0?.m ?? b.m, -2.5); b.age ??= b.name === 'Sun' ? 46 : life * 0.3; q('.sb-age').value = +b.age.toFixed(1); q('.sb-ager').max = Math.round(life * 1.25 * 10); q('.sb-ager').value = Math.round(b.age * 10); q('.sb-stage').textContent = ' ' + starStage(b).name; }
   q('.sb-rnum').value = b.Rkm ? +b.Rkm.toPrecision(4) : ''; q('.sb-spin').value = b.spinH ?? (SPIN_H[b.name] ?? ''); q('.sb-tilt').value = b.tilt ?? (TILT[b.name] ?? '');
   const hs = hostStar(b); q('.sb-vnum').value = +(norm(add(b.v, hs && hs !== b ? hs.v : [0, 0, 0], -1)) * O.KMS).toPrecision(4);
   q('.sb-mnum').value = b.test ? 0 : +(b.m / u).toPrecision(4); q('.sb-mnum').disabled = !!b.test;
   const st = hostStar(b); q('.sb-dnum').value = st && st !== b ? +Math.hypot(...add(b.r, st.r, -1)).toPrecision(3) : ''; }
+// stellar evolution, kept simple: main sequence brightening by ~40% over its life, then red giant (x1000 light, x100 size), then a white dwarf
+function starStage(s) { const life = 100 * Math.pow(s.base0?.m ?? s.m, -2.5), f = (s.age ?? 46) / life; // lifetime from the mass it was born with // life in 1e8 years
+  if (f < 1) return { name: '주계열성', L: 0.7 + 0.4 * f / 0.46 * 0.46 + 0.3 * f, R: 1 + 0.4 * f, m: 1, col: null };
+  if (f < 1.1) { const g = (f - 1) / 0.1; return { name: '적색거성', L: 1 + Math.pow(10, 3 * g), R: 1 + 200 * g, m: 1 - 0.3 * g, col: 0xff8a5a }; }
+  if (f < 1.12) return { name: '행성상 성운', L: 3000, R: 0.5, m: 0.55, col: 0x9fd8ff };
+  return { name: '백색왜성', L: 0.003, R: 0.0105, m: 0.55, col: 0xe8eeff }; }
+function setAge(s, age) { const st0 = starStage(s); s.age = Math.max(0, age); const st = starStage(s); s.base0 ??= { m: s.m, R: s.Rkm };
+  const Lms = (m) => m < 0.43 ? 0.23 * Math.pow(m, 2.3) : m < 2 ? Math.pow(m, 4) : 1.4 * Math.pow(m, 3.5);
+  s.lumK = st.L * Lms(s.base0.m) / Lms(s.base0.m * st.m); // light of this stage, relative to a main-sequence star of the mass it now has
+  s.m = s.base0.m * st.m; s.Rkm = s.base0.R * st.R; if (st.col) s.color = st.col; rebuild(s); sim.E0 = energy();
+  if (st.name !== st0.name) toast(st.name === '적색거성' ? `${s.ko}이(가) 적색거성이 되었습니다: 수백 배로 부풀고 천 배 밝아져 가까운 행성들이 녹거나 삼켜집니다` : st.name === '백색왜성' ? `${s.ko}이(가) 바깥층을 날려 보내고 지구만 한 백색왜성이 되었습니다. 질량이 줄어 행성 궤도가 넓어집니다` : `${s.ko}: ${st.name}`); }
+const burnPrev = new THREE.Group();
+function burnVec(b) { const q = (s) => +root.querySelector(s).value / 1000 / O.KMS, o = dominantOther(b); if (!o) return null; // m/s -> AU/day
+  const rv = add(b.r, o.r, -1), vv = add(b.v, o.v, -1), t = scale(vv, 1 / norm(vv)), rr = scale(rv, 1 / norm(rv)), h = cross(rv, vv), n = scale(h, 1 / norm(h)), rad = cross(n, t);
+  return { o, dv: add(add(scale(t, q('.sb-dvp')), scale(rad, -q('.sb-dvr'))), scale(n, q('.sb-dvn'))) }; }
+function previewBurn() { const b = selected; burnPrev.clear(); if (!b) return; const x = burnVec(b); if (!x) return;
+  const r0 = add(b.r, x.o.r, -1), v0 = add(add(b.v, x.o.v, -1), x.dv), mu = O.MU_SUN * sim.G * (x.o.m + b.m), e = O.elements(r0, v0, mu), T = e.e < 1 ? e.period : 3 * norm(r0) / norm(v0), pts = [];
+  for (let k = 0; k <= 200; k++) { const st = O.propagate(r0, v0, T * k / 200, mu); pts.push(new THREE.Vector3(...add(st.r, x.o.r))); }
+  const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineDashedMaterial({ color: 0x5fe08a, dashSize: norm(r0) * 0.04, gapSize: norm(r0) * 0.03 })); l.computeLineDistances(); burnPrev.add(l);
+  toast(e.e < 1 ? `분사 후 궤도: 긴반지름 ${fmt(e.a, 3)} AU · 이심률 ${fmt(e.e, 3)} · 주기 ${e.period < 400 ? fmt(e.period, 1) + '일' : fmt(e.period / 365.25, 2) + '년'}` : '분사 후에는 묶이지 않은 궤도: 날아가 버립니다'); }
+const baryMark = new THREE.Group();
+function updateBary() { baryMark.visible = !!root.querySelector('.sb-bary')?.checked; if (!baryMark.visible) return; const ms = massive(); let M = 0; const c0 = [0, 0, 0];
+  for (const o of ms) { M += o.m; for (let k = 0; k < 3; k++) c0[k] += o.m * o.r[k]; } if (M) baryMark.position.set(c0[0] / M, c0[1] / M, c0[2] / M);
+  const d = camera.position.distanceTo(baryMark.position); baryMark.scale.setScalar(d * 0.02); }
+const ruler = { a: null, b: null, line: null, lb: null };
+function updateRuler() { if (!ruler.line) return; const A = ruler.a, B = ruler.b; if (!A || !B || A.dead || B.dead) { ruler.line.visible = false; ruler.lb.hidden = true; return; }
+  const p = ruler.line.geometry.attributes.position; p.setXYZ(0, ...A.r); p.setXYZ(1, ...B.r); p.needsUpdate = true; ruler.line.visible = true;
+  const d = norm(add(A.r, B.r, -1)), km = d * O.AU_KM, m = new THREE.Vector3((A.r[0] + B.r[0]) / 2, (A.r[1] + B.r[1]) / 2, (A.r[2] + B.r[2]) / 2).project(camera);
+  ruler.lb.hidden = m.z > 1; ruler.lb.textContent = `${A.ko} ↔ ${B.ko}: ${d >= 0.01 ? fmt(d, 3) + ' AU' : fmt(km, 0) + ' km'} · 빛으로 ${km / 299792 < 120 ? fmt(km / 299792, 1) + '초' : fmt(km / 299792 / 60, 1) + '분'}`;
+  ruler.lb.style.transform = `translate(${(m.x + 1) / 2 * root.clientWidth}px, ${(1 - m.y) / 2 * root.clientHeight}px)`; }
 function hostStar(b) { return sim.bodies.filter(o => (o.kind === 'star' || o.kind === 'bh') && o !== b).sort((x, y) => y.m - x.m)[0] || null; }
 function moveToOrbit(b, d) { // put a body on a circular orbit d AU from its star, in the ecliptic, keeping its direction around the star
   const st = hostStar(b); if (!st) return toast('별이 있어야 합니다'); const rel = add(b.r, st.r, -1), ang = Math.atan2(rel[1], rel[0]), sp = Math.sqrt(O.MU_SUN * (st.m + b.m) / d);
@@ -611,7 +643,8 @@ function quick(k) {
     toast(`질량 ${fmt(ms, 2)}배인 별과 행성 ${n}개로 이루어진 새 행성계입니다. 생명 가능 지대(초록 띠) 안의 행성을 찾아보세요`); return; }
   if (k === 'moonaway') { const m = byName('Moon'); if (!m) return toast('달이 없습니다. 위의 "태양계 천체 더하기"에서 달을 먼저 놓아 보세요'); select(m); root.querySelector('.sb-del').click(); toast('달을 지웠습니다. 실제로는 조석이 약해지고 자전축이 오랜 세월에 걸쳐 크게 흔들리게 됩니다'); }
 }
-function select(b) { selected = b; root.querySelector('.sb-sel').hidden = !b; if (b) { b.base = b.m; root.querySelector('.sb-mass').value = 0; root.querySelector('.sb-massv').textContent = ''; showNums(); } atmEditor(b); }
+function select(b) { if (view.tool === 'ruler' && b) { if (!ruler.a || ruler.b) { ruler.a = b; ruler.b = null; toast(`${b.ko}에서 잴 두 번째 천체를 누르세요`); } else if (b !== ruler.a) { ruler.b = b; } }
+  burnPrev.clear(); selected = b; root.querySelector('.sb-sel').hidden = !b; if (b) { b.base = b.m; root.querySelector('.sb-mass').value = 0; root.querySelector('.sb-massv').textContent = ''; showNums(); } atmEditor(b); }
 const GAS_COL = { N2: '#6F8FD8', O2: '#7FD0E8', CO2: '#E0A25A', H2O: '#4FB3A9', CH4: '#C779C9', H2: '#E7E3A1', He: '#B9B4E8', Ar: '#9AA0AE' };
 function atmEditor(b) { // Universe-Sandbox-style property rows: every value is a number you can type (with its unit), the slider is a shortcut
   const box = root.querySelector('.sb-atm'); box.innerHTML = ''; const a = b && b.kind === 'planet' ? ATM.atmOf(b) : null; box.hidden = !a; root.querySelector('.sb-noatm').hidden = !!a; if (!a) return;
@@ -1207,6 +1240,7 @@ function buildUI() {
         <label><input type="checkbox" class="sb-trails" checked> 지나온 길</label>
         <label><input type="checkbox" class="sb-reltrail"> 지나온 길을 중심 천체 기준으로</label>
         <label><input type="checkbox" class="sb-names" checked> 이름</label>
+        <label><input type="checkbox" class="sb-bary"> 무게중심 (천체들이 함께 도는 점)</label>
         <div class="small sb-center"></div>
         <h3>물리 설정</h3>
         <div class="sb-prop sb-gprop"><label>중력 세기</label><input class="sb-g" type="number" min="0" max="10" step="0.1" value="1"><span class="u">배</span><input class="sb-gr" type="range" min="0" max="1000" value="500"></div>
@@ -1229,6 +1263,11 @@ function buildUI() {
         <tr><th>속력</th><td><input class="sb-vnum" type="number" min="0" step="any"><span class="u">km/s</span><button class="sb-vcirc" title="지금 거리에서 원 궤도가 되는 속력으로">원 궤도 속력</button></td></tr>
         <tr><th>자전 주기</th><td><input class="sb-spin" type="number" step="any"><span class="u">시간</span></td></tr>
         <tr><th>자전축 기울기</th><td><input class="sb-tilt" type="number" min="0" max="180" step="any"><span class="u">°</span></td></tr>
+        <tr class="sb-burnrow"><th>분사 Δv</th><td><input class="sb-dvp" type="number" step="10" value="0" title="진행 방향 (+ 빨라짐)"><input class="sb-dvr" type="number" step="10" value="0" title="바깥쪽"><input class="sb-dvn" type="number" step="10" value="0" title="궤도면 위쪽"><span class="u">m/s</span></td></tr>
+        <tr class="sb-burnrow"><th></th><td class="small">진행 · 바깥 · 위쪽 방향. 미리 보기는 초록 점선</td></tr>
+        <tr class="sb-burnrow"><th></th><td><button class="sb-burnprev">미리 보기</button><button class="sb-burngo">분사</button></td></tr>
+        <tr class="sb-agerow"><th>별의 나이</th><td><input class="sb-age" type="number" min="0" step="0.1"><span class="u">억 년</span><span class="small sb-stage"></span></td></tr>
+        <tr class="sb-agerow"><th></th><td><input class="sb-ager" type="range" min="0" max="1000" value="460"></td></tr>
         <tr><th>별에서 거리</th><td><input class="sb-dnum" type="number" min="0.05" step="any"><span class="u">AU</span><button class="sb-dgo">옮기기</button></td></tr>
       </table>
       <input class="sb-mass" type="range" min="-3" max="3" step="0.05" value="0" hidden><div class="small sb-massv"></div>
@@ -1239,6 +1278,7 @@ function buildUI() {
       <button data-tool="select" title="고르기 (V)"><b>고르기</b><span>V</span></button>
       <button data-tool="add" title="천체 놓기 (A)"><b>놓기</b><span>A</span></button>
       <button data-tool="throw" title="탐사선 던지기 (T)"><b>던지기</b><span>T</span></button>
+      <button data-tool="ruler" title="두 천체 사이 거리 재기 (R)"><b>자</b><span>R</span></button>
       <button data-tool="belt" title="소행성대 (B)"><b>소행성대</b><span>B</span></button>
       <button data-tool="play" title="재생·정지 (Space)"><b>재생</b><span>Space</span></button>
       <button data-tool="reset" title="처음으로 (Z)"><b>처음으로</b><span>Z</span></button>
@@ -1246,10 +1286,14 @@ function buildUI() {
     <div class="small sb-hint"></div>
     <div class="sb-lab" hidden></div>
     <div class="sb-terra" hidden></div>
+    <div class="sb-rulerlb" hidden></div>
     <div class="sb-toast" hidden></div>`;
   document.body.append(root);
   renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); root.prepend(renderer.domElement);
-  scene = new THREE.Scene(); scene.background = new THREE.Color(0x05070d); scene.add(starLight, ambient);
+  scene = new THREE.Scene(); scene.background = new THREE.Color(0x05070d); scene.add(starLight, ambient, burnPrev, baryMark);
+  for (const ax of [[1, 0, 0], [0, 1, 0], [0, 0, 1]]) { const g2 = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-ax[0], -ax[1], -ax[2]), new THREE.Vector3(...ax)]); baryMark.add(new THREE.Line(g2, new THREE.LineBasicMaterial({ color: 0xffd36a }))); }
+  baryMark.add(new THREE.Mesh(new THREE.TorusGeometry(0.45, 0.04, 6, 24), new THREE.MeshBasicMaterial({ color: 0xffd36a }))); baryMark.visible = false;
+  ruler.line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: 0xffd36a })); ruler.line.visible = false; ruler.line.frustumCulled = false; scene.add(ruler.line);
   camera = new THREE.PerspectiveCamera(50, 1, 1e-9, 1e4); camera.up.set(0, 0, 1); camera.position.set(1, -5, 3);
   controls = new OrbitControls(camera, renderer.domElement); controls.enableDamping = true; controls.minDistance = 1e-6; controls.maxDistance = 400; controls.zoomSpeed = 1.4;
   // reference: ecliptic grid rings every AU (faint), plus the stars as a backdrop dome
@@ -1309,15 +1353,21 @@ function buildUI() {
   root.querySelectorAll('.sb-tabs button').forEach(b => b.onclick = () => { const open = !b.classList.contains('on');
     root.querySelectorAll('.sb-tabs button').forEach(x => x.classList.toggle('on', open && x === b)); root.querySelectorAll('.sb-tab').forEach(t => t.hidden = !open || t.dataset.tab !== b.dataset.tab); root.classList.toggle('drawer', open); });
   q('.sb-selx').onclick = () => select(null);
+  ruler.lb = q('.sb-rulerlb');
+  q('.sb-burnprev').onclick = previewBurn;
+  q('.sb-burngo').onclick = () => { const b = selected; if (!b) return; const x = burnVec(b); if (!x) return; b.v = add(b.v, x.dv); burnPrev.clear(); sim.E0 = energy(); showNums(); toast('분사했습니다. 새 궤도를 따라갑니다'); };
+  q('.sb-age').onchange = () => { if (selected?.kind === 'star') { setAge(selected, +q('.sb-age').value); showNums(); } };
+  q('.sb-ager').oninput = () => { if (selected?.kind === 'star') { setAge(selected, +q('.sb-ager').value / 10); q('.sb-age').value = +(selected.age).toFixed(1); q('.sb-stage').textContent = ' ' + starStage(selected).name; } };
   const setG = (g) => { sim.G = Math.max(0, Math.min(10, g)); q('.sb-g').value = +sim.G.toFixed(2); q('.sb-gr').value = sim.G <= 0 ? 0 : 500 + Math.log10(sim.G) * 500; sim.E0 = energy(); };
   q('.sb-g').onchange = () => setG(+q('.sb-g').value); q('.sb-gr').oninput = () => { const s = +q('.sb-gr').value; setG(s < 5 ? 0 : Math.pow(10, (s - 500) / 500)); };
   q('.sb-coll').onchange = () => { sim.collide = q('.sb-coll').checked; };
   root.querySelectorAll('.sb-itabs button').forEach(b => b.onclick = () => { root.querySelectorAll('.sb-itabs button').forEach(x => x.classList.toggle('on', x === b)); root.querySelectorAll('.sb-ipane').forEach(p => p.hidden = p.dataset.it !== b.dataset.it); });
   const dock = (t) => { if (t === 'select') setTool(null); else if (t === 'add') setTool(view.tool === 'add' ? null : 'add'); else if (t === 'throw') setTool(view.tool === 'throw' ? null : 'throw');
+    else if (t === 'ruler') { setTool(view.tool === 'ruler' ? null : 'ruler'); ruler.a = ruler.b = null; if (view.tool === 'ruler') toast('잴 첫 번째 천체를 누르세요'); }
     else if (t === 'belt') makeBelt(); else if (t === 'play') q('.sb-play').click(); else if (t === 'reset') restore(); };
   root.querySelectorAll('.sb-dock button').forEach(b => b.onclick = () => dock(b.dataset.tool));
   addEventListener('keydown', (e) => { if (!document.body.classList.contains('sandbox') || /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
-    const t = { v: 'select', a: 'add', t: 'throw', b: 'belt', z: 'reset', ' ': 'play' }[e.key.toLowerCase()]; if (t) { e.preventDefault(); dock(t); } });
+    const t = { v: 'select', a: 'add', t: 'throw', r: 'ruler', b: 'belt', z: 'reset', ' ': 'play' }[e.key.toLowerCase()]; if (t) { e.preventDefault(); dock(t); } });
   for (const [k, t, d] of SCENS) { const b = el('button', 'sb-scenbtn', `<b>${t}</b><span>${d}</span>`); b.onclick = () => scenario(k); q('.sb-scens').append(b); }
   q('.sb-belt').onclick = makeBelt; q('.sb-ring').onclick = () => selected ? makeRing(selected) : toast('먼저 행성을 하나 누르세요');
   q('.sb-save').onclick = saveScene; q('.sb-loads').onchange = (e) => { if (e.target.value !== '') loadScene(loadSaves()[+e.target.value].data); e.target.value = ''; }; q('.sb-share').onclick = shareScene; refreshSaves();
