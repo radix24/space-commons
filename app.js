@@ -1438,6 +1438,7 @@ function select(o) {
     const lt = p.dist * 499.0; row('신호가 닿는 시간', lt > 3600 ? `${(lt / 3600).toFixed(1)}시간` : lt > 60 ? `${(lt / 60).toFixed(1)}분` : `${lt.toFixed(1)}초`);
     row('태양 기준 속도', `${probeSpeed(p, jd(state.time)).toFixed(1)} km/s`);
     row('설명', p.note);
+    setTimeout(() => { if (selected !== o || !mode.space) return; const b = document.createElement('button'); b.textContent = '이 탐사선 카메라로 보기'; b.onclick = () => probeCamera(p); $('info-exo').hidden = false; $('info-exo').prepend(b); }, 0);
   } else if (o.planet) {
     const p = o.p; ra = p.ra; dec = p.dec;
     $('info-title').textContent = `${p.ko} (${p.name})`; $('info-sub').textContent = p.small ? `${p.small} · 궤도: JPL SBDB` : p.name === 'Sun' ? '항성' : p.name === 'Moon' ? '위성' : p.parent ? `${PLANETS.find(q => q.name === p.parent).ko}의 위성 · 위치 근사` : '행성';
@@ -2910,6 +2911,20 @@ function showLesson() {
 $('ls-btn').onclick = () => { $('ls').hidden = !$('ls').hidden; };
 $('ls-close').onclick = () => $('ls').hidden = true; $('ls-make').onclick = makeLesson; $('lesson-close').onclick = () => $('lesson').hidden = true;
 if (lessonParam) setTimeout(showLesson, 1500);
+// ---------- C2. look through a spacecraft's camera: from its real position toward the nearest body, with the instrument's field of view ----------
+const INSTR = { 'New Horizons': ['LORRI 망원 카메라', 0.29], 'Juno': ['JunoCam', 58], 'Voyager 1': ['ISS 협각 카메라', 0.42], 'Voyager 2': ['ISS 협각 카메라', 0.42],
+  'Parker Solar Probe': ['WISPR 광시야 카메라', 95], 'Danuri': ['LUTI 고해상도 카메라', 0.7], JWST: ['NIRCam', 0.04], 'Europa Clipper': ['EIS 협각 카메라', 2.3], Juice: ['JANUS 카메라', 1.3],
+  Lucy: ['L\'LORRI 카메라', 0.29], Psyche: ['다중분광 카메라', 4.6], BepiColombo: ['SIMBIO-SYS 협각', 1.5], 'Solar Orbiter': ['EUI 전면 카메라', 3.8], 'Pioneer 10': ['IPP 영상 편광계', 0.5], 'Pioneer 11': ['IPP 영상 편광계', 0.5] };
+function probeCamera(p) {
+  const pos = helioPos[p.name]; if (!pos) return;
+  let best = null, bd = Infinity; for (const b of PLANETS) { if (b.probe || b === p || !helioPos[b.name] || (b.name === 'Sun' && p.name !== 'Parker Solar Probe' && p.name !== 'Solar Orbiter')) continue;
+    const d = helioPos[b.name].distanceTo(pos) / Math.max(1, bodyR(b)); if (d < bd) { bd = d; best = b; } }
+  if (!best) return; const [inst, fov] = INSTR[p.name] || ['카메라', 5];
+  sp.flight = null; sp.target = null; sp.pos.copy(pos); sp.quat.copy(lookQuat(helioPos[best.name].clone().sub(pos).normalize())); view.fov = fov;
+  const dist = helioPos[best.name].distanceTo(pos), ang = 2 * Math.atan(bodyR(best) / dist) * R2D;
+  $('sp-target').textContent = `${p.ko}의 ${inst}`;
+  $('status').textContent = `${p.ko} ${inst} (시야 ${fov}°)로 본 ${best.ko} · 거리 ${fmtDist(dist)} · ${best.ko}의 겉보기 크기 ${ang < 0.01 ? (ang * 3600).toFixed(1) + '″' : ang.toFixed(2) + '°'}${ang < fov * 0.02 ? ' (아직 점으로 보입니다)' : ''}`;
+}
 // ---------- 22. whole spacecraft journeys (S7) ----------
 function journeyTimeline(p) {
   const box = $('info-exo'), ev = JOURNEYS[p.name], e = probeEph[p.name]; box.innerHTML = ''; box.hidden = false;
