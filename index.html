@@ -28,6 +28,7 @@
   <div class="version" data-version="{v}"></div><script>scFill()</script>
   <div id="loader-step">별 4만 개와 NGC/IC 천체 1만 2천 개를 불러오는 중</div>
 </div>
+<video id="ar-video" playsinline muted hidden></video>
 <canvas id="c"></canvas>
 <div id="labels"></div>
 <div id="sel-ring" hidden></div>
@@ -51,7 +52,7 @@
     <button id="cal-btn" title="앞으로 90일의 천문 현상">천문 달력</button>
     <button id="flyby-btn" class="space-only" title="탐사선이 행성을 지나간 순간을 실제 궤도로 재생">명장면</button>
     <button id="obs-btn" title="관측 목록 (O)">관측 목록</button>
-    <button id="gyro" title="휴대폰을 하늘에 비추면 그 방향을 보여 줍니다">하늘 비추기</button>
+    <button id="gyro" title="휴대폰을 하늘에 비추면 그 방향을 보여 줍니다">하늘 비추기</button><button id="ar" hidden title="휴대폰 카메라 화면 위에 별자리와 행성 이름을 겹칩니다">카메라 겹치기</button>
     <button id="tour-btn" title="주요 천체를 차례로 둘러봅니다">투어</button>
     <button id="share" title="지금 보는 화면의 링크 복사">링크</button>
     <button id="night" title="눈의 암순응을 지키는 붉은 화면 (N)">야간 시야</button>

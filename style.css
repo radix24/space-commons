@@ -411,3 +411,5 @@ button.on, .on > button { background: var(--orbit); border-color: var(--orbit); 
 .log-photo { max-width: 100%; display: block; margin: 4px 0; }
 .vs-box { margin-top: 8px; padding: 8px; border: 1px solid var(--line); } .vs-box input { width: 80px; }
 #ecl.wide { width: min(560px, 94vw); }
+#ar-video { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+body.ar { background: #000; } body.ar #c { background: transparent; }

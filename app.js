@@ -55,7 +55,7 @@ function bvToRGB(bv) {
 
 // ---------- renderer / scene ----------
 const canvas = $('c');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, logarithmicDepthBuffer: true, preserveDrawingBuffer: true }); // preserve: screenshot button
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, logarithmicDepthBuffer: true, preserveDrawingBuffer: true, alpha: true }); // alpha: the camera shows through in AR // preserve: screenshot button
 renderer.autoClear = false;
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 const scene = new THREE.Scene();
@@ -3108,12 +3108,22 @@ function onOrient(e) {
   const az = (Math.atan2(E, Nn) * R2D + 360) % 360, alt = Math.asin(Math.max(-1, Math.min(1, U))) * R2D;
   const daz = ((az - view.az + 540) % 360) - 180; view.az = (view.az + daz * 0.25 + 360) % 360; view.alt += (alt - view.alt) * 0.25; // smooth the jitter
 }
+// B3: the phone camera behind the sky - labels, constellation lines and planets over the real view
+let arStream = null;
+async function setAR(on) {
+  if (!on) { arStream?.getTracks().forEach(t => t.stop()); arStream = null; $('ar-video').hidden = true; document.body.classList.remove('ar'); $('ar').classList.remove('on'); return; }
+  try { arStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false }); }
+  catch { $('status').textContent = '카메라를 쓸 수 없습니다 (권한 또는 기기)'; return; }
+  const v = $('ar-video'); v.srcObject = arStream; v.hidden = false; await v.play().catch(() => {});
+  document.body.classList.add('ar'); $('ar').classList.add('on'); view.fov = 62; // about a phone's main camera across its height
+}
+$('ar').onclick = () => setAR(!arStream);
 $('gyro').onclick = async () => {
-  if (gyro) { removeEventListener(gyro, onOrient); gyro = null; $('gyro').classList.remove('on'); return; }
+  if (gyro) { removeEventListener(gyro, onOrient); gyro = null; $('gyro').classList.remove('on'); setAR(false); $('ar').hidden = true; return; }
   try { if (typeof DeviceOrientationEvent?.requestPermission === 'function' && await DeviceOrientationEvent.requestPermission() !== 'granted') return; } catch { return; }
   setMode(false); flight = null; tracking = null;
   gyro = 'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
-  addEventListener(gyro, onOrient); $('gyro').classList.add('on');
+  addEventListener(gyro, onOrient); $('gyro').classList.add('on'); $('ar').hidden = !navigator.mediaDevices?.getUserMedia;
 };
 if (!('DeviceOrientationEvent' in window) || !matchMedia('(pointer: coarse)').matches) $('gyro').hidden = true;
 
@@ -3228,7 +3238,7 @@ function frame(now) {
 
   // brightness / limiting magnitudes scale with zoom
   const zoom = Math.log10(70 / view.fov);
-  const gOn = groundOn(); ground.visible = gOn;
+  const gOn = groundOn(); ground.visible = gOn && !arStream;
   // daylight: how bright the sky is from the Sun's altitude; the day-sky setting decides what it does
   const daySky = $('daysky').value, sunlight = gOn && PLANETS[0].world ? Math.min(1, Math.max(0, (Math.asin(PLANETS[0].world.y) * R2D + 12) / 14)) : 0;
   const obsc = gOn ? solarObscuration() : 0, totality = obsc >= 0.999 ? 1 : obsc * 0.96; // sky light follows the uncovered part of the Sun
@@ -3249,6 +3259,7 @@ function frame(now) {
     u.lp.value = (bortle - 1) / 8; u.k.value = 1 - skyDayK; updateAuroraGround(u); }
   const atmo = gOn && $('t-refr').checked; atmoU.refractOn.value = atmo ? 1 : 0; atmoU.extK.value = atmo ? 0.25 : 0;
   if (gOn && bortle > 3) bg.lerp(new THREE.Color(0x2a2620), (bortle - 3) / 6 * 0.35 * (1 - skyDayK)); renderer.setClearColor(bg); // skyglow
+  if (arStream) { renderer.setClearColor(bg, 0); skyDome.visible = false; nightGlow.visible = false; milkyWay.visible = false; }
   starMat.uniforms.limit.value = Math.min(view.fov > 30 ? 8.5 : MOBILE ? 11 : 12.5, (gOn ? NELM[bortle - 1] : 6.4) + (view.fov > 30 ? 2.2 : 3) * zoom) - day * 5; // deeper when zoomed: Gaia tiles
   mwMat.uniforms.gain.value = 3.5 * dim * MWK[bortle - 1] / Math.max(1, Math.sqrt(70 / view.fov) * 0.6);
   if (mwMat.uniforms.photo.value) mwMat.uniforms.gain.value *= Math.max(0, Math.min(1, (view.fov - 6) / 24));
