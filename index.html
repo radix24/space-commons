@@ -31,27 +31,34 @@
   <a id="brand" href="./"><img src="assets/sc-mark.svg" alt=""><span>Space <b>Commons</b></span></a>
   <input id="search" list="search-list" placeholder="검색: M31, NGC 7000, Jupiter, Sirius…" autocomplete="off">
   <datalist id="search-list"></datalist>
+  <div id="modes" role="tablist">
+    <button data-mode="ground" class="on">지상</button>
+    <button data-mode="space">우주</button>
+  </div>
   <span id="status">카탈로그 불러오는 중…</span>
 </div>
 
 <div id="panel">
   <div class="row"><b id="clock">—</b></div>
   <div class="row">
-    <button data-speed="-3600">⏪</button>
-    <button data-speed="-60">◀◀</button>
-    <button data-speed="1">▶ 실시간</button>
-    <button data-speed="60">▶▶</button>
-    <button data-speed="3600">⏩</button>
-    <button data-speed="0">⏸</button>
+    <button data-speed="-3600" title="1초에 1시간씩 거꾸로">−1시간</button>
+    <button data-speed="-60" title="1초에 1분씩 거꾸로">−1분</button>
+    <button data-speed="1">실시간</button>
+    <button data-speed="60" title="1초에 1분씩">+1분</button>
+    <button data-speed="3600" title="1초에 1시간씩">+1시간</button>
+    <button data-speed="86400" title="1초에 하루씩">+1일</button>
+    <button data-speed="0">정지</button>
     <button id="now">지금</button>
   </div>
-  <div class="row">
+  <div class="row space-only"><b id="sp-target">지구 주위 공전</b><button id="sp-free">자유 비행</button></div>
+  <div class="row ground-only">
     <label>위도 <input id="lat" type="number" step="0.01" value="37.57"></label>
     <label>경도 <input id="lon" type="number" step="0.01" value="126.98"></label>
   </div>
   <div class="row toggles">
-    <label><input type="checkbox" id="t-ground" checked> 지면</label>
-    <label><input type="checkbox" id="t-atm"> 낮 하늘</label>
+    <label class="ground-only"><input type="checkbox" id="t-ground" checked> 지면</label>
+    <label class="ground-only"><input type="checkbox" id="t-atm"> 낮 하늘</label>
+    <label class="space-only"><input type="checkbox" id="t-orbits" checked> 궤도</label>
     <label><input type="checkbox" id="t-mw" checked> 은하수</label>
     <label><input type="checkbox" id="t-lines" checked> 별자리선</label>
     <label><input type="checkbox" id="t-grid"> 적도 격자</label>
@@ -70,7 +77,7 @@
   <div class="row"><button id="info-goto">이동 · 확대</button></div>
 </div>
 
-<div id="help">드래그: 회전 · 휠/핀치: 확대 · 클릭: 선택 · 더블클릭: 이동·확대<br>행성 텍스처 © <a href="https://www.solarsystemscope.com/textures/" target="_blank" style="color:inherit">Solar System Scope</a> (CC BY 4.0)</div>
+<div id="help"><span class="ground-only">드래그: 회전 · 휠/핀치: 확대 · 클릭: 선택 · 더블클릭: 이동·확대</span><span class="space-only">드래그: 공전/시점 · 휠: 거리 · W A S D / Q E: 이동 · Shift: 가속 · 더블클릭: 천체로 비행</span><br>행성 텍스처 © <a href="https://www.solarsystemscope.com/textures/" target="_blank" style="color:inherit">Solar System Scope</a> (CC BY 4.0)</div>
 
 <script type="module" src="app.js"></script>
 </body>

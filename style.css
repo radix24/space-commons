@@ -5,7 +5,7 @@
   --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; overflow: hidden; background: var(--night); color: var(--ink);
+html, body { -webkit-user-select: none; user-select: none; margin: 0; height: 100%; overflow: hidden; background: var(--night); color: var(--ink);
   font: 13px/1.45 var(--sans); }
 #c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
 #c.drag { cursor: grabbing; }
@@ -71,3 +71,14 @@ button.on { background: var(--orbit); color: var(--night); border-color: var(--o
 #help { text-align: right; position: fixed; right: 12px; bottom: 12px; color: var(--mute); font-size: 11px; text-shadow: 0 0 3px #000; }
 #help a { color: inherit; }
 @media (max-width: 640px) { #help, #status { display: none; } #brand span { display: none; } #info { top: auto; bottom: 210px; max-height: 40vh; } }
+
+/* mode switch */
+#modes { pointer-events: auto; display: flex; padding: 3px; gap: 2px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); }
+#modes button { white-space: nowrap; border: 0; background: transparent; padding: 5px 14px; border-radius: 7px; font-weight: 600; }
+#modes button.on { background: var(--orbit); color: var(--night); }
+.space-only { display: none !important; }
+body.space .space-only { display: revert !important; }
+body.space .ground-only { display: none !important; }
+#panel .row.space-only { display: none !important; }
+body.space #panel .row.space-only { display: flex !important; }
+#sp-target { color: var(--star); }
