@@ -1660,7 +1660,17 @@ function setMode(space) {
   }
 }
 $('lang').textContent = EN ? '한국어' : 'EN'; $('lang').onclick = () => setLang(EN ? 'ko' : 'en');
-document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { setMode(b.dataset.mode === 'space'); $('tonight').hidden = true; });
+// third mode: the gravity sandbox and orbital-mechanics labs (sandbox.js, loaded on first use)
+let sandboxOn = false, sandboxMod = null;
+async function setSandbox(on) {
+  sandboxOn = on; document.body.classList.toggle('sandbox', on);
+  document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('on', on ? b.dataset.mode === 'sandbox' : (b.dataset.mode === 'space') === mode.space));
+  if (on) { sandboxMod ||= await import('./sandbox.js'); sandboxMod.openSandbox({ helio, jdNow: () => jd(state.time) }); }
+  else sandboxMod?.closeSandbox();
+}
+document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { $('tonight').hidden = true;
+  if (b.dataset.mode === 'sandbox') return setSandbox(true);
+  if (sandboxOn) setSandbox(false); setMode(b.dataset.mode === 'space'); });
 $('t-orbits').onchange = (e) => orbits.visible = mode.space && e.target.checked;
 $('light-btn').onclick = startLight;
 $('sp-free').onclick = () => { sp.target = null; sp.flight = null; $('sp-target').textContent = '자유 비행'; };
@@ -2723,6 +2733,7 @@ function drawLabels() {
 // ---------- main loop ----------
 const skyNight = new THREE.Color(0x02040a), skyDay = new THREE.Color(0x3d72b8), skyTwi = new THREE.Color(0x1a2a50), bg = new THREE.Color();
 function frame(now) {
+  if (sandboxOn) { state.lastReal = now; requestAnimationFrame(frame); return; } // the sandbox draws itself
   const dt = now - state.lastReal; state.lastReal = now;
   state.time += dt * state.speed;
   updateSkyMatrix();
