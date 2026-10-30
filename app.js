@@ -714,7 +714,7 @@ const planetMat = (tex, emissive) => new THREE.ShaderMaterial({
     uniform sampler2D map, night; uniform float skyK; uniform float hasNight, ambient, on, umbR, penR, isMoon; uniform vec3 shadowDir; varying vec3 vW; uniform vec3 sunDir; uniform float emissive; varying vec2 vUv; varying vec3 vN;
     uniform sampler2D bump; uniform float hasBump, bumpK; varying vec3 vPole;
     uniform float detail; varying vec3 vO; uniform mat4 modelMatrix;
-    float h3(vec3 p){ return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
+    float h3(vec3 p){ p = fract(p * 0.1031); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); } // sin-free hash: stays clean at large coordinates
     float vn3(vec3 p){ vec3 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
       return mix(mix(mix(h3(i), h3(i + vec3(1,0,0)), f.x), mix(h3(i + vec3(0,1,0)), h3(i + vec3(1,1,0)), f.x), f.y),
                  mix(mix(h3(i + vec3(0,0,1)), h3(i + vec3(1,0,1)), f.x), mix(h3(i + vec3(0,1,1)), h3(i + vec3(1,1,1)), f.x), f.y), f.z); }
@@ -729,11 +729,11 @@ const planetMat = (tex, emissive) => new THREE.ShaderMaterial({
         n = normalize(n - bumpK * (hx / (2.0 * 6.2831853 / 4096.0 * cl) * e + hy / (2.0 * 3.1415927 / 2048.0) * no)); }
       float dh = 0.5;
       if (detail > 0.0) { // close to the ground: relief and albedo variation finer than the map, fading in with altitude
-        vec3 q = normalize(vO) * 900.0; dh = rel(q); float e = 0.35;
+        vec3 q = normalize(vO) * 600.0; dh = rel(q); float e = 0.25;
         vec3 gr = vec3(rel(q + vec3(e, 0, 0)) - dh, rel(q + vec3(0, e, 0)) - dh, rel(q + vec3(0, 0, e)) - dh) / e;
-        vec3 gw = normalize(mat3(modelMatrix) * gr); n = normalize(n - detail * 0.35 * (gw - n * dot(gw, n))); }
+        vec3 gw = normalize(mat3(modelMatrix) * gr); n = normalize(n - detail * 0.18 * (gw - n * dot(gw, n))); }
       float ndl = dot(n, sunDir);
-      vec3 c = texture2D(map, vUv).rgb * (1.0 + (dh - 0.5) * 0.4 * detail); float l = emissive > 0.5 ? 1.2 : max(ndl, 0.0) * 1.15 + ambient;
+      vec3 c = texture2D(map, vUv).rgb * (1.0 + (dh - 0.5) * 0.16 * detail); float l = emissive > 0.5 ? 1.2 : max(ndl, 0.0) * 1.15 + ambient;
       // the Sun map is a filtered (orange) image; to the eye the photosphere is near-white, keep only a hint of granulation
       if (emissive > 0.5) { c = mix(vec3(1.0, 0.97, 0.9), c, 0.18); l = 1.25; }
       vec3 col = c * l;
@@ -767,9 +767,28 @@ const texLoader = new THREE.TextureLoader();
 const HIRES = { Moon: ['8k_moon.jpg', 'disp_moon.png', 20000, 2], Mars: ['8k_mars.jpg', 'disp_mars.png', 29500, 2] };
 function loadHires(p) {
   p.hires = true; const [col, disp, range, ex] = HIRES[p.name], u = p.mesh.material.uniforms;
+  const im = new Image(); im.onload = () => { const cv = document.createElement('canvas'); cv.width = im.width; cv.height = im.height; const x = cv.getContext('2d', { willReadFrequently: true }); x.drawImage(im, 0, 0); p.dem = { w: im.width, h: im.height, d: x.getImageData(0, 0, im.width, im.height).data, range, ex }; }; im.src = 'textures/' + disp;
   texLoader.load('textures/' + col, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; u.map.value = t; });
   texLoader.load('textures/' + disp, (t) => { t.anisotropy = 4; u.bump.value = t; u.bumpK.value = range / (p.R * 1000) * ex; u.hasBump.value = 1; });
   $('status').textContent = `${p.ko} 고해상도 표면을 받는 중 (8k 사진, ${p.name === 'Moon' ? 'LRO LOLA' : 'MGS MOLA'} 고도)`;
+}
+// real-relief patch under the camera (Moon: LRO LOLA, Mars: MGS MOLA): a fine grid lifted by the measured heights, its edges fading into the sphere
+function terrainPatch(p, loc) {
+  const D = p.dem, alt = loc.length() - 1; if (!D) return;
+  const dir = loc.clone().normalize(), th0 = Math.acos(Math.max(-1, Math.min(1, dir.y))), ph0 = Math.atan2(dir.z, -dir.x), half = Math.min(0.6, Math.max(0.01, alt * 2.5));
+  const P = p.patch; if (P) P.mesh.visible = true; if (P && Math.abs(Math.log(alt / P.alt)) < 0.4 && P.dir.angleTo(dir) < P.half * 0.3) return;
+  const N = 128, pos = new Float32Array((N + 1) ** 2 * 3), uv = new Float32Array((N + 1) ** 2 * 2), hs = new Float32Array((N + 1) ** 2), k = D.ex / (p.R * 1000);
+  const hAt = (U, V) => { const x = Math.min(D.w - 1, Math.max(0, Math.floor(((U % 1) + 1) % 1 * D.w))), y = Math.min(D.h - 1, Math.max(0, Math.floor((1 - V) * D.h))); return D.d[(y * D.w + x) * 4] / 255 * D.range; };
+  let hmin = Infinity;
+  for (let i = 0; i <= N; i++) for (let j = 0; j <= N; j++) { const th = Math.min(Math.PI - 1e-4, Math.max(1e-4, th0 + (i / N - 0.5) * 2 * half)), ph = ph0 + (j / N - 0.5) * 2 * half / Math.max(0.05, Math.sin(th));
+    const U = ph / (2 * Math.PI), V = 1 - th / Math.PI, n = i * (N + 1) + j; uv[n * 2] = ((U % 1) + 1) % 1; uv[n * 2 + 1] = V; hs[n] = hAt(U, V); hmin = Math.min(hmin, hs[n]);
+    pos[n * 3] = -Math.cos(ph) * Math.sin(th); pos[n * 3 + 1] = Math.cos(th); pos[n * 3 + 2] = Math.sin(ph) * Math.sin(th); }
+  for (let i = 0; i <= N; i++) for (let j = 0; j <= N; j++) { const n = i * (N + 1) + j, e = Math.min(i, j, N - i, N - j) / (N * 0.15), w = Math.min(1, e) ** 2;
+    const r = 1 + 0.0004 + (hs[n] - hmin) * k * w; pos[n * 3] *= r; pos[n * 3 + 1] *= r; pos[n * 3 + 2] *= r; }
+  const idx = []; for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) { const a = i * (N + 1) + j; idx.push(a, a + N + 1, a + 1, a + 1, a + N + 1, a + N + 2); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
+  if (P) { P.mesh.geometry.dispose(); P.mesh.geometry = g; } else { const m = new THREE.Mesh(g, p.mesh.material); m.renderOrder = 6; p.mesh.add(m); p.patch = { mesh: m }; }
+  Object.assign(p.patch, { alt, dir, half }); p.patch.mesh.visible = true;
 }
 const planetGroup = new THREE.Group(); planetScene.add(planetGroup);
 for (const p of PLANETS) {
@@ -1745,6 +1764,8 @@ function updateSpace() {
     p.rpx = Math.atan(p.mesh.scale.x / d) / (view.fov / 2 * D2R) * innerHeight / 2;
   }
   if (!MOBILE) for (const p of PLANETS) if (HIRES[p.name] && !p.hires && mode.space && p.camDist < bodyR(p) * 8) loadHires(p);
+  for (const p of PLANETS) if (p.patch || p.dem) { const near = mode.space && p.dem && p.mesh.visible && p.camDist < bodyR(p) * 1.5;
+    if (near) terrainPatch(p, p.mesh.worldToLocal(new THREE.Vector3(0, 0, 0))); else if (p.patch) p.patch.mesh.visible = false; }
   orbits.position.copy(sp.pos).negate(); trails.position.copy(orbits.position); updateTrails(jd(state.time));
   orbits.visible = $('t-orbits').checked && nearest > 2; trails.visible = orbits.visible; // orbit lines only clutter close-ups
   // orbits smaller than a few dozen pixels (inner planets seen from the outer solar system) collapse into a bright smudge beside the Sun
