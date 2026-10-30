@@ -2288,7 +2288,7 @@ async function loadSats() {
       const l1 = L[i + 1], l2 = L[i + 2]; if (!l1?.startsWith('1 ') || !l2?.startsWith('2 ')) continue;
       const id = +l1.slice(2, 7); if (seen.has(id)) continue; seen.add(id);
       const korea = g === 'data/korea.tle';
-      try { sats.push({ kindName: 'sat', id, korea, name: EN ? ({ 25544: 'International Space Station', 48274: 'Tiangong', 20580: 'Hubble Space Telescope' }[id] || L[i].trim()) : KR_SATS[id] || SAT_KO[id] || L[i].trim(), rec: satellite.twoline2satrec(l1, l2), iss: id === 25544, star: !!SAT_KO[id] }); } catch {}
+      try { sats.push({ kindName: 'sat', id, korea, name: EN ? ({ 25544: 'International Space Station', 48274: 'Tiangong', 20580: 'Hubble Space Telescope' }[id] || L[i].trim()) : KR_SATS[id] || SAT_KO[id] || L[i].trim(), rec: satellite.twoline2satrec(l1, l2), iss: id === 25544, star: !!SAT_KO[id], tle: L[i].trim() }); } catch {}
     }
   }
   return sats.length;
@@ -2300,23 +2300,28 @@ function satState(s, ms, sunEqU) {
   return { az: la.azimuth * R2D, el: la.elevation * R2D, lit, h: satellite.eciToGeodetic(pv.position, gmst).height, v: Math.hypot(pv.velocity.x, pv.velocity.y, pv.velocity.z) };
 }
 const stations = {}; // NORAD id -> model group
+// Korean satellites: which hand-built model (craft.js) and its real span in metres, from the TLE name
+function krCraft(s) { const n = s.tle || '';
+  return /KOMPSAT-5|ARIRANG-5/.test(n) ? ['KOMPSAT-5', 6] : /GEO-KOMPSAT|COMS/.test(n) ? ['GEO-KOMPSAT', 14] : /KOMPSAT|ARIRANG/.test(n) ? ['KOMPSAT', 6]
+    : /KOREASAT|MUGUNG/.test(n) ? ['Koreasat', 28] : /CAS500/.test(n) ? ['CAS500', 6] : /STSAT|NEXTSAT|KITSAT/.test(n) ? ['Microsat', 2] : ['CubeSat', 0.5]; }
 function stationModel(id) {
   if (stations[id]) return stations[id];
   const g = new THREE.Group(); stations[id] = g; planetGroup.add(g);
+  const s = sats.find(x => x.id === id);
   if (id === 25544) gltfLoader.load('models/iss.glb', (m) => { g.add(fitUnit(m.scene)); }, undefined, () => g.add(fitUnit(buildCraft('Tiangong'))));
-  else g.add(fitUnit(buildCraft('Tiangong')));
+  else g.add(fitUnit(buildCraft(s?.korea ? krCraft(s)[0] : 'Tiangong')));
   return g;
 }
 const krOrbits = new THREE.Group(); krOrbits.visible = false; planetGroup.add(krOrbits); let krOrbitsAt = -1e15;
 function updateStations() { // space mode near Earth: station models at their real place, Korean satellites' orbits
   const E = helioPos.Earth, near = mode.space && E && E.distanceTo(sp.pos) < 0.3 && $('t-sats').checked;
-  for (const s of sats) if (s.star && stations[s.id]) stations[s.id].visible = false;
+  for (const s of sats) if ((s.star || s.korea) && stations[s.id]) stations[s.id].visible = false;
   krOrbits.visible = near; if (!near) return;
   const date = new Date(state.time);
-  for (const s of sats) { if (!s.star) continue;
+  for (const s of sats) { if (!s.star && !s.korea) continue;
     const pv = satellite.propagate(s.rec, date); if (!pv || !pv.position) continue;
     const g = stationModel(s.id), rel = E.clone().add(new THREE.Vector3(pv.position.x, pv.position.y, pv.position.z).divideScalar(1e6)).sub(sp.pos), d = rel.length();
-    g.visible = true; g.position.copy(rel); g.scale.setScalar(Math.max((s.iss ? 55 : 27) / 1e9, d * Math.tan(view.fov * D2R * 0.012)));
+    g.visible = true; g.position.copy(rel); g.scale.setScalar(Math.max((s.iss ? 55 : s.korea ? krCraft(s)[1] : 27) / 1e9, d * Math.tan(view.fov * D2R * (s.korea ? 0.008 : 0.012))));
     g.lookAt(rel.clone().add(new THREE.Vector3(pv.velocity.x, pv.velocity.y, pv.velocity.z)));
   }
   if (Math.abs(state.time - krOrbitsAt) > 600e3) { // redraw one revolution of each Korean satellite every 10 simulated minutes

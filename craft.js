@@ -78,6 +78,70 @@ function boom(g, len, dirVec, from = new THREE.Vector3(), r = 0.025) {
 function thrusters(g, w, h, d) { for (const sx of [-1, 1]) for (const sy of [-1, 1]) { const n = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.12, 8), M.dark()); n.position.set(sx * w / 2, sy * h / 2, -d / 2); n.rotation.x = -Math.PI / 2; g.add(n); } }
 
 const BUILDERS = {
+  // ---- Korean satellites (modelled here from published sizes and photos; no official open models exist) ----
+  // KOMPSAT-3 / 3A (Arirang): hexagonal bus 2.0 m across, 3.5 m tall, three fixed solar panels in a fan, AEISS telescope barrel pointing down
+  'KOMPSAT'() {
+    const g = new THREE.Group();
+    const bus = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 2.2, 6), M.gold()); g.add(bus);
+    cyl(g, 0.45, 1.3, M.white(), 'y', 0, -1.7, 0, 20);                                  // telescope barrel (Earth side, -Y here)
+    cyl(g, 0.5, 0.12, M.dark(), 'y', 0, -2.35, 0, 20);
+    for (let k = 0; k < 3; k++) { const w = new THREE.Group(), a = k * 2.094 + 0.52;
+      const p = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.035, 2.4), [M.frame(), M.frame(), solarMat(), M.dark(), M.frame(), M.frame()]); p.position.set(1.75, 0.6, 0); p.rotation.z = -0.35; w.add(p);
+      w.rotation.y = a; g.add(w); }
+    dish(g, 0.35, 0.06, M.white(), 0.3, -1.05, 0.7, new THREE.Vector3(0, -1, 0.3));
+    return g;
+  },
+  // KOMPSAT-5: X-band SAR, a 4.5 x 0.6 m antenna on one face of the bus, two short solar wings
+  'KOMPSAT-5'() {
+    const g = new THREE.Group();
+    box(g, 1.6, 2.0, 1.6, M.gold());
+    box(g, 4.5, 0.12, 0.65, std(0xd9dde3, 0.6, 0.35), 0, -1.08, 0);                      // SAR panel facing Earth
+    for (const s of [-1, 1]) wing(g, 2, 1.0, 1.4, s, 0.85, 0.4, 0);
+    return g;
+  },
+  // GEO-KOMPSAT-2A/2B (Cheollian 2): 3.4 m box bus, one long 4-panel wing on the south face, imager on the Earth deck
+  'GEO-KOMPSAT'() {
+    const g = new THREE.Group();
+    box(g, 2.4, 3.4, 2.6, M.gold());
+    box(g, 2.45, 0.05, 2.65, M.white(), 0, 1.72, 0);
+    wing(g, 4, 2.2, 2.6, 1, 1.25, 0.3, 0, 0.1);
+    box(g, 1.1, 0.9, 1.2, M.silver(), 0, -1.95, 0.3);                                   // AMI / GOCI imager housing
+    cyl(g, 0.3, 0.4, M.dark(), 'y', 0, -2.55, 0.3);
+    dish(g, 1.0, 0.15, M.white(), -1.0, -1.8, -0.7, new THREE.Vector3(0, -1, 0));
+    return g;
+  },
+  // Koreasat (Mugunghwa): 3 x 2.5 x 3.6 m box, two 3-panel wings (about 30 m tip to tip), two 2.4 m deployable reflectors on the east and west faces
+  'Koreasat'() {
+    const g = new THREE.Group();
+    box(g, 3.0, 3.6, 2.5, M.gold());
+    for (const s of [-1, 1]) wing(g, 3, 4.0, 2.4, s, 1.55, 0.6, 0, 0.12);
+    for (const s of [-1, 1]) dish(g, 2.4, 0.4, M.white(), 0, -1.2, s * 2.3, new THREE.Vector3(0, -0.8, s * 0.6));
+    dish(g, 1.0, 0.15, M.white(), 0, -2.0, 0, new THREE.Vector3(0, -1, 0));
+    return g;
+  },
+  // CAS500 (next-generation medium satellite): 1.6 m box bus, two 2-panel wings, telescope underneath
+  'CAS500'() {
+    const g = new THREE.Group();
+    box(g, 1.6, 2.2, 1.6, M.gold());
+    for (const s of [-1, 1]) wing(g, 2, 1.3, 1.4, s, 0.85, 0.5, 0);
+    cyl(g, 0.4, 1.0, M.white(), 'y', 0, -1.6, 0, 20);
+    return g;
+  },
+  // STSAT / NEXTSAT / KITSAT microsatellites: about 0.6-1 m box with body-mounted cells and one small wing
+  'Microsat'() {
+    const g = new THREE.Group();
+    box(g, 0.8, 0.9, 0.8, solarMat());
+    wing(g, 1, 0.7, 0.6, 1, 0.42, 0.2, 0);
+    boom(g, 0.8, new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0.45, 0), 0.01);
+    return g;
+  },
+  // university cubesats: a 2U-3U frame of cells
+  'CubeSat'() {
+    const g = new THREE.Group();
+    box(g, 0.1, 0.3, 0.1, solarMat()); for (const s of [-1, 1]) box(g, 0.002, 0.3, 0.1, solarMat(), s * 0.08, 0, 0);
+    boom(g, 0.4, new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0.15, 0), 0.003);
+    return g;
+  },
   // Solar Orbiter: 2.5 x 3.1 x 2.7 m bus behind a 3.1 x 2.4 m titanium heat shield, two 3-panel wings (18 m span), 4.4 m mag boom
   'Solar Orbiter'() {
     const g = new THREE.Group();
