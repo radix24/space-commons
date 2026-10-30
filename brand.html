@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Space Commons Brand</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400&display=swap">
+<style>
+  :root { --ink:#EEF0FA; --night:#0A0D1C; --deep:#12163A; --teal:#4FE3C1; --violet:#7C6CFF; --mute:#8D93B3; --line:#262B4D; }
+  body { margin:0; background:var(--night); color:var(--ink); font:15px/1.6 "Pretendard Variable",Pretendard,sans-serif; }
+  main { max-width: 960px; margin: 0 auto; padding: 48px 16px 80px; }
+  h1 { font: 600 13px "IBM Plex Mono", monospace; letter-spacing:.14em; text-transform:uppercase; color:var(--teal); margin:56px 0 16px; }
+  .hero { display:flex; align-items:center; gap:28px; flex-wrap:wrap; padding:48px 32px; border-radius:24px;
+    background: radial-gradient(120% 140% at 20% 0%, #1b1f4d 0%, var(--night) 60%); border:1px solid var(--line); }
+  .hero img { width:132px; }
+  .wm { font: 600 54px/1 "Space Grotesk", sans-serif; letter-spacing:-.035em; }
+  .wm span { color: var(--teal); }
+  .tag { color:var(--mute); margin-top:10px; font-size:17px; }
+  .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap:14px; }
+  .card { border:1px solid var(--line); border-radius:16px; padding:20px; background:#0E1230; }
+  .card.light { background:#F4F5FB; color:#14183A; }
+  .sw { height:72px; border-radius:10px; margin-bottom:10px; }
+  .mono { font: 13px "IBM Plex Mono", monospace; color: var(--mute); }
+  .light .mono { color:#5a6080; }
+  .sizes { display:flex; align-items:flex-end; gap:24px; }
+  .lockup { white-space:nowrap; display:flex; align-items:center; gap:12px; font:600 26px "Space Grotesk",sans-serif; letter-spacing:-.03em; }
+  .lockup img { width:40px; }
+  p { color:#c5c9de; max-width: 680px; }
+  @media (max-width:560px){ .wm { font-size:38px; } .hero img { width:96px; } }
+</style>
+</head>
+<body>
+<main>
+  <section class="hero">
+    <img src="assets/sc-mark.svg" alt="Space Commons 마크">
+    <div>
+      <div class="wm">Space <span>Commons</span></div>
+      <div class="tag">땅에서 올려다보고, 우주로 나아가는 모두의 하늘</div>
+    </div>
+  </section>
+
+  <h1>Idea</h1>
+  <p>마크는 서비스의 두 가지 보기 방식을 하나의 그림에 담았습니다. 지평선 위의 <b>돔</b>은 땅에서 올려다보는 하늘(지상 모드)이고, 돔을 비스듬히 감싸는 <b>궤도</b>와 그 위의 <b>작은 점</b>은 우주로 떠나는 여행자(우주 모드)입니다. 궤도의 뒤쪽 절반은 돔 뒤로 숨고 앞쪽 절반은 돔 앞을 지나가서, 평면 그림이 입체로 읽힙니다. 지평선은 모두가 함께 딛고 선 땅, 곧 Commons입니다.</p>
+
+  <h1>Lockups</h1>
+  <div class="grid">
+    <div class="card"><div class="lockup"><img src="assets/sc-mark.svg" alt="">Space Commons</div><div class="mono" style="margin-top:12px">어두운 바탕 (기본)</div></div>
+    <div class="card light"><div class="lockup"><img src="assets/sc-mark-light.svg" alt="">Space Commons</div><div class="mono" style="margin-top:12px">밝은 바탕</div></div>
+    <div class="card"><div class="sizes"><img src="assets/sc-icon.svg" width="96" alt=""><img src="assets/sc-icon.svg" width="48" alt=""><img src="assets/favicon.svg" width="24" alt=""><img src="assets/favicon.svg" width="16" alt=""></div><div class="mono" style="margin-top:12px">앱 아이콘 · 파비콘</div></div>
+  </div>
+
+  <h1>Color</h1>
+  <div class="grid">
+    <div class="card"><div class="sw" style="background:#0A0D1C;border:1px solid #262B4D"></div>Midnight<div class="mono">#0A0D1C · 바탕</div></div>
+    <div class="card"><div class="sw" style="background:linear-gradient(#7C6CFF,#2B2F7A)"></div>Dome Violet<div class="mono">#7C6CFF → #2B2F7A</div></div>
+    <div class="card"><div class="sw" style="background:#4FE3C1"></div>Orbit Teal<div class="mono">#4FE3C1 · 강조, 선택</div></div>
+    <div class="card"><div class="sw" style="background:#EEF0FA"></div>Starlight<div class="mono">#EEF0FA · 글자</div></div>
+  </div>
+
+  <h1>Type</h1>
+  <div class="grid">
+    <div class="card"><div style="font:600 32px 'Space Grotesk';letter-spacing:-.03em">Space Grotesk</div><div class="mono">워드마크 · 영문 제목</div></div>
+    <div class="card"><div style="font:600 28px 'Pretendard Variable'">프리텐다드</div><div class="mono">한글 본문 · UI</div></div>
+    <div class="card"><div style="font:400 22px 'IBM Plex Mono'">RA 5h 35m</div><div class="mono">좌표 · 수치</div></div>
+  </div>
+</main>
+</body>
+</html>

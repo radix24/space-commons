@@ -5,6 +5,7 @@
 - 별: Hipparcos 기반 8등급까지 약 4만 개 (d3-celestial 데이터), 별 이름·별자리선
 - 딥스카이: [OpenNGC](https://github.com/mattiaverga/OpenNGC) 전체 NGC/IC (~1.25만 개), 확대할수록 어두운 천체 표시
 - 선택한 천체에 DSS2 실사 이미지(CDS hips2fits) 오버레이
+- 탐사선: 보이저 1·2호, 뉴호라이즌스, 파이어니어 10·11호, 제임스 웹 우주망원경, 주노 (위치 근사)
 - 태양·달·8행성 3D 구체 (실시간 위치, 위상, 토성 고리)
 - 지면/대기, 시간 배속, 관측 위치, 검색
 
@@ -16,4 +17,4 @@
 
 로컬 실행: `python -m http.server 8765` → http://localhost:8765
 
-브랜드 가이드: [BRAND.md](BRAND.md) · 은하수 파노라마·행성 텍스처 © Solar System Scope (CC BY 4.0)
+브랜드 가이드: [BRAND.md](BRAND.md) · 브랜드 시트: https://radix24.github.io/space-commons/brand.html · 은하수 파노라마·행성 텍스처 © Solar System Scope (CC BY 4.0)
