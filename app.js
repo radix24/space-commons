@@ -1916,6 +1916,30 @@ $('shot').onclick = () => {
   const a = document.createElement('a'); a.download = `space-commons-${toLocalInput(state.time).replace(/[:T]/g, '-')}.png`;
   a.href = canvas.toDataURL('image/png'); a.click();
 };
+// ---------- A3. take a long exposure: stars sweep arcs around the celestial pole; longer and higher-ISO shots reach fainter stars ----------
+function longExposure() {
+  if (mode.space) { $('status').textContent = '장노출 사진은 지상 모드에서 찍을 수 있습니다'; return; }
+  const sec = +$('exp-sec').value, iso = +$('exp-iso').value, W = canvas.width, H = canvas.height, k = W / innerWidth;
+  const out = document.createElement('canvas'); out.width = W; out.height = H; const g = out.getContext('2d');
+  g.drawImage(canvas, 0, 0); g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(0, 0, W, H); // the live frame, darkened, keeps the ground and horizon
+  const pole = eqVec(0, 90).applyMatrix4(new THREE.Matrix4().extractRotation(sky.matrixWorld)).normalize(), steps = Math.max(2, Math.min(90, Math.round(sec / 20)));
+  const lim = Math.min([7.6, 7.1, 6.6, 6.2, 5.7, 5.2, 4.7, 4.2, 3.8][+$('bortle').value - 1] + 2.5, 5 + 1.25 * Math.log10(Math.max(1, sec * iso / 800))), ang = -sec / 86164 * 2 * Math.PI; // sidereal day
+  const q = new THREE.Quaternion(), v = new THREE.Vector3(); g.globalCompositeOperation = 'lighter'; g.lineCap = 'round';
+  for (let i = 0; i < starData.pos.length; i++) { const m = starData.mag[i]; if (m > lim) continue;
+    const w0 = starData.pos[i].clone().applyMatrix4(sky.matrixWorld).normalize(); if (w0.y < -0.05) continue;
+    const [r, gg, b] = bvToRGB(starData.bv[i]), a = Math.min(1, 0.25 + (lim - m) * 0.22), lw = Math.max(0.6, (lim - m) * 0.55) * k;
+    g.strokeStyle = `rgba(${r * 255 | 0},${gg * 255 | 0},${b * 255 | 0},${a})`; g.lineWidth = lw; g.beginPath(); let started = false;
+    for (let s = 0; s <= steps; s++) { q.setFromAxisAngle(pole, ang * s / steps); v.copy(w0).applyQuaternion(q); if (v.y < 0) { started = false; continue; }
+      const p = toScreen(v); if (!p) { started = false; continue; } started ? g.lineTo(p[0] * k, p[1] * k) : g.moveTo(p[0] * k, p[1] * k); started = true; }
+    if (steps <= 2 || sec < 15) { const p = toScreen(w0); if (p) { g.fillStyle = g.strokeStyle; g.beginPath(); g.arc(p[0] * k, p[1] * k, lw * 0.9, 0, 7); g.fill(); } } else g.stroke(); }
+  g.globalCompositeOperation = 'source-over'; g.fillStyle = 'rgba(236,230,218,.8)'; g.font = `${12 * k}px "Pretendard Variable", sans-serif`;
+  g.fillText(`노출 ${sec >= 60 ? (sec / 60).toFixed(0) + '분' : sec + '초'} · ISO ${iso} · 별 한계 약 ${lim.toFixed(1)}등급 · Space Commons`, 12 * k, H - 12 * k);
+  $('exp-img').src = out.toDataURL('image/jpeg', 0.9); $('exp-out').hidden = false;
+  $('exp-save').onclick = () => { const a = document.createElement('a'); a.download = `space-commons-exposure-${sec}s.jpg`; a.href = $('exp-img').src; a.click(); };
+}
+$('exp-btn').onclick = () => { $('exp').hidden = !$('exp').hidden; };
+$('exp-go').onclick = () => longExposure();
+$('exp-close').onclick = () => { $('exp').hidden = true; $('exp-out').hidden = true; };
 $('full').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.();
 function tonight() { // what is up right now: planets, the Moon and bright Messier objects above 15 degrees
   const list = [], up = (w) => Math.asin(Math.max(-1, Math.min(1, w.y))) * R2D;

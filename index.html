@@ -56,7 +56,7 @@
     <button id="tour-btn" title="주요 천체를 차례로 둘러봅니다">투어</button>
     <button id="share" title="지금 보는 화면의 링크 복사">링크</button>
     <button id="night" title="눈의 암순응을 지키는 붉은 화면 (N)">야간 시야</button>
-    <button id="shot" title="화면 저장 (P)">캡처</button>
+    <button id="shot" title="화면 저장 (P)">캡처</button><button id="exp-btn" class="ground-only" title="카메라 노출 시간과 감도를 정해 장노출 사진(별 궤적)을 찍어 봅니다">장노출</button>
     <button id="full" title="전체 화면 (F)">전체 화면</button>
     <button id="lang" title="한국어 / English">EN</button>
   </div>
@@ -237,6 +237,14 @@
   <div class="small">어두울수록 태양이 많이 가려지는 곳 · 붉은 띠: 개기식(또는 금환식)이 보이는 길 · 흰 원: 지금 관측지</div>
   <p id="ecl-sub" class="small"></p>
   <button id="ecl-go">여기서 최대일 때 하늘 보기</button>
+</div>
+<div id="exp" class="side" hidden>
+  <button class="x" id="exp-close">×</button>
+  <h2>장노출 사진</h2>
+  <div class="small">삼각대에 고정한 카메라로 오래 찍으면 지구가 도는 동안 별이 원을 그립니다. 노출이 길고 감도가 높을수록 더 어두운 별까지 찍힙니다.</div>
+  <div class="row"><label>노출 <select id="exp-sec"><option value="10">10초</option><option value="30">30초</option><option value="300">5분</option><option value="1800" selected>30분</option><option value="3600">1시간</option><option value="10800">3시간</option></select></label>
+  <label>감도 <select id="exp-iso"><option>400</option><option selected>1600</option><option>6400</option></select></label><button id="exp-go">찍기</button></div>
+  <div id="exp-out" hidden><img id="exp-img" alt="장노출 사진" style="width:100%;display:block;margin-top:8px"><button id="exp-save">이미지 저장</button></div>
 </div>
 <div id="log" class="side" hidden>
   <button class="x" id="log-close">×</button>
