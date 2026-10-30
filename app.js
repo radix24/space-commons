@@ -2925,6 +2925,27 @@ function probeCamera(p) {
   $('sp-target').textContent = `${p.ko}의 ${inst}`;
   $('status').textContent = `${p.ko} ${inst} (시야 ${fov}°)로 본 ${best.ko} · 거리 ${fmtDist(dist)} · ${best.ko}의 겉보기 크기 ${ang < 0.01 ? (ang * 3600).toFixed(1) + '″' : ang.toFixed(2) + '°'}${ang < fov * 0.02 ? ' (아직 점으로 보입니다)' : ''}`;
 }
+// ---------- C6. cinematic flight and recording: a smooth tour of the planets, and the screen saved as a video (MediaRecorder) ----------
+let rec = null, tourTimer = null;
+function toggleRecord() {
+  if (rec) { rec.stop(); return; }
+  if (!canvas.captureStream || !window.MediaRecorder) { $('status').textContent = '이 브라우저는 화면 녹화를 지원하지 않습니다'; return; }
+  const chunks = [], type = ['video/webm;codecs=vp9', 'video/webm', 'video/mp4'].find(t => MediaRecorder.isTypeSupported(t)) || '';
+  rec = new MediaRecorder(canvas.captureStream(30), type ? { mimeType: type, videoBitsPerSecond: 8e6 } : undefined);
+  rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+  rec.onstop = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(chunks, { type: rec.mimeType })); a.download = `space-commons-${Date.now()}.${rec.mimeType.includes('mp4') ? 'mp4' : 'webm'}`; a.click(); rec = null; $('rec-btn').textContent = '녹화'; $('rec-btn').classList.remove('on'); };
+  rec.start(500); $('rec-btn').textContent = '녹화 중지'; $('rec-btn').classList.add('on'); $('status').textContent = '녹화 중: 화면에 보이는 하늘이 영상으로 저장됩니다 (글자 표시는 빠짐)';
+}
+function cinematic() {
+  if (tourTimer) { clearTimeout(tourTimer); tourTimer = null; $('cine-btn').classList.remove('on'); return; }
+  if (!mode.space) setMode(true);
+  const stops = ['Earth', 'Moon', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'].map(n => PLANETS.find(q => q.name === n)).filter(Boolean); let k = 0;
+  $('cine-btn').classList.add('on');
+  const next = () => { if (k >= stops.length) { tourTimer = null; $('cine-btn').classList.remove('on'); $('status').textContent = '자동 비행이 끝났습니다'; return; }
+    const b = stops[k++]; flyTo(planetObj(b)); $('status').textContent = `자동 비행 ${k}/${stops.length}: ${b.ko}`; tourTimer = setTimeout(next, 11000); };
+  next();
+}
+$('rec-btn').onclick = toggleRecord; $('cine-btn').onclick = cinematic;
 // ---------- 22. whole spacecraft journeys (S7) ----------
 function journeyTimeline(p) {
   const box = $('info-exo'), ev = JOURNEYS[p.name], e = probeEph[p.name]; box.innerHTML = ''; box.hidden = false;
