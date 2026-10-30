@@ -2535,6 +2535,41 @@ function updateHorizon() {
   } catch { hz.ready = false; } }, 600);
 }
 
+// ---------- 25. constellation artwork (G7): Johan Meuris' drawings, tinted in Space Commons teal ----------
+const artGroup = new THREE.Group(); artGroup.visible = false; sky.add(artGroup);
+const artMat = (tex) => new THREE.ShaderMaterial({
+  uniforms: { map: { value: tex }, op: { value: 0.35 } },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `uniform sampler2D map; uniform float op; varying vec2 vUv;
+    void main(){ float l = texture2D(map, vUv).r / 0.62; l = 0.25 * l + 0.75 * smoothstep(0.55, 1.0, l); gl_FragColor = vec4(vec3(0.31, 0.89, 0.76) * l * op, 1.0); }`,
+  transparent: true, depthTest: false, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+});
+let artLoaded = false;
+async function loadArt() {
+  artLoaded = true;
+  const list = await fetch('data/constellation-art.json').then(r => r.json()), byHip = new Map(); starData.id.forEach((id, i) => byHip.set(+id, starData.pos[i]));
+  const loader = new THREE.TextureLoader();
+  for (const a of list) {
+    const S = a.anchors.map(([x, y, hip]) => ({ x, y, v: byHip.get(hip) })); if (S.some(q => !q.v)) continue;
+    // gnomonic plane at the anchors' centroid; affine map pixel -> plane from the three anchors
+    const c = S.reduce((m, q) => m.add(q.v), new THREE.Vector3()).normalize(), e1 = new THREE.Vector3(0, 0, 1).cross(c).normalize(), e2 = c.clone().cross(e1);
+    const P = S.map(q => { const t = q.v.clone().divideScalar(q.v.dot(c)); return [t.dot(e1), t.dot(e2)]; });
+    const M = new THREE.Matrix3().set(S[0].x, S[0].y, 1, S[1].x, S[1].y, 1, S[2].x, S[2].y, 1).invert();
+    const solve = (k) => new THREE.Vector3(P[0][k], P[1][k], P[2][k]).applyMatrix3(M); const au = solve(0), av = solve(1);
+    const [W, H] = a.size, N = 16, pos = [], uv = [], idx = [];
+    for (let j = 0; j <= N; j++) for (let i = 0; i <= N; i++) { const x = i / N * W, y = j / N * H, u = au.x * x + au.y * y + au.z, v = av.x * x + av.y * y + av.z;
+      const d = c.clone().addScaledVector(e1, u).addScaledVector(e2, v).normalize().multiplyScalar(R_SKY * 0.995); pos.push(d.x, d.y, d.z); uv.push(i / N, 1 - j / N); }
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const k = j * (N + 1) + i; idx.push(k, k + 1, k + N + 1, k + 1, k + N + 2, k + N + 1); }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx);
+    const m = new THREE.Mesh(g, artMat(loader.load('assets/constellations/' + a.file))); m.frustumCulled = false; m.renderOrder = 1; artGroup.add(m);
+  }
+}
+function updateArt() {
+  const on = $('t-art').checked && !s3d.far; artGroup.visible = on; if (!on) return; if (!artLoaded) loadArt();
+  const op = 0.3 * Math.max(0, Math.min(1, (view.fov - 6) / 20));
+  for (const m of artGroup.children) m.material.uniforms.op.value = op;
+}
+
 // ---------- 11. observing list (kept in this browser) ----------
 const OBS_KEY = 'space-commons-obslist';
 const loadObs = () => { try { return JSON.parse(localStorage.getItem(OBS_KEY)) || []; } catch { return []; } };
@@ -2677,7 +2712,7 @@ function frame(now) {
   updateSkyMatrix();
   if (mode.space) { computeHelio(); stepSpaceFlight(now); spaceKeys(dt); }
   updatePlanets();   // positions for this frame first...
-  updateAsteroids(); updateLight(); updateStations(); updateNeo(); updateStars3d(); updateGaia(); updateHorizon(); updateSkyPhoto();
+  updateAsteroids(); updateLight(); updateStations(); updateNeo(); updateStars3d(); updateGaia(); updateHorizon(); updateArt(); updateSkyPhoto();
   updateSats();
   stepFlight(now);   // ...then aim the camera at them (aiming at last frame's position made zoomed views shake)
   updateCamera();
