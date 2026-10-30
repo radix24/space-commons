@@ -164,6 +164,15 @@ function addBody(kind, r, v) {
 }
 function circularAt(r) { const o = dominant(r); if (!o) return [0, 0, 0]; const d = add(r, o.r, -1), dn = norm(d), vc = Math.sqrt(O.MU_SUN * o.m / dn); return add(o.v, [-d[1] / dn, d[0] / dn, 0], vc); }
 
+// temperature map: each planet's label shows its estimated surface temperature (Earth-like greenhouse), coloured from icy blue to scorching red
+const tempCol = (C) => C < -50 ? '#8fb8ff' : C < 0 ? '#bfe0ff' : C < 50 ? '#9fe0a0' : C < 150 ? '#ffd27a' : C < 400 ? '#ff9a5a' : '#ff5a4a';
+function updateTempMap() {
+  const on = root.querySelector('.sb-temp')?.checked;
+  for (const [b, lb] of view.labels) { if (b.kind !== 'planet') continue;
+    if (!on) { if (lb.dataset.t) { lb.textContent = b.ko; lb.style.color = ''; delete lb.dataset.t; } continue; }
+    const T = teq(b), Ts = T + (b.Rkm && b.Rkm < 12000 ? 33 : 0), C = Math.round(Ts - 273.15); if (lb.dataset.t === String(C)) continue;
+    lb.dataset.t = C; lb.textContent = `${b.ko} ${C}°C`; lb.style.color = tempCol(C); }
+}
 // habitable zones: Kopparapu-style bounds 0.95 and 1.37 sqrt(L) AU
 const hzGroup = new THREE.Group();
 function updateHZ() {
@@ -183,7 +192,7 @@ function updateRoche() {
 }
 const teq = (b) => { let F = 0; for (const s of sim.bodies) if (s.kind === 'star') { const d2 = (s.r[0] - b.r[0]) ** 2 + (s.r[1] - b.r[1]) ** 2 + (s.r[2] - b.r[2]) ** 2; F += lum(s) / d2; } return 255 * Math.pow(F, 0.25); }; // K, albedo 0.3
 // climate at a glance: an Earth-like greenhouse (+33 K) on top of the equilibrium temperature, and what water would do there
-function climateLine(T, b) { const Ts = T + (b.m > 0.05 && b.m < 20 ? 33 : 0), w = Ts < 273 ? '얼음 (눈덩이 행성)' : Ts < 373 ? '액체 물 가능 (생명 가능)' : Ts < 647 ? '물이 끓어 수증기 대기 (폭주 온실 위험)' : '물이 남지 못함';
+function climateLine(T, b) { const Ts = T + (b.Rkm && b.Rkm < 12000 ? 33 : 0), w = Ts < 273 ? '얼음 (눈덩이 행성)' : Ts < 373 ? '액체 물 가능 (생명 가능)' : Ts < 647 ? '물이 끓어 수증기 대기 (폭주 온실 위험)' : '물이 남지 못함';
   return `<br>표면 온도 (지구 정도의 온실 효과 가정) 약 ${fmt(Ts - 273.15, 0)} °C · 물: ${w}`; }
 
 // ---- seeing more: orbit predictions, velocity arrows, the gravity well, flashes ----
@@ -341,7 +350,7 @@ function draw() {
   const E = energy(), dE = sim.E0 ? Math.abs((E - sim.E0) / sim.E0) : 0;
   root.querySelector('.sb-date').textContent = `${fmtDate(sim.t)} · ${sim.playing ? (sim.speed < 0 ? '역재생 ' : '') + speedLabel(Math.abs(sim.speed)) : '정지'}${sim.slow ? ' · 근접 통과 계산 중 (느려짐)' : ''}`;
   root.querySelector('.sb-energy').textContent = `에너지 보존 오차 ${dE < 1e-12 ? '0' : dE.toExponential(1)}`;
-  updateSelected(); labTick(); updateHZ(); updateRoche(); updatePredictions(performance.now()); updateVelocities(); updateWell(); updateGraph();
+  updateSelected(); labTick(); updateHZ(); updateTempMap(); updateRoche(); updatePredictions(performance.now()); updateVelocities(); updateWell(); updateGraph();
 }
 const speedLabel = (s) => s >= 1 ? `1초에 ${s}일` : s * 24 >= 1 ? `1초에 ${Math.round(s * 24)}시간` : `1초에 ${Math.round(s * 1440)}분`;
 function loop(now) {
@@ -910,6 +919,7 @@ function buildUI() {
       <div class="sb-tab" data-tab="scen" hidden><div class="sb-scens"></div></div>
       <div class="sb-tab" data-tab="view" hidden>
         <label class="small"><input type="checkbox" class="sb-hz" checked> 생명 가능 지대</label>
+        <label class="small" title="행성 이름 옆에 표면 온도(지구 정도의 온실 효과 가정)를 색으로 표시"><input type="checkbox" class="sb-temp"> 온도 지도</label>
         <label class="small"><input type="checkbox" class="sb-pred"> 궤도 예측선 (지금 속도로 계속 간다면)</label>
         <label class="small"><input type="checkbox" class="sb-vel"> 속도 화살표</label>
         <label class="small"><input type="checkbox" class="sb-well"> 중력 우물 (퍼텐셜을 그물로)</label>
