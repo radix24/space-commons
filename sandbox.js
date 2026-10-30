@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import * as O from './orbits.js';
 import { openCards } from './cards.js';
+import * as L2 from './labs2.js';
 
 const { dot, cross, norm, add, scale } = O.vec;
 const PL = ['Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'];
@@ -439,7 +440,10 @@ let lab = null, labCard = null; // { tick() }; the concept card that goes with t
 const LABS = [['1단계 · 관찰'], ['행성들의 빠르기 비교', () => labSpeeds(), 'keplerlaws'], ['태양 질량을 바꾸면?', () => labSunMass(), 'gravity'],
   ['2단계 · 측정'], ['케플러 2법칙: 같은 시간, 같은 넓이', () => labKepler2(), 'keplerlaws'], ['케플러 3법칙: 주기와 거리', () => labKepler3(), 'keplerlaws'], ['목성의 질량 재기', () => labJupiterMass(), 'gravity'],
   ['3단계 · 계산'], ['원 궤도와 탈출 속도', () => labCircular(), 'twobody'], ['활력 방정식 (vis-viva)', () => labVisViva(), 'visviva'], ['호만 전이 (지구→화성)', () => labHohmann(), 'hohmann'],
-  ['4단계 · 설계'], ['발사 시기와 포크찹', () => labPorkchop(), 'lambert'], ['플라이바이 설계', () => labFlyby(), 'flyby'], ['임무 설계 (여러 행성 경유)', () => labMission(), 'flyby'], ['라그랑주점과 트로이', () => labLagrange(), 'cr3bp']];
+  ['4단계 · 설계'], ['발사 시기와 포크찹', () => labPorkchop(), 'lambert'], ['플라이바이 설계', () => labFlyby(), 'flyby'], ['임무 설계 (여러 행성 경유)', () => labMission(), 'flyby'], ['라그랑주점과 트로이', () => labLagrange(), 'cr3bp'],
+  ['5단계 · 더 큰 실험'], ['지구 둘레 궤도 설계', () => L2.labOrbitDesign(H2()), 'j2'], ['로켓 발사부터 궤도까지', () => L2.labLaunch(H2()), 'rocket'], ['태양의 일생', () => L2.labSunLife(H2()), 'stellar'],
+  ['블랙홀의 빛 휘어짐', () => L2.labLensing(H2()), 'remnants'], ['은하 충돌', () => L2.labGalaxies(H2()), 'galaxy'], ['충돌 파편의 물리', () => L2.labImpact(H2()), 'moon']];
+const H2 = () => ({ labBox, steps, field, num, btn, results, deeper, el, fmt }); // helpers for labs2.js
 const SCENS = [['nosun', '태양이 사라진다면', '행성들은 그 순간의 속도로 곧게 날아갑니다'], ['sunbh', '태양이 블랙홀이라면', '같은 질량이면 궤도는 그대로, 빛과 열만 사라집니다'], ['sun2', '태양 질량 2배', '더 빨리, 더 좁게 돕니다'], ['sunhalf', '태양 질량 절반', '바깥 행성은 풀려납니다'],
   ['jupstar', '목성이 별이었다면', '0.3 태양질량 적색왜성과 쌍성계'], ['jupx10', '목성 질량 10배', '이웃 행성 궤도가 흔들립니다'], ['rogue', '떠돌이 별이 지나간다면', '태양계 바깥이 흐트러집니다'], ['roguebh', '블랙홀이 지나간다면', '10 태양질량, 30 km/s'],
   ['binary', '쌍성 둘레 행성', '케플러-16형, 안정한 궤도와 불안정한 궤도'], ['theia', '달의 탄생: 거대 충돌', '테이아가 원시 지구에 부딪혀 파편 원반이 생깁니다'], ['belt', '소행성대와 목성', '1,000년 흘려 보내며 커크우드 간극 찾기']];
