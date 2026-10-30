@@ -22,7 +22,7 @@ const URLS = {
   ngc: CDN + 'mattiaverga/OpenNGC@master/database_files/NGC.csv',
 };
 const $ = (id) => document.getElementById(id);
-export const VERSION = 'Alpha 0.0.2g';
+export const VERSION = window.SC_VERSION || ''; // set in version.js
 const MOBILE = matchMedia('(max-width: 640px), (pointer: coarse)').matches; // phones get lighter versions of heavy features // bump the letter with every feature batch
 for (const el of document.querySelectorAll('[data-version]')) el.textContent = el.dataset.version.replace('{v}', VERSION);
 
@@ -1101,9 +1101,9 @@ function updatePlanets() {
 
 // ---------- ground & horizon ----------
 const groundMat = new THREE.ShaderMaterial({
-  uniforms: { light: { value: 0.5 } },
+  uniforms: { light: { value: 0.5 }, horizon: { value: null }, realH: { value: 0 } },
   vertexShader: `varying vec3 vP; void main(){ vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
-  fragmentShader: `uniform float light; varying vec3 vP;
+  fragmentShader: `uniform float light, realH; uniform sampler2D horizon; varying vec3 vP;
     float h1(float x){ return fract(sin(x * 127.1) * 43758.5453); }
     float n1(float x){ float i = floor(x), f = fract(x); return mix(h1(i), h1(i + 1.0), f * f * (3.0 - 2.0 * f)); }
     float h2(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -1117,6 +1117,7 @@ const groundMat = new THREE.ShaderMaterial({
       float grove = smoothstep(0.45, 0.75, n1(az * 6.0 + 3.0));
       float trees = grove * (0.010 + 0.014 * n1(az * 70.0)) * (0.55 + 0.45 * pow(abs(sin(az * 160.0)), 0.6));
       float top = hills + trees;
+      if (realH > 0.5) top = texture2D(horizon, vec2(fract(az / 6.2831853 + 1.0), 0.5)).r * 0.6 - 0.1 + trees * 0.35; // real terrain (G4) with a few trees
       if (alt > top) discard;
       vec3 col;
       if (alt > 0.0) col = vec3(0.025, 0.032, 0.03);       // silhouette above the horizon line
@@ -1230,17 +1231,19 @@ function pick(x, y) {
     const s = toScreen(p.world);
     if (s && Math.hypot(s[0] - x, s[1] - y) < Math.max(14, p.rpx)) return planetObj(p);
   }
-  const lim = starMat.uniforms.limit.value;
+  // only stars an eye can see here (and that are drawn) answer a click; fainter ones are found by search
+  const lim = Math.min(6.5, starMat.uniforms.limit.value);
   for (let i = 0; i < starData.pos.length; i++) { if (starData.mag[i] > lim) continue;
-    const w = tmp.copy(starData.pos[i]).applyMatrix4(sky.matrixWorld).normalize().clone(); test(w, i, (lim - starData.mag[i]) * 0.8); }
+    const w = tmp.copy(starData.pos[i]).applyMatrix4(sky.matrixWorld).normalize().clone(); test(w, i, Math.max(0, lim - starData.mag[i]) * 0.5 - 6); }
   if (typeof best === 'number') best = starObj(best);
   if (mode.space) for (const st of sites) { if (!st.world) continue; const sc = toScreen(st.world); if (!sc) continue; const d = Math.hypot(sc[0] - x, sc[1] - y) - 6; if (d < bd) { bd = d; best = st; } }
   for (const s of sats) { if (!s.world) continue; const sc = toScreen(s.world); if (!sc) continue; const d = Math.hypot(sc[0] - x, sc[1] - y) - 6; if (d < bd) { bd = d; best = s; } }
   if ($('t-showers').checked && !mode.space) for (const sh of showers) { if (!showerActive(sh)) continue;
     const s = toScreen(sh.v.clone().applyMatrix4(sky.matrixWorld)); if (!s) continue; const d = Math.hypot(s[0] - x, s[1] - y) - 4; if (d < bd) { bd = d; best = sh; } }
-  if (exoPoints?.visible) for (const h of exo.hosts) {
+  if (exoPoints?.visible) for (const h of exo.hosts) { // like their labels: famous systems, or any when zoomed in; others by search
+    if (!(EXO_FAMOUS.has(h.name) && view.fov < 40) && view.fov >= 4 && !(h.vmag != null && h.vmag <= 6.5)) continue;
     const w = h.v.clone().applyMatrix4(sky.matrixWorld); if (w.dot(fwd) < cosLim) continue;
-    const s = toScreen(w); if (!s) continue; const d = Math.hypot(s[0] - x, s[1] - y) - 3; if (d < bd) { bd = d; best = h; } }
+    const s = toScreen(w); if (!s) continue; const d = Math.hypot(s[0] - x, s[1] - y) + 4; if (d < bd) { bd = d; best = h; } }
   if ($('t-dso').checked) {
     const ppd = innerHeight / view.fov;
     for (const o of dsos) { const px = o.maj / 60 * ppd; if (px < 4 && !(o.messier && view.fov < 60)) continue;
@@ -2493,6 +2496,45 @@ function updateGaia() {
     for (const [k, t] of old) { if (t.pts) { gaia.group.remove(t.pts); t.pts.geometry.dispose(); } gaia.tiles.delete(k); } }
 }
 
+// ---------- 24. real horizon from terrain (G4): Copernicus DEM through Open-Meteo's elevation API ----------
+const hzTex = new THREE.DataTexture(new Uint8Array(360 * 4), 360, 1, THREE.RGBAFormat); // altitude (rad) as (r * 0.6 - 0.1): 0.13 deg steps, filterable everywhere
+hzTex.wrapS = THREE.RepeatWrapping; hzTex.magFilter = hzTex.minFilter = THREE.LinearFilter; groundMat.uniforms.horizon.value = hzTex;
+const hz = { key: '', pending: null, cache: new Map() };
+function destPoint(lat, lon, az, km) { const R = 6371, d = km / R, a = az * D2R, p1 = lat * D2R, l1 = lon * D2R;
+  const p2 = Math.asin(Math.sin(p1) * Math.cos(d) + Math.cos(p1) * Math.sin(d) * Math.cos(a));
+  return [p2 * R2D, (l1 + Math.atan2(Math.sin(a) * Math.sin(d) * Math.cos(p1), Math.cos(d) - Math.sin(p1) * Math.sin(p2))) * R2D]; }
+// elevation from AWS Terrain Tiles (Terrarium PNG, zoom 10 ~ 130 m per pixel near Korea), read on a canvas
+const demTiles = new Map();
+function demTile(x, y) { const key = x + '/' + y; if (!demTiles.has(key)) demTiles.set(key, (async () => {
+  const im = await createImageBitmap(await fetch(`https://elevation-tiles-prod.s3.amazonaws.com/terrarium/10/${x}/${y}.png`).then(r => { if (!r.ok) throw 0; return r.blob(); }));
+  const c = new OffscreenCanvas(256, 256), g = c.getContext('2d'); g.drawImage(im, 0, 0); return g.getImageData(0, 0, 256, 256).data; })());
+  return demTiles.get(key); }
+async function elevation(lat, lon) {
+  const n = 1024, fx = (lon + 180) / 360 * n, fy = (1 - Math.log(Math.tan(lat * D2R) + 1 / Math.cos(lat * D2R)) / Math.PI) / 2 * n;
+  const d = await demTile(Math.floor(fx), Math.floor(fy)), px = Math.min(255, Math.floor((fx % 1) * 256)), py = Math.min(255, Math.floor((fy % 1) * 256)), o = (py * 256 + px) * 4;
+  return d[o] * 256 + d[o + 1] + d[o + 2] / 256 - 32768;
+}
+async function loadHorizon(lat, lon) {
+  const key = `${lat.toFixed(3)},${lon.toFixed(3)}`; if (hz.cache.has(key)) return hz.cache.get(key);
+  const NA = 180, DIST = MOBILE ? [0.4, 0.8, 1.3, 2, 3, 4.5, 6.5, 9, 12, 16, 21, 27, 35] : [0.3, 0.6, 1, 1.5, 2.2, 3, 4, 5.5, 7, 9, 11.5, 14.5, 18, 22, 27, 33, 40, 48, 57];
+  const h0 = Math.max(0, await elevation(lat, lon)) + 1.7, prof = new Float32Array(NA);
+  for (let i = 0; i < NA; i++) { let m = -0.02;
+    for (const d of DIST) { const [la, lo] = destPoint(lat, lon, i * 360 / NA, d), h = Math.max(0, await elevation(la, lo)), m2 = d * 1000, drop = m2 * m2 / (2 * 6371000) * 0.87; // curvature with standard refraction
+      m = Math.max(m, Math.atan((h - h0 - drop) / m2)); }
+    prof[i] = m; }
+  const out = { prof, h0: h0 - 1.7 }; hz.cache.set(key, out); return out;
+}
+function updateHorizon() {
+  const on = groundOn() && $('t-terrain').checked; groundMat.uniforms.realH.value = on && hz.ready ? 1 : 0; if (!on) return;
+  const key = `${state.lat.toFixed(3)},${state.lon.toFixed(3)}`; if (key === hz.key) return;
+  hz.key = key; clearTimeout(hz.pending); hz.ready = false;
+  hz.pending = setTimeout(async () => { try { const r = await loadHorizon(state.lat, state.lon); if (hz.key !== key) return;
+    const a = hzTex.image.data, N = r.prof.length;
+    for (let x = 0; x < 360; x++) { const f = x / 360 * N, i = Math.floor(f) % N, t = f - Math.floor(f); a[x * 4] = Math.round(Math.max(0, Math.min(1, ((r.prof[i] * (1 - t) + r.prof[(i + 1) % N] * t) + 0.1) / 0.6)) * 255); }
+    hzTex.needsUpdate = true; hz.ready = true; $('status').textContent = `실제 지형 지평선 · 관측지 고도 ${Math.round(r.h0)} m · 가장 높은 능선 ${(Math.max(...r.prof) * R2D).toFixed(1)}°`;
+  } catch { hz.ready = false; } }, 600);
+}
+
 // ---------- 11. observing list (kept in this browser) ----------
 const OBS_KEY = 'space-commons-obslist';
 const loadObs = () => { try { return JSON.parse(localStorage.getItem(OBS_KEY)) || []; } catch { return []; } };
@@ -2635,7 +2677,7 @@ function frame(now) {
   updateSkyMatrix();
   if (mode.space) { computeHelio(); stepSpaceFlight(now); spaceKeys(dt); }
   updatePlanets();   // positions for this frame first...
-  updateAsteroids(); updateLight(); updateStations(); updateNeo(); updateStars3d(); updateGaia(); updateSkyPhoto();
+  updateAsteroids(); updateLight(); updateStations(); updateNeo(); updateStars3d(); updateGaia(); updateHorizon(); updateSkyPhoto();
   updateSats();
   stepFlight(now);   // ...then aim the camera at them (aiming at last frame's position made zoomed views shake)
   updateCamera();
