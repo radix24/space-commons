@@ -337,6 +337,13 @@ const PH = [
   ['5배', '5×'], ['6배', '6×'], ['7배', '7×'], ['8배', '8×'],
   ['9배', '9×'],
   ['없음', 'None'], ['일식', 'Solar eclipse'], ['별자리 그림', 'Constellation art'],
+  // concept-card interface
+  ['전공 심화: 유도와 실제', 'Going deeper: derivation and practice'], ['먼저 볼 것', 'Read first'], ['이어서 볼 것', 'Read next'], ['식으로 쓰면', 'As a formula'], ['한눈에 보기', 'At a glance'], ['식 읽기', 'Reading the formula'],
+  ['확인 문제', 'Check'], ['풀이 보기', 'Show answer'], ['다음 문제 →', 'Next question →'], ['정답입니다.', 'Correct.'], ['다시 생각해 보세요.', 'Think again.'], ['이미 맞힌 문제입니다.', 'Already answered correctly.'],
+  ['← 목차', '← Contents'], ['다음에 볼 개념', 'Up next'], ['읽었지만 확인 문제가 남았습니다', 'Read, but its questions are not all answered'], ['바로 시작할 수 있습니다', 'Ready to start'], ['을 다 읽었습니다', ' all read'],
+  ['샌드박스에서 해 보기', 'Try it in the sandbox'], ['읽은 개념', 'Concepts read'], ['맞힌 확인 문제', 'Questions answered'], ['문제 맞힘 ✓', 'answered ✓'], ['먼저: ', 'First: '],
+  ['카드마다 직접 조작하는 그림, 먼저 볼 것과 이어서 볼 것', 'each card has a live diagram, what to read first and what to read next'], ['개 개념', ' concepts'], ['단원', ' chapters'], [' 읽음', ' read'], [' 맞힘', ' answered'],
+  ['교양', 'General'], ['기초', 'Basic'], ['전공', 'Advanced'], ['답: ', 'Answer: '],
 ].sort((a, b) => b[0].length - a[0].length);
 const RX = [
   [/(\d[\d,.]*)만 km/g, (m, n) => `${Math.round(parseFloat(n.replace(/,/g, '')) * 1e4).toLocaleString('en-US')} km`],

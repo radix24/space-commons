@@ -182,6 +182,9 @@ function updateRoche() {
   rocheGroup.position.set(...b.r); [3000, 900].forEach((rho, i) => { const l = rocheGroup.children[i]; l.scale.setScalar(rocheKm(b, rho) / O.AU_KM); l.computeLineDistances(); l.material.dashSize = l.material.gapSize = 0.25 * l.scale.x; });
 }
 const teq = (b) => { let F = 0; for (const s of sim.bodies) if (s.kind === 'star') { const d2 = (s.r[0] - b.r[0]) ** 2 + (s.r[1] - b.r[1]) ** 2 + (s.r[2] - b.r[2]) ** 2; F += lum(s) / d2; } return 255 * Math.pow(F, 0.25); }; // K, albedo 0.3
+// climate at a glance: an Earth-like greenhouse (+33 K) on top of the equilibrium temperature, and what water would do there
+function climateLine(T, b) { const Ts = T + (b.m > 0.05 && b.m < 20 ? 33 : 0), w = Ts < 273 ? '얼음 (눈덩이 행성)' : Ts < 373 ? '액체 물 가능 (생명 가능)' : Ts < 647 ? '물이 끓어 수증기 대기 (폭주 온실 위험)' : '물이 남지 못함';
+  return `<br>표면 온도 (지구 정도의 온실 효과 가정) 약 ${fmt(Ts - 273.15, 0)} °C · 물: ${w}`; }
 
 // ---- seeing more: orbit predictions, velocity arrows, the gravity well, flashes ----
 const predGroup = new THREE.Group(), velGroup = new THREE.Group(), flashGroup = new THREE.Group();
@@ -380,7 +383,7 @@ function updateSelected() {
     (b.kind === 'star' ? `<br>밝기 ${fmt(lum(b), 3)} 태양 · 반지름 ${fmt(b.Rkm / 696000, 2)} 태양 · 생명 가능 지대 ${fmt(0.95 * Math.sqrt(lum(b)), 2)}~${fmt(1.37 * Math.sqrt(lum(b)), 2)} AU` : '') +
     (b.kind === 'bh' ? `<br>사건의 지평선 반지름 ${fmt(RS_KM(b.m), 1)} km · 이 안에서는 빛도 탈출 못 함` : '') +
     (!b.test && b.kind !== 'bh' && b.Rkm ? `<br>로슈 한계 (점선): 암석 위성 ${fmt(rocheKm(b, 3000), 0)} km · 얼음 위성 ${fmt(rocheKm(b, 900), 0)} km (평균 밀도 ${fmt(density(b), 0)} kg/m³)` : '') +
-    (b.kind === 'planet' ? `<br>평형 온도 ${fmt(teq(b), 0)} K (${fmt(teq(b) - 273.15, 0)} °C, 반사율 0.3)` : '');
+    (b.kind === 'planet' ? `<br>평형 온도 ${fmt(teq(b), 0)} K (${fmt(teq(b) - 273.15, 0)} °C, 반사율 0.3)` + climateLine(teq(b), b) : '');
   box.querySelector('.sb-bh').hidden = b.test || b.kind === 'bh';
 }
 function bindEditing() {

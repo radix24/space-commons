@@ -1,3 +1,5 @@
+import { EN } from './i18n.js';
+import { CARD_EN, CHAPTERS_EN, INTROS_EN } from './cards-en.js';
 import { QUIZ2 } from './quiz2.js';
 // Space Commons concept cards: astrodynamics from the two-body problem to relative motion, each with a live widget.
 // Level: 기초 (high school), 교양 (university general education), 전공 (astrodynamics course). Formulas in KaTeX.
@@ -1190,3 +1192,13 @@ function build() {
 }
 export function openCards(o = {}) { opts = o; if (!root) build(); root.hidden = false; if (o.card && BYID[o.card]) openCard(BYID[o.card]); }
 function close() { if (root) { root.hidden = true; cancelAnimationFrame(anim); } }
+
+// English: swap in the translated text (cards-en.js) once everything above is defined; numbers and answers stay from the Korean source
+if (EN) {
+  for (const c of ALL) { const e = CARD_EN[c.id]; if (!e) continue;
+    Object.assign(c, { title: e.title, tag: e.tag, body: e.body, deep: e.deep });
+    if (EXPLAIN[c.id]) { EXPLAIN[c.id].r = e.r; EXPLAIN[c.id].s.forEach((x, i) => { if (e.s?.[i]) x[1] = e.s[i]; }); }
+    const qs = [QUIZ[c.id], ...(QUIZ2[c.id] || [])];
+    (e.quiz || []).forEach((qe, i) => { const q = qs[i]; if (!q) return; q.q = qe.q; q.why = qe.why; if (qe.opts) q.opts = qe.opts; if (qe.unit != null) q.unit = qe.unit; }); }
+  CHAPTERS.forEach((ch, i) => { ch.title = CHAPTERS_EN[i] || ch.title; ch.intro = INTROS_EN[i] || ch.intro; });
+}
