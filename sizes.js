@@ -57,7 +57,7 @@ async function draw(i) {
   const names = SETS[i][1], list = names.map(n => B[n]), cv = root.querySelector('.sz-canvas'), W = cv.clientWidth || 800, H = Math.round(Math.min(460, W * 0.55)), pr = Math.min(2, devicePixelRatio || 1);
   cv.width = W * pr; cv.height = H * pr; cv.style.height = H + 'px'; const g = cv.getContext('2d'); g.setTransform(pr, 0, 0, pr, 0, 0);
   const texs = await Promise.all(list.map(b => b.tex && !b.T ? loadTex(b.tex) : b.tex === 'sun' ? loadTex('sun') : null)); if (cur !== i) return;
-  g.fillStyle = '#05070d'; g.fillRect(0, 0, W, H);
+  g.fillStyle = '#0a0a0b'; g.fillRect(0, 0, W, H);
   const big = list[list.length - 1], ext = (b) => b.ring ? b.ring[1] : b.r, totalW = list.reduce((s, b) => s + 2 * ext(b), 0);
   // the largest body may be cut off at the right edge when it dwarfs the rest, like a horizon
   let k = Math.min((W - 40 - 14 * list.length - 80 * list.filter(b => b !== big).length) / totalW, (H - 70) / (2 * big.r)), clipBig = false;
@@ -66,8 +66,8 @@ async function draw(i) {
   list.forEach((b, j) => { const R = b.r * k, E = ext(b) * k, slot = Math.max(E, 40), cx = x + slot, yy = base - R;
     if (b.ring) { g.strokeStyle = 'rgba(214,196,150,.55)'; g.lineWidth = Math.max(1, (b.ring[1] - b.ring[0]) * k * 0.35); g.beginPath(); g.ellipse(cx, yy, (b.ring[0] + b.ring[1]) / 2 * k, (b.ring[0] + b.ring[1]) / 2 * k * 0.22, -0.12, 0, 7); g.stroke(); }
     sphere(g, cx, yy, R, R > 700 ? null : texs[j], b.T ? starRGB(b.T) : null);
-    g.fillStyle = '#c9d1e6'; g.font = '12px "Pretendard Variable", "Malgun Gothic", sans-serif'; g.textAlign = 'center';
-    const lx = Math.min(cx, W - 70); g.fillText(b.n, lx, H - 22); g.fillStyle = '#7d8aa8'; g.font = '11px "Pretendard Variable", "Malgun Gothic", sans-serif';
+    g.fillStyle = '#d8d2c6'; g.font = '12px "Pretendard Variable", "Malgun Gothic", sans-serif'; g.textAlign = 'center';
+    const lx = Math.min(cx, W - 70); g.fillText(b.n, lx, H - 22); g.fillStyle = '#8e887d'; g.font = '11px "Pretendard Variable", "Malgun Gothic", sans-serif';
     g.fillText(b.r >= 0.05 * KM_RSUN && b.T ? `반지름 태양의 ${(b.r / KM_RSUN).toLocaleString('ko-KR', { maximumFractionDigits: b.r < KM_RSUN ? 3 : 0 })}배` : `반지름 ${Math.round(b.r).toLocaleString('ko-KR')} km`, lx, H - 8);
     x += 2 * slot + 14; });
   g.textAlign = 'left';

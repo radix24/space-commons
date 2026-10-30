@@ -276,8 +276,8 @@ function updateGraph() {
   const t0 = hist.pts[0][0], t1 = hist.pts[hist.pts.length - 1][0] || t0 + 1;
   const line = (k, col) => { const vs = hist.pts.map(p => p[k]), lo = Math.min(...vs), hi = Math.max(...vs), rg = hi - lo || 1; g.strokeStyle = col; g.lineWidth = 3; g.beginPath();
     hist.pts.forEach((p, i) => { const x = 8 + (p[0] - t0) / (t1 - t0 || 1) * (W - 16), y = H - 10 - (p[k] - lo) / rg * (H - 30); i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke(); return [lo, hi]; };
-  const [d0, d1] = line(1, '#4FE3C1'), [v0, v1] = line(2, '#ffb454');
-  g.font = '20px "Pretendard Variable", "Malgun Gothic", sans-serif'; g.fillStyle = '#4FE3C1'; g.fillText(`${o.ko}까지 거리 ${fmt(d0, 3)}~${fmt(d1, 3)} AU`, 10, 22); g.fillStyle = '#ffb454'; g.fillText(`속력 ${fmt(v0, 1)}~${fmt(v1, 1)} km/s`, W / 2 + 20, 22);
+  const [d0, d1] = line(1, '#8fb8c9'), [v0, v1] = line(2, '#ffb454');
+  g.font = '20px "Pretendard Variable", "Malgun Gothic", sans-serif'; g.fillStyle = '#8fb8c9'; g.fillText(`${o.ko}까지 거리 ${fmt(d0, 3)}~${fmt(d1, 3)} AU`, 10, 22); g.fillStyle = '#ffb454'; g.fillText(`속력 ${fmt(v0, 1)}~${fmt(v1, 1)} km/s`, W / 2 + 20, 22);
 }
 
 // scenarios
@@ -539,7 +539,7 @@ function labKepler3() {
   lab = { tick() { const st = laps(), S = byName('Sun'); for (const n of names) { const d = norm(add(byName(n).r, S.r, -1)); mm[n][0] = Math.min(mm[n][0], d); mm[n][1] = Math.max(mm[n][1], d); }
     const rows = names.map(n => { const q = st[n], a2 = (mm[n][0] + mm[n][1]) / 2, T = q.T ? q.T / 365.25 : null; return [KO[n], T ? `T ${fmt(T, 3)}년 · a ${fmt(a2, 3)} AU · T²/a³ = ${fmt(T * T / a2 ** 3, 3)}` : `재는 중 (${fmt(q.acc / (2 * Math.PI) * 100, 0)}%)`]; }); set(rows);
     const g = cv.getContext('2d'), W = cv.width, H = cv.height; g.fillStyle = '#0a0f1c'; g.fillRect(0, 0, W, H); const X = (a2) => 30 + Math.log10(a2 / 0.3) / Math.log10(6 / 0.3) * (W - 40), Y = (T) => H - 20 - Math.log10(T / 0.15) / Math.log10(15 / 0.15) * (H - 30);
-    g.strokeStyle = '#4FE3C1'; g.beginPath(); g.moveTo(X(0.3), Y(0.3 ** 1.5)); g.lineTo(X(6), Y(6 ** 1.5)); g.stroke(); g.fillStyle = '#9aa5c0'; g.font = '10px "Pretendard Variable", "Malgun Gothic", sans-serif'; g.fillText('log a (AU) →', W - 70, H - 4); g.fillText('↑ log T (년) · 선: T = a^1.5', 4, 12);
+    g.strokeStyle = '#8fb8c9'; g.beginPath(); g.moveTo(X(0.3), Y(0.3 ** 1.5)); g.lineTo(X(6), Y(6 ** 1.5)); g.stroke(); g.fillStyle = '#9aa5c0'; g.font = '10px "Pretendard Variable", "Malgun Gothic", sans-serif'; g.fillText('log a (AU) →', W - 70, H - 4); g.fillText('↑ log T (년) · 선: T = a^1.5', 4, 12);
     for (const n of names) { const q = st[n]; if (!q.T) continue; const a2 = (mm[n][0] + mm[n][1]) / 2; g.fillStyle = '#ffb454'; g.beginPath(); g.arc(X(a2), Y(q.T / 365.25), 4, 0, 7); g.fill(); g.fillText(KO[n], X(a2) + 6, Y(q.T / 365.25) + 4); } } };
 }
 
@@ -605,7 +605,7 @@ function labVisViva() {
     set([['거리 r', `${fmt(r, 3)} AU`], ['잰 속도', `${fmt(v, 2)} km/s`], ['공식 √(GM(2/r − 1/a))', `${fmt(vf, 2)} km/s`], ['차이', `${fmt((v - vf) / vf * 100, 2)}%`], ['궤도 에너지 v²/2 − GM/r', `${fmt((v / O.KMS) ** 2 / 2 * 1e4 - O.MU_SUN / r * 1e4, 4)} ×10⁻⁴ AU²/일²`]]);
     const g = cv.getContext('2d'), W = cv.width, H = cv.height, r0 = Math.min(+q.value, +Q.value) * 0.9, r1 = Math.max(+q.value, +Q.value) * 1.05, vmax = Math.sqrt(O.MU_SUN * (2 / r0 - 1 / pr.a0)) * O.KMS * 1.05;
     const X = (x) => 30 + (x - r0) / (r1 - r0) * (W - 40), Y = (y) => H - 20 - y / vmax * (H - 30);
-    g.clearRect(0, 0, W, H); g.strokeStyle = '#4FE3C1'; g.lineWidth = 2; g.beginPath(); for (let i = 0; i <= 60; i++) { const x = r0 + (r1 - r0) * i / 60, y = Math.sqrt(Math.max(0, O.MU_SUN * (2 / x - 1 / pr.a0))) * O.KMS; i ? g.lineTo(X(x), Y(y)) : g.moveTo(X(x), Y(y)); } g.stroke();
+    g.clearRect(0, 0, W, H); g.strokeStyle = '#8fb8c9'; g.lineWidth = 2; g.beginPath(); for (let i = 0; i <= 60; i++) { const x = r0 + (r1 - r0) * i / 60, y = Math.sqrt(Math.max(0, O.MU_SUN * (2 / x - 1 / pr.a0))) * O.KMS; i ? g.lineTo(X(x), Y(y)) : g.moveTo(X(x), Y(y)); } g.stroke();
     g.fillStyle = '#ffb454'; for (const p of pts) g.fillRect(X(p[0]) - 1.5, Y(p[1]) - 1.5, 3, 3);
     g.fillStyle = '#c9d1e6'; g.font = '10px "Pretendard Variable", "Malgun Gothic", sans-serif'; g.fillText('속도 km/s ↑', 2, 10); g.fillText('거리 r (AU) →', W - 80, H - 4); g.fillText('초록: 공식 · 주황: 잰 값', 34, 22); } };
 }
@@ -747,8 +747,8 @@ function labFlyby() {
     const g = cv.getContext('2d'); g.clearRect(0, 0, cv.width, cv.height); const S = 150 / Math.max(Vp + v, 1), ox = 30, oy = 150, L = (x, y, x2, y2, c, w = 2, lab2) => { g.strokeStyle = c; g.lineWidth = w; g.beginPath(); g.moveTo(ox + x * S, oy - y * S); g.lineTo(ox + x2 * S, oy - y2 * S); g.stroke();
       const a = Math.atan2(-(y2 - y), x2 - x); g.beginPath(); g.moveTo(ox + x2 * S, oy - y2 * S); g.lineTo(ox + x2 * S - 8 * Math.cos(a - 0.4), oy - y2 * S - 8 * Math.sin(a - 0.4)); g.lineTo(ox + x2 * S - 8 * Math.cos(a + 0.4), oy - y2 * S - 8 * Math.sin(a + 0.4)); g.fillStyle = c; g.fill();
       if (lab2) { g.fillStyle = c; g.font = '11px "Pretendard Variable", "Malgun Gothic", sans-serif'; g.fillText(lab2, ox + x2 * S + 4, oy - y2 * S - 4); } };
-    L(0, 0, Vp, 0, '#9aa5c0', 2, '행성 속도'); L(Vp, 0, hin[0], hin[1], '#ffb454', 2, 'v∞ 들어옴'); L(Vp, 0, hout[0], hout[1], '#4FE3C1', 2, 'v∞ 나감');
-    L(0, 0, hin[0], hin[1], '#ffb454', 1, ''); L(0, 0, hout[0], hout[1], '#4FE3C1', 1, '');
+    L(0, 0, Vp, 0, '#9aa5c0', 2, '행성 속도'); L(Vp, 0, hin[0], hin[1], '#ffb454', 2, 'v∞ 들어옴'); L(Vp, 0, hout[0], hout[1], '#8fb8c9', 2, 'v∞ 나감');
+    L(0, 0, hin[0], hin[1], '#ffb454', 1, ''); L(0, 0, hout[0], hout[1], '#8fb8c9', 1, '');
     g.fillStyle = '#c9d1e6'; g.font = '10px "Pretendard Variable", "Malgun Gothic", sans-serif'; g.fillText('가는 선: 태양 기준 속도 (들어옴 · 나감)', 6, 14);
   };
   for (const i of [planet, vinf, alt, ang, side]) i.oninput = i.onchange = calc;

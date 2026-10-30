@@ -431,7 +431,7 @@ function systemSVG(h) { // orbits on a log AU axis, with the conservative habita
     const a = p[1] ?? (p[2] ? Math.pow(p[2] / 365.25, 2 / 3) * Math.pow(L ? Math.pow(L, 0.25) : 1, 1 / 3) : null); if (!a) return;
     const r = Math.max(2.5, Math.min(9, 2.2 * Math.sqrt(p[3] || (p[4] ? Math.pow(p[4], 0.4) : 1.5))));
     const y = 46 + (i % 3) * 16;
-    el('circle', { cx: X(a), cy: y, r, fill: p[5] && p[5] < 330 && p[5] > 180 ? '#4FE3C1' : '#F3E2A6' });
+    el('circle', { cx: X(a), cy: y, r, fill: p[5] && p[5] < 330 && p[5] > 180 ? '#8fb8c9' : '#F3E2A6' });
     el('text', { x: X(a), y: y - r - 2, 'text-anchor': 'middle', class: 'pl' }, p[0]);
   });
   return svg;
@@ -2386,7 +2386,7 @@ function altGraph(o, ra, dec) {
   for (const a of [30, 60]) svg += `<line x1="0" x2="${W}" y1="${y(a)}" y2="${y(a)}" stroke="#7d8aa8" stroke-opacity=".25" stroke-dasharray="2 3"/><text x="3" y="${y(a) - 2}" fill="#7d8aa8" font-size="8">${a}°</text>`;
   const path = (arr) => arr.map((a, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(a).toFixed(1)}`).join('');
   if (name !== 'Moon') svg += `<path d="${path(M)}" fill="none" stroke="#c9d1e6" stroke-opacity=".55" stroke-width="1.2" stroke-dasharray="3 3"/>`;
-  svg += `<path d="${path(A)}" fill="none" stroke="#4FE3C1" stroke-width="2"/>`;
+  svg += `<path d="${path(A)}" fill="none" stroke="#8fb8c9" stroke-width="2"/>`;
   for (let i = 0; i <= N; i += 12) { const t = start + i * 15 * 60e3; svg += `<text x="${Math.min(W - 12, x(i) + 1)}" y="${H - 12}" fill="#9aa5c0" font-size="8.5">${new Date(t).getHours()}시</text>`; }
   const k = (state.time - start) / (15 * 60e3); if (k >= 0 && k <= N) svg += `<line x1="${x(k)}" x2="${x(k)}" y1="${top}" y2="${bot}" stroke="#ffb454" stroke-width="1.2"/>`;
   svg += '</svg>';
@@ -2566,8 +2566,8 @@ function journeyTimeline(p) {
   const t0 = Date.parse(ev[0][0] + 'T12:00:00Z'), tEnd = e ? (e.jd0 + (e.xyz.length / 3 - 1) * e.step - 2440587.5) * 86400e3 : Date.now();
   const t1 = Math.max(tEnd, ...ev.map(x => Date.parse(x[0] + 'T12:00:00Z'))), X = (t) => 4 + (t - t0) / (t1 - t0) * 292;
   let svg = `<svg viewBox="0 0 300 34" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="여정 타임라인"><line x1="4" x2="296" y1="17" y2="17" stroke="#7d8aa8" stroke-opacity=".5"/>`;
-  svg += `<line x1="4" x2="${Math.min(296, X(state.time)).toFixed(1)}" y1="17" y2="17" stroke="#4FE3C1" stroke-width="2"/>`;
-  for (const [d, , f] of ev) { const t = Date.parse(d + 'T12:00:00Z'); svg += `<circle cx="${X(t).toFixed(1)}" cy="17" r="3.2" fill="${t > Date.now() ? '#ffb454' : '#4FE3C1'}"/>`; }
+  svg += `<line x1="4" x2="${Math.min(296, X(state.time)).toFixed(1)}" y1="17" y2="17" stroke="#8fb8c9" stroke-width="2"/>`;
+  for (const [d, , f] of ev) { const t = Date.parse(d + 'T12:00:00Z'); svg += `<circle cx="${X(t).toFixed(1)}" cy="17" r="3.2" fill="${t > Date.now() ? '#ffb454' : '#8fb8c9'}"/>`; }
   const xn = X(state.time); if (xn >= 4 && xn <= 296) svg += `<line x1="${xn}" x2="${xn}" y1="8" y2="26" stroke="#fff" stroke-width="1.2"/>`;
   svg += `<text x="4" y="32" fill="#9aa5c0" font-size="8">${new Date(t0).getUTCFullYear()}</text><text x="296" y="32" fill="#9aa5c0" font-size="8" text-anchor="end">${new Date(t1).getUTCFullYear()}</text></svg>`;
   const h = document.createElement('div'); h.className = 'small'; h.textContent = '전체 여정 · 누르면 그 순간으로 이동 (초록: 지나온 길, 주황 점선: 앞으로의 예정 경로)';

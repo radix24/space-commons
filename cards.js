@@ -26,7 +26,7 @@ function slider(box, label, min, max, step, val, show = (v) => v) {
   t.textContent = label; l.append(t, i, out); box.append(l); return i;
 }
 function readout(box) { const d = el('div', 'cc-read'); box.append(d); return (rows) => { d.innerHTML = rows.map(([a, b]) => `<span>${a}</span><b>${b}</b>`).join(''); }; }
-const C = { bg: '#0a0f1c', grid: '#1c2640', mute: '#7d8aa8', text: '#c9d1e6', teal: '#4FE3C1', amber: '#ffb454', pink: '#ff7aa2', blue: '#6f8dff', sun: '#ffe6a6' };
+const C = { bg: '#101011', grid: '#2a2927', mute: '#8e887d', text: '#d8d2c6', teal: '#8fb8c9', amber: '#d9a650', pink: '#e2573f', blue: '#7f93c9', sun: '#ffe6a6' };
 function clear(K) { K.g.fillStyle = C.bg; K.g.fillRect(0, 0, K.w, K.h); }
 function arrow(g, x1, y1, x2, y2, col, lw = 2) { g.strokeStyle = col; g.fillStyle = col; g.lineWidth = lw; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
   const a = Math.atan2(y2 - y1, x2 - x1); g.beginPath(); g.moveTo(x2, y2); g.lineTo(x2 - 8 * Math.cos(a - 0.4), y2 - 8 * Math.sin(a - 0.4)); g.lineTo(x2 - 8 * Math.cos(a + 0.4), y2 - 8 * Math.sin(a + 0.4)); g.fill(); }
