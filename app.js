@@ -2021,10 +2021,10 @@ function frame(now) {
   state.time += dt * state.speed;
   updateSkyMatrix();
   if (mode.space) { computeHelio(); stepSpaceFlight(now); spaceKeys(dt); }
-  stepFlight(now);
-  updateCamera();
-  updatePlanets();
+  updatePlanets();   // positions for this frame first...
   updateSats();
+  stepFlight(now);   // ...then aim the camera at them (aiming at last frame's position made zoomed views shake)
+  updateCamera();
   placePhoto();
 
   // brightness / limiting magnitudes scale with zoom
