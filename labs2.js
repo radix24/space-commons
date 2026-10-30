@@ -84,7 +84,7 @@ export function labGalaxies(h) {
   h.steps(box, ['처음 거리와 원반 기울기를 정하고 시작하세요.', '가까이 지나칠수록 긴 조석 꼬리가 생기고, 원반이 궤도와 같은 방향으로 돌 때(순행) 꼬리가 가장 뚜렷합니다.', '"우리 은하와 안드로메다"는 약 45억 년 뒤 첫 근접을 재현합니다.']);
   const peri = h.field(box, '가장 가까울 때 거리 (원반 반지름 단위)', h.num(1.4, 0.1, 0.3, 4)), tilt = h.field(box, '두 번째 원반 기울기 (°)', h.num(30, 5, 0, 180));
   const cv = canvas(h, box, 340, 260), set = h.results(box); let S = null;
-  const start = (mw) => { const N = matchMedia('(max-width: 640px)').matches ? 1200 : 3000, rp = +peri.value, cores = [{ m: 1, p: [-6, -rp / 2, 0], v: [0.32, 0, 0] }, { m: mw ? 1.3 : 1, p: [6, rp / 2, 0], v: [-0.32, 0, 0] }];
+  const start = (mw) => { const N = matchMedia('(max-width: 640px)').matches ? 1200 : 3000, rp = +peri.value, cores = [{ m: 1, p: [-4, -rp / 2, 0], v: [0.36, 0, 0] }, { m: mw ? 1.3 : 1, p: [4, rp / 2, 0], v: [-0.36, 0, 0] }];
     const parts = []; let s = 7;
     const rnd = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
     for (let c = 0; c < 2; c++) { const tl = c ? +tilt.value * D2R : 0, M = cores[c].m;
@@ -96,7 +96,7 @@ export function labGalaxies(h) {
   const acc = (p, cores) => { const a = [0, 0, 0]; for (const c of cores) { const d = [c.p[0] - p[0], c.p[1] - p[1], c.p[2] - p[2]], r2 = d[0] ** 2 + d[1] ** 2 + d[2] ** 2 + 0.04, f = c.m / (r2 * Math.sqrt(r2)); a[0] += f * d[0]; a[1] += f * d[1]; a[2] += f * d[2]; } return a; };
   loop(cv, () => {
     const { g, w, h: H } = cv; g.fillStyle = 'rgba(12,12,13,.55)'; g.fillRect(0, 0, w, H); if (!S) return set([['안내', '"시작"을 누르세요']]);
-    for (let k = 0; k < 3; k++) { const dt = 0.02; // leapfrog: cores pull each other, everything feels the cores
+    for (let k = 0; k < 6; k++) { const dt = 0.02; // leapfrog: cores pull each other, everything feels the cores
       for (const c of S.cores) { const o = S.cores.find(q => q !== c), a = acc(c.p, [o]); for (let i = 0; i < 3; i++) c.v[i] += a[i] * dt; } for (const c of S.cores) for (let i = 0; i < 3; i++) c.p[i] += c.v[i] * dt;
       for (const q of S.parts) { const a = acc(q.p, S.cores); for (let i = 0; i < 3; i++) { q.v[i] += a[i] * dt; q.p[i] += q.v[i] * dt; } } S.t += dt; }
     const sc = Math.min(w, H) / 14, cx = w / 2, cy = H / 2;
