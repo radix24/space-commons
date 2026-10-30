@@ -113,6 +113,7 @@
     <label class="ground-only"><input type="checkbox" id="t-sats" checked> 인공위성</label>
     <label class="space-only"><input type="checkbox" id="t-orbits" checked> 궤도</label>
     <label><input type="checkbox" id="t-mw" checked> 은하수</label>
+    <select id="mwstyle" aria-label="은하수 표현" title="은하수를 실제 사진(ESO 전천 파노라마)으로 볼지, 그림으로 볼지"><option value="photo" selected>은하수: 실제 사진 (ESO)</option><option value="art">은하수: 그림</option></select>
     <label><input type="checkbox" id="t-lines" checked> 별자리선</label>
     <label><input type="checkbox" id="t-bounds"> 별자리 경계</label>
     <label title="별자리 그림 (Johan Meuris, Free Art License)"><input type="checkbox" id="t-art"> 별자리 그림</label>
@@ -216,7 +217,7 @@
   <ul id="obs-list"></ul>
 </div>
 
-<div id="help"><span class="ground-only">드래그: 회전 · 휠/핀치: 확대 · 클릭: 선택 · 더블클릭: 이동·확대</span><span class="space-only">드래그: 공전/시점 · 휠: 거리 · W A S D / Q E: 이동 · Shift: 가속 · 더블클릭: 천체로 비행</span><br>행성 텍스처 © <a href="https://www.solarsystemscope.com/textures/" target="_blank" style="color:inherit">Solar System Scope</a> (CC BY 4.0) · 탐사선 모델 NASA, ESA</div>
+<div id="help"><span class="ground-only">드래그: 회전 · 휠/핀치: 확대 · 클릭: 선택 · 더블클릭: 이동·확대</span><span class="space-only">드래그: 공전/시점 · 휠: 거리 · W A S D / Q E: 이동 · Shift: 가속 · 더블클릭: 천체로 비행</span><br>행성 텍스처 © <a href="https://www.solarsystemscope.com/textures/" target="_blank" style="color:inherit">Solar System Scope</a> (CC BY 4.0) · 은하수 사진 <a href="https://www.eso.org/public/images/eso0932a/" target="_blank" rel="noopener">ESO/S. Brunier</a> (CC BY 4.0) · 탐사선 모델 NASA, ESA</div>
 
 <script type="module" src="app.js"></script>
 </body>

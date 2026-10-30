@@ -173,9 +173,9 @@ async function loadStars() {
 
 // ---------- Milky Way (galactic-coordinate panorama mapped onto the equatorial sphere) ----------
 const mwMat = new THREE.ShaderMaterial({
-  uniforms: { map: { value: null }, gain: { value: 1 } },
+  uniforms: { map: { value: null }, gain: { value: 1 }, photo: { value: 0 } },
   vertexShader: `varying vec3 vP; void main(){ vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
-  fragmentShader: `uniform sampler2D map; uniform float gain; varying vec3 vP;
+  fragmentShader: `uniform sampler2D map; uniform float gain, photo; varying vec3 vP;
     const mat3 EQ2GAL = mat3(-0.0548755604, 0.4941094279, -0.8676661490,
                              -0.8734370902, -0.4448296300, -0.1980763734,
                              -0.4838350155, 0.7469822445, 0.4559837762);
@@ -183,12 +183,21 @@ const mwMat = new THREE.ShaderMaterial({
       float l = atan(g.y, g.x), b = asin(clamp(g.z, -1.0, 1.0));
       vec2 uv = vec2(0.5 - l / 6.2831853, 0.5 + b / 3.1415927);
       vec3 c = texture2D(map, uv).rgb;
-      gl_FragColor = vec4(pow(c, vec3(0.85)) * gain, 1.0); }`,
+      gl_FragColor = vec4((photo > 0.5 ? c * 1.35 : pow(c, vec3(0.85))) * gain, 1.0); }`, // the photograph keeps its own tones
   side: THREE.BackSide, depthTest: false, depthWrite: false, blending: THREE.AdditiveBlending, transparent: true,
 });
 const milkyWay = new THREE.Mesh(new THREE.SphereGeometry(R_MW, 96, 48), mwMat);
 milkyWay.renderOrder = 0; milkyWay.visible = false; sky.add(milkyWay);
-new THREE.TextureLoader().load('textures/4k_milky_way.jpg', (t) => { t.colorSpace = THREE.SRGBColorSpace; mwMat.uniforms.map.value = t; milkyWay.visible = $('t-mw').checked; });
+// Milky Way: the real all-sky photograph (ESO/S. Brunier, CC BY 4.0) by default, or the painted map (Solar System Scope)
+const mwTex = {};
+function setMilkyWay(style) {
+  const file = style === 'photo' ? (matchMedia('(max-width: 640px)').matches ? 'textures/eso_milkyway_2k.jpg' : 'textures/eso_milkyway_4k.jpg') : 'textures/4k_milky_way.jpg';
+  const use = (t) => { mwMat.uniforms.map.value = t; mwMat.uniforms.photo.value = style === 'photo' ? 1 : 0; milkyWay.visible = $('t-mw').checked; };
+  if (mwTex[file]) return use(mwTex[file]);
+  new THREE.TextureLoader().load(file, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; mwTex[file] = t; if ($('mwstyle').value === style) use(t); });
+}
+setMilkyWay($('mwstyle').value);
+$('mwstyle').onchange = (e) => setMilkyWay(e.target.value);
 
 // ---------- constellation lines & grid ----------
 const linesGroup = new THREE.Group(); sky.add(linesGroup);

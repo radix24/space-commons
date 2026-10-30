@@ -77,6 +77,7 @@
 | 궤도역학 알고리즘 | Curtis, Orbital Mechanics for Engineering Students; Vallado, Fundamentals of Astrodynamics and Applications (램버트 문제, 범용 변수 케플러 전파) |
 | 달 위치 | Meeus, Astronomical Algorithms 47장 (astronomia 라이브러리에서 이식, MIT) |
 | 날씨 예보 | Open-Meteo (실시간) |
+| 은하수 사진 | ESO/S. Brunier, The Milky Way panorama (eso0932a, CC BY 4.0) |
 | 확대 시 어두운 별 | ESA Gaia DR3 (G 8~12등급 약 302만 개, 하늘 1,668개 구역으로 나눠 저장) |
 | 별자리 그림 | Johan Meuris, Stellarium "modern" 별자리 문화 (Free Art License 1.3, 별도 파일과 라이선스 안내) |
 | 달·화성 고해상도 표면 | Solar System Scope 8k (CC BY 4.0), 고도: LRO LOLA (NASA SVS), MGS MOLA (NASA PDS) |
