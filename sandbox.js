@@ -425,16 +425,31 @@ function quick(k) {
   if (k === 'moonaway') { const m = byName('Moon'); if (!m) return toast('달이 없습니다. 위의 "태양계 천체 더하기"에서 달을 먼저 놓아 보세요'); select(m); root.querySelector('.sb-del').click(); toast('달을 지웠습니다. 실제로는 조석이 약해지고 자전축이 오랜 세월에 걸쳐 크게 흔들리게 됩니다'); }
 }
 function select(b) { selected = b; root.querySelector('.sb-sel').hidden = !b; if (b) { b.base = b.m; root.querySelector('.sb-mass').value = 0; root.querySelector('.sb-massv').textContent = ''; showNums(); } atmEditor(b); }
-function atmEditor(b) { // pressure, cloud albedo and the gas mix of the selected rocky planet
+const GAS_COL = { N2: '#6F8FD8', O2: '#7FD0E8', CO2: '#E0A25A', H2O: '#4FB3A9', CH4: '#C779C9', H2: '#E7E3A1', He: '#B9B4E8', Ar: '#9AA0AE' };
+function atmEditor(b) { // Universe-Sandbox-style property rows: every value is a number you can type (with its unit), the slider is a shortcut
   const box = root.querySelector('.sb-atm'); box.innerHTML = ''; const a = b && b.kind === 'planet' ? ATM.atmOf(b) : null; box.hidden = !a; if (!a) return;
-  box.append(el('b', '', '대기 바꾸기'));
-  const pre = el('div', 'sb-row'); for (const [k, n] of [['Earth', '지구'], ['Venus', '금성'], ['Mars', '화성'], ['Titan', '타이탄'], ['none', '대기 없음']]) pre.append(btn(n + '처럼', () => { b.atm = JSON.parse(JSON.stringify(ATM.PRESETS[k])); atmEditor(b); }));
-  box.append(pre);
-  const range = (label, min, max, step, val, show, on) => { const l = el('label', 'sb-field'), i = el('input'), o = el('span', 'small'); i.type = 'range'; i.min = min; i.max = max; i.step = step; i.value = val; o.textContent = show(+val); i.oninput = () => { o.textContent = show(+i.value); on(+i.value); }; l.append(el('span', '', label), i, o); box.append(l); };
-  range('지표 기압 (로그)', -3, 2.2, 0.01, Math.log10(Math.max(a.P, 0.001)), (v) => `${fmt(10 ** v, 10 ** v < 0.1 ? 3 : 1)}기압`, (v) => { a.P = 10 ** v; });
-  range('구름·표면 반사율', 0, 0.9, 0.01, a.albedo, (v) => fmt(v, 2), (v) => { a.albedo = v; });
-  for (const [g, ko] of ATM.GASES) range(`${ko} (${g})`, -4, 0, 0.01, Math.log10(Math.max(a.mix[g] || 0, 1e-4)), (v) => v <= -3.99 ? '0' : fmt(10 ** v * 100, 10 ** v < 0.01 ? 2 : 0) + '%', (v) => { a.mix[g] = v <= -3.99 ? 0 : 10 ** v; });
-  box.append(el('div', 'small', '비율은 상대값입니다. 이산화탄소·수증기·메테인이 많고 기압이 높을수록 온실 효과가 커지고, 반사율이 높으면 햇빛을 덜 받아 식습니다.'));
+  const head = el('div', 'sb-sec', '<span>대기</span>'), pre = el('select', 'sb-preset');
+  pre.innerHTML = '<option value="">본보기 고르기</option>' + [['Earth', '지구'], ['Venus', '금성'], ['Mars', '화성'], ['Titan', '타이탄'], ['none', '대기 없음']].map(([k, n]) => `<option value="${k}">${n} 대기</option>`).join('');
+  pre.onchange = () => { if (pre.value) { b.atm = JSON.parse(JSON.stringify(ATM.PRESETS[pre.value])); atmEditor(b); } }; head.append(pre); box.append(head);
+  const bar = el('div', 'sb-mixbar'); box.append(bar);
+  const drawBar = () => { const tot = Object.values(a.mix).reduce((s, v) => s + v, 0) || 1; bar.innerHTML = ATM.GASES.filter(([g]) => a.mix[g] > 0).map(([g, ko]) => { const f = a.mix[g] / tot; return `<i style="width:${f * 100}%;background:${GAS_COL[g]}" title="${ko} ${fmt(f * 100, f < 0.01 ? 2 : 1)}%">${f > 0.12 ? ko : ''}</i>`; }).join('') || '<em>기체 없음</em>'; };
+  // one property row: label, typed number + unit, and a slider that maps to it (linear or log)
+  const prop = (label, unit, val, { min, max, log = false, digits = 2, set }) => {
+    const row = el('div', 'sb-prop'), num = el('input'), sl = el('input'); num.type = 'number'; num.step = 'any'; num.min = min; num.max = max; sl.type = 'range'; sl.min = 0; sl.max = 1000;
+    const toS = (v) => log ? (Math.log10(Math.max(v, min)) - Math.log10(min)) / (Math.log10(max) - Math.log10(min)) * 1000 : (v - min) / (max - min) * 1000;
+    const fromS = (s) => log ? 10 ** (Math.log10(min) + s / 1000 * (Math.log10(max) - Math.log10(min))) : min + s / 1000 * (max - min);
+    const show = (v) => { num.value = +(+v).toPrecision(v < 1 ? 3 : 4); sl.value = toS(v); };
+    show(val); num.onchange = () => { const v = Math.min(max, Math.max(log ? 0 : min, +num.value || 0)); set(v); show(v); drawBar(); };
+    sl.oninput = () => { let v = fromS(+sl.value); if (log && +sl.value < 4) v = 0; set(v); num.value = +v.toPrecision(3); drawBar(); };
+    row.append(el('label', '', label), num, el('span', 'u', unit), sl); box.append(row); };
+  prop('지표 기압', '기압', a.P, { min: 0.001, max: 160, log: true, set: (v) => { a.P = v; } });
+  prop('반사율', '', a.albedo, { min: 0, max: 0.9, set: (v) => { a.albedo = v; } });
+  box.append(el('div', 'sb-sec', '<span>성분</span>'));
+  const tot0 = Object.values(a.mix).reduce((s, v) => s + v, 0) || 1;
+  for (const [g, ko] of ATM.GASES) prop(`<i class="sw" style="background:${GAS_COL[g]}"></i>${ko}`, '%', (a.mix[g] || 0) / tot0 * 100, { min: 0.01, max: 100, log: true, set: (v) => { a.mix[g] = v / 100; } });
+  box.append(btn('합계를 100%로 맞추기', () => { const t = Object.values(a.mix).reduce((s, v) => s + v, 0) || 1; for (const g in a.mix) a.mix[g] /= t; atmEditor(b); }, 'sb-norm'));
+  box.append(el('div', 'small sb-atmnote', '이산화탄소·수증기·메테인이 많고 기압이 높을수록 온실 효과가 커집니다. 반사율이 높으면 햇빛을 덜 받아 식습니다. 결과 온도는 위에 바로 나타납니다.'));
+  drawBar();
 }
 // the reference body: camera centre, distances, speeds, and (optionally) trails are measured from it
 function setCenter(b) {
@@ -953,60 +968,71 @@ function labLagrange() {
 function buildUI() {
   root = el('div', 'sb-root'); root.innerHTML = `
     <div class="sb-labels"></div>
-    <div class="sb-panel">
-      <div class="sb-title"><b>샌드박스</b><span class="small">실제 태양계를 복사한 N체 중력 실험실</span></div>
-      <div class="sb-row"><span class="sb-date"></span></div>
-      <div class="sb-row">
-        <button class="sb-reset" title="처음 상태로">처음으로</button><button class="sb-back" title="역재생">역재생</button><button class="sb-play">정지</button>
-        <select class="sb-speed"><option value="0.0007">1초에 1분</option><option value="0.0035">1초에 5분</option><option value="0.0417">1초에 1시간</option><option value="0.25">1초에 6시간</option><option value="1">1초에 1일</option><option value="10" selected>1초에 10일</option><option value="50">1초에 50일</option><option value="200">1초에 200일</option></select>
+    <div class="sb-bar">
+      <div class="sb-clock"><span class="sb-date"></span><span class="sb-energy"></span></div>
+      <div class="sb-transport">
+        <button class="sb-reset" title="처음 상태로 되돌리기">처음으로</button><button class="sb-back" title="시간을 거꾸로">역재생</button><button class="sb-play">정지</button>
+        <select class="sb-speed" title="재생 속도"><option value="0.0007">1초에 1분</option><option value="0.0035">1초에 5분</option><option value="0.0417">1초에 1시간</option><option value="0.25">1초에 6시간</option><option value="1">1초에 1일</option><option value="10" selected>1초에 10일</option><option value="50">1초에 50일</option><option value="200">1초에 200일</option></select>
       </div>
-      <div class="sb-row small sb-energy"></div>
-      <div class="sb-sel" hidden><b class="sb-sel-name"></b><div class="small sb-sel-data"></div>
-        <div class="sb-row sb-num"><span class="small">질량</span><input class="sb-mnum" type="number" min="0" step="any"><select class="sb-munit"><option value="${MASS.Earth}">지구 질량</option><option value="${MASS.Jupiter}">목성 질량</option><option value="1">태양 질량</option></select>
-          <button class="sb-mx" data-k="0.1">×0.1</button><button class="sb-mx" data-k="10">×10</button></div>
-        <div class="sb-row sb-num"><span class="small">별에서 거리</span><input class="sb-dnum" type="number" min="0.05" step="any"><span class="small">AU</span><button class="sb-dgo">이 거리 원 궤도로 옮기기</button></div>
-        <input class="sb-mass" type="range" min="-3" max="3" step="0.05" value="0" hidden><span class="small sb-massv"></span>
-        <canvas class="sb-graph" width="560" height="120"></canvas>
-        <div class="sb-row"><button class="sb-follow">따라가기</button><button class="sb-del">지우기</button><button class="sb-bh">블랙홀로 바꾸기</button></div><div class="sb-atm" hidden></div></div>
-      <div class="sb-tabs"><button data-tab="make" class="on">만들고 바꾸기</button><button data-tab="scen">해 보기</button><button data-tab="learn">궤도 실습</button><button data-tab="view">보기</button></div>
+      <nav class="sb-tabs"><button data-tab="make">만들기</button><button data-tab="scen">시나리오</button><button data-tab="learn">궤도 실습</button><button data-tab="view">보기</button></nav>
+    </div>
+    <aside class="sb-drawer">
+      <div class="sb-tab" data-tab="make" hidden>
+        <h3>바로 해 보기</h3>
+        <ol class="sb-quick">
+          <li><button data-q="sunbh">태양을 블랙홀로 바꾸기</button><span>행성 궤도는 그대로일까</span></li>
+          <li><button data-q="nosun">태양 없애기</button><span>붙잡던 중력이 사라지면</span></li>
+          <li><button data-q="jup2star">목성을 별로 키우기</button><span>질량 90배에서 핵융합</span></li>
+          <li><button data-q="earthvenus">지구를 금성 자리로</button><span>0.72 AU에서 바다는</span></li>
+          <li><button data-q="marsatm">화성에 1기압 공기</button><span>대기가 기온을 바꾼다</span></li>
+          <li><button data-q="moonaway">달 없애기</button><span>지구 혼자 남으면</span></li>
+        </ol>
+        <h3>더하기</h3>
+        <div class="sb-line"><label>태양계 천체</label><select class="sb-addsol"><option value="">고르기</option>${Object.entries(EXTRA).map(([k, v]) => `<option value="${k}">${v[0]}</option>`).join('')}<option value="all">모두</option></select></div>
+        <div class="sb-line"><label>새 천체</label><select class="sb-addkind"><option value="asteroid">소행성 (질량 없음)</option><option value="earth">지구</option><option value="jupiter">목성</option><option value="reddwarf">적색왜성 (0.2)</option><option value="star">태양 같은 별</option><option value="bh">블랙홀 (10 태양질량)</option></select></div>
+        <div class="sb-line"><label><input type="checkbox" class="sb-circ" checked> 원 궤도로</label><button class="sb-add">화면을 눌러 놓기</button></div>
+        <div class="sb-line"><label>탐사선</label><button class="sb-throw">끌어서 던지기</button></div>
+        <div class="sb-line"><label>입자</label><button class="sb-belt">소행성대 3만 개</button><button class="sb-ring" title="고른 행성 둘레에 로슈 한계 안팎으로 입자 고리를 만듭니다">고른 행성에 고리</button></div>
+        <h3>장면</h3>
+        <div class="sb-line"><button class="sb-save">저장</button><select class="sb-loads"><option value="">저장한 장면</option></select><button class="sb-share">링크로 공유</button></div>
+      </div>
+      <div class="sb-tab" data-tab="scen" hidden><h3>시나리오</h3><div class="sb-scens"></div></div>
       <div class="sb-tab" data-tab="learn" hidden>
-        <button class="sb-bigcard"><b>개념으로 배우기</b><span>하늘의 좌표부터 은하 진화까지 68개 개념 · 직접 조작하는 그림과 확인 문제</span></button>
-        <div class="small sb-sub">실습: 1단계부터 차례로 해 보세요. 오른쪽 "개념"은 관련 개념 카드를 엽니다</div>
+        <button class="sb-bigcard">개념 카드 68개 열기</button>
+        <div class="small sb-sub">1단계부터 차례로. "개념"은 관련 카드를 엽니다.</div>
         <div class="sb-labs"></div>
         <button class="sb-recbtn">실습 기록지</button>
       </div>
-      <div class="sb-tab" data-tab="make">
-        <div class="small sb-sub">천체를 누르면 위에서 질량·거리·대기를 숫자로 바꿀 수 있습니다. 바로 해 볼 만한 것:</div>
-        <div class="sb-quick">
-          <button data-q="sunbh"><b>태양을 블랙홀로</b><span>행성 궤도는 그대로일까?</span></button>
-          <button data-q="nosun"><b>태양 없애기</b><span>행성들이 직선으로 날아갑니다</span></button>
-          <button data-q="jup2star"><b>목성을 별로</b><span>질량 90배: 핵융합이 켜집니다</span></button>
-          <button data-q="earthvenus"><b>지구를 금성 자리로</b><span>0.72 AU에서 바다는?</span></button>
-          <button data-q="marsatm"><b>화성에 두꺼운 대기</b><span>지구 같은 공기 1기압</span></button>
-          <button data-q="moonaway"><b>달 없애기</b><span>달을 지우고 지구만</span></button>
-        </div>
-        <div class="sb-row"><span class="small">태양계 천체 더하기</span><select class="sb-addsol"><option value="">고르기…</option>${Object.entries(EXTRA).map(([k, v]) => `<option value="${k}">${v[0]}</option>`).join('')}<option value="all">모두</option></select></div>
-        <div class="sb-row"><button class="sb-throw">탐사선 던지기</button></div>
-        <div class="sb-row"><select class="sb-addkind"><option value="asteroid">소행성 (질량 없음)</option><option value="earth">지구</option><option value="jupiter">목성</option><option value="reddwarf">적색왜성 (0.2)</option><option value="star">태양 같은 별</option><option value="bh">블랙홀 (10 태양질량)</option></select>
-          <label class="small"><input type="checkbox" class="sb-circ" checked> 원 궤도로</label><button class="sb-add">천체 놓기</button></div>
-        <div class="sb-row"><button class="sb-belt">소행성대 만들기</button><button class="sb-ring" title="고른 행성 둘레에 로슈 한계 안팎으로 입자 고리를 만듭니다">고른 행성에 고리 만들기</button></div>
-        <div class="sb-row"><button class="sb-save">장면 저장</button><select class="sb-loads"><option value="">저장한 장면…</option></select><button class="sb-share">링크로 공유</button></div>
-      </div>
-      <div class="sb-tab" data-tab="scen" hidden><div class="sb-scens"></div></div>
       <div class="sb-tab" data-tab="view" hidden>
-        <label class="small"><input type="checkbox" class="sb-hz" checked> 생명 가능 지대</label>
-        <label class="small" title="행성 이름 옆에 표면 온도(지구 정도의 온실 효과 가정)를 색으로 표시"><input type="checkbox" class="sb-temp"> 온도 지도</label>
-        <label class="small"><input type="checkbox" class="sb-pred"> 궤도 예측선 (지금 속도로 계속 간다면)</label>
-        <label class="small"><input type="checkbox" class="sb-vel"> 속도 화살표</label>
-        <label class="small"><input type="checkbox" class="sb-well"> 중력 우물 (퍼텐셜을 그물로)</label>
-        <label class="small"><input type="checkbox" class="sb-trails" checked> 지나온 길</label>
-        <label class="small"><input type="checkbox" class="sb-reltrail"> 지나온 길도 중심 천체 기준으로 (예: 지구 중심에서 본 화성의 역행 고리)</label>
+        <h3>표시</h3>
+        <label><input type="checkbox" class="sb-hz" checked> 생명 가능 지대</label>
+        <label title="행성 이름 옆에 표면 온도를 색으로 표시"><input type="checkbox" class="sb-temp"> 온도 지도</label>
+        <label><input type="checkbox" class="sb-pred"> 궤도 예측선</label>
+        <label><input type="checkbox" class="sb-vel"> 속도 화살표</label>
+        <label><input type="checkbox" class="sb-well"> 중력 우물</label>
+        <label><input type="checkbox" class="sb-trails" checked> 지나온 길</label>
+        <label><input type="checkbox" class="sb-reltrail"> 지나온 길을 중심 천체 기준으로</label>
+        <label><input type="checkbox" class="sb-names" checked> 이름</label>
         <div class="small sb-center"></div>
-        <label class="small"><input type="checkbox" class="sb-names" checked> 이름</label>
-        <div class="sb-row"><button class="sb-now">지금 태양계로 새로</button></div>
+        <button class="sb-now">지금 태양계로 새로 시작</button>
       </div>
-      <div class="small sb-hint"></div>
-    </div>
+    </aside>
+    <aside class="sb-sel" hidden>
+      <header><b class="sb-sel-name"></b><button class="sb-selx" title="선택 해제">닫기</button></header>
+      <div class="small sb-sel-data"></div>
+      <div class="sb-sec"><span>물리량</span></div>
+      <table class="sb-nums">
+        <tr><th>질량</th><td><input class="sb-mnum" type="number" min="0" step="any"><select class="sb-munit"><option value="${MASS.Earth}">지구 질량</option><option value="${MASS.Jupiter}">목성 질량</option><option value="1">태양 질량</option></select></td></tr>
+        <tr><th></th><td><button class="sb-mx" data-k="0.1">×0.1</button><button class="sb-mx" data-k="0.5">×0.5</button><button class="sb-mx" data-k="2">×2</button><button class="sb-mx" data-k="10">×10</button></td></tr>
+        <tr><th>별에서 거리</th><td><input class="sb-dnum" type="number" min="0.05" step="any"><span class="u">AU</span><button class="sb-dgo">옮기기</button></td></tr>
+      </table>
+      <input class="sb-mass" type="range" min="-3" max="3" step="0.05" value="0" hidden><div class="small sb-massv"></div>
+      <div class="sb-sec"><span>궤도 기록</span></div>
+      <canvas class="sb-graph" width="560" height="120"></canvas>
+      <div class="sb-acts"><button class="sb-follow">따라가기</button><button class="sb-bh">블랙홀로</button><button class="sb-del">지우기</button></div>
+      <div class="sb-atm" hidden></div>
+    </aside>
+    <div class="small sb-hint"></div>
     <div class="sb-lab" hidden></div>
     <div class="sb-toast" hidden></div>`;
   document.body.append(root);
@@ -1042,12 +1068,14 @@ function buildUI() {
   root.querySelectorAll('.sb-mx').forEach(x => x.onclick = () => { if (selected && !selected.test) setMass(selected, selected.m * +x.dataset.k); });
   q('.sb-dgo').onclick = () => { if (!selected) return; const d = +q('.sb-dnum').value; if (d > 0) moveToOrbit(selected, d); };
   q('.sb-addsol').onchange = (e) => { const v = e.target.value; e.target.value = ''; if (v === 'all') Object.keys(EXTRA).forEach(n => byName(n) || addSolarBody(n)); else if (v) addSolarBody(v); };
-  root.querySelectorAll('.sb-quick button').forEach(x => x.onclick = () => quick(x.dataset.q));
+  root.querySelectorAll('.sb-quick button').forEach(x => x.onclick = () => { quick(x.dataset.q); if (innerWidth < 760) root.querySelector('.sb-tabs button.on')?.click(); }); // on a phone, close the drawer so the result is visible
   q('.sb-add').onclick = () => setTool(view.tool === 'add' ? null : 'add');
   scene.add(hzGroup, rocheGroup);
   for (const [t, f, card] of LABS) { if (!f) { q('.sb-labs').append(el('div', 'sb-level', t)); continue; } const row = el('div', 'sb-labrow'), go = btn(t, () => { labCard = card; f(); }), c = btn('개념', () => openCards({ card, openLab: (n) => openLab(n) }), 'sb-concept'); c.title = '관련 개념 카드 열기'; row.append(go, c); q('.sb-labs').append(row); }
   q('.sb-bigcard').onclick = () => openCards({ openLab: (n) => openLab(n) });
-  root.querySelectorAll('.sb-tabs button').forEach(b => b.onclick = () => { root.querySelectorAll('.sb-tabs button').forEach(x => x.classList.toggle('on', x === b)); root.querySelectorAll('.sb-tab').forEach(t => t.hidden = t.dataset.tab !== b.dataset.tab); });
+  root.querySelectorAll('.sb-tabs button').forEach(b => b.onclick = () => { const open = !b.classList.contains('on');
+    root.querySelectorAll('.sb-tabs button').forEach(x => x.classList.toggle('on', open && x === b)); root.querySelectorAll('.sb-tab').forEach(t => t.hidden = !open || t.dataset.tab !== b.dataset.tab); root.classList.toggle('drawer', open); });
+  q('.sb-selx').onclick = () => select(null);
   for (const [k, t, d] of SCENS) { const b = el('button', 'sb-scenbtn', `<b>${t}</b><span>${d}</span>`); b.onclick = () => scenario(k); q('.sb-scens').append(b); }
   q('.sb-belt').onclick = makeBelt; q('.sb-ring').onclick = () => selected ? makeRing(selected) : toast('먼저 행성을 하나 누르세요');
   q('.sb-save').onclick = saveScene; q('.sb-loads').onchange = (e) => { if (e.target.value !== '') loadScene(loadSaves()[+e.target.value].data); e.target.value = ''; }; q('.sb-share').onclick = shareScene; refreshSaves();

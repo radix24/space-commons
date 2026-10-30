@@ -684,7 +684,7 @@ const KM_AU = 149597870.7;
 const eclU = { on: { value: 0 }, shadowDir: { value: new THREE.Vector3(0, 0, 1) }, umbR: { value: 0.012 }, penR: { value: 0.022 } };
 const planetMat = (tex, emissive) => new THREE.ShaderMaterial({
   uniforms: { ...eclU, isMoon: { value: 0 }, occ: { value: [0, 1, 2, 3].map(() => new THREE.Vector4()) }, occN: { value: 0 }, sunAng: { value: 0.005 },
-    ringOn: { value: 0 }, ringN: { value: new THREE.Vector3(0, 1, 0) }, ringC: { value: new THREE.Vector3() }, ringR: { value: 1 }, ringMap: { value: null }, map: { value: tex }, ambient: { value: 0.025 }, night: { value: null }, hasNight: { value: 0 }, sunDir: { value: new THREE.Vector3(1, 0, 0) }, emissive: { value: emissive ? 1 : 0 }, bump: { value: null }, hasBump: { value: 0 }, bumpK: { value: 0 } },
+    ringOn: { value: 0 }, ringN: { value: new THREE.Vector3(0, 1, 0) }, ringC: { value: new THREE.Vector3() }, ringR: { value: 1 }, ringMap: { value: null }, map: { value: tex }, ambient: { value: 0.025 }, night: { value: null }, hasNight: { value: 0 }, skyK: { value: 0 }, sunDir: { value: new THREE.Vector3(1, 0, 0) }, emissive: { value: emissive ? 1 : 0 }, bump: { value: null }, hasBump: { value: 0 }, bumpK: { value: 0 } },
   vertexShader: `#include <common>
     #include <logdepthbuf_pars_vertex>
     varying vec2 vUv; varying vec3 vN; varying vec3 vW; varying vec3 vPole; void main(){ vUv = uv; vN = normalize(mat3(modelMatrix) * normal); vW = (modelMatrix * vec4(position, 1.0)).xyz; vPole = mat3(modelMatrix) * vec3(0.0, 1.0, 0.0);
@@ -693,7 +693,7 @@ const planetMat = (tex, emissive) => new THREE.ShaderMaterial({
     }`,
   fragmentShader: `#include <logdepthbuf_pars_fragment>
     uniform vec4 occ[4]; uniform int occN; uniform float sunAng; uniform float ringOn, ringR; uniform vec3 ringN, ringC; uniform sampler2D ringMap;
-    uniform sampler2D map, night; uniform float hasNight, ambient, on, umbR, penR, isMoon; uniform vec3 shadowDir; varying vec3 vW; uniform vec3 sunDir; uniform float emissive; varying vec2 vUv; varying vec3 vN;
+    uniform sampler2D map, night; uniform float skyK; uniform float hasNight, ambient, on, umbR, penR, isMoon; uniform vec3 shadowDir; varying vec3 vW; uniform vec3 sunDir; uniform float emissive; varying vec2 vUv; varying vec3 vN;
     uniform sampler2D bump; uniform float hasBump, bumpK; varying vec3 vPole;
     void main(){
       #include <logdepthbuf_fragment>
@@ -729,8 +729,9 @@ const planetMat = (tex, emissive) => new THREE.ShaderMaterial({
         vec3 h = normalize(sunDir + normalize(-vW)); float nh = max(dot(n, h), 0.0);
         col += vec3(1.0, 0.95, 0.85) * sea * (pow(nh, 18.0) * 0.55 + pow(nh, 160.0) * 1.4) * smoothstep(0.0, 0.15, ndl); }
       if (hasNight > 0.5) col += texture2D(night, vUv).rgb * (1.0 - smoothstep(-0.12, 0.08, ndl)) * 1.3; // city lights on the night side
-      gl_FragColor = vec4(col, 1.0); }`,
-  depthTest: true, depthWrite: true,
+      // in a daytime sky the unlit part of a body is not black but sky-coloured: let it fade out (bright parts stay opaque)
+      gl_FragColor = vec4(col, mix(1.0, clamp(dot(col, vec3(0.3, 0.59, 0.11)) * 5.0, 0.0, 1.0), skyK)); }`,
+  depthTest: true, depthWrite: true, transparent: true,
 });
 const texLoader = new THREE.TextureLoader();
 // close to the Moon or Mars (S5): 8k colour and LOLA / MOLA relief. [height range in m, exaggeration]
@@ -1237,7 +1238,7 @@ function updatePlanets() {
     if (p.magSeen > starMat.uniforms.limit.value + 0.3) p.mesh.visible = false; // fainter than anything visible at this zoom
     p.rpx = Math.atan(p.mesh.scale.x / p.mesh.position.length()) / (view.fov / 2 * D2R) * innerHeight / 2;
     orientBody(p);
-    p.mesh.material.uniforms.sunDir.value.copy(sunEq.transformDirection(sky.matrixWorld));
+    p.mesh.material.uniforms.sunDir.value.copy(sunEq).transformDirection(sky.matrixWorld); // copy first: transformDirection works in place, and sunEq is reused for every body
     if (p.glow) p.glow.scale.setScalar(Math.max(8, 0.15 * view.fov * D2R * R / p.mesh.scale.x));
   }
 }
@@ -1946,6 +1947,7 @@ function readHash() {
   const o = q.get('o');
   if (o) setTimeout(() => { const mk = searchIndex.get(o.toLowerCase().replace(/\s+/g, '')); if (mk) { const x = mk(); if (!x.planet || x.p.world) select(x); } }, 300);
 }
+let hashOwn = false; addEventListener('hashchange', () => { if (!hashOwn) { readHash(); updateSkyMatrix(); } hashOwn = false; }); // links and back/forward move the view without a reload
 $('share').onclick = async () => {
   writeHash(); await new Promise(r => setTimeout(r, 350));
   try { await navigator.clipboard.writeText(location.href); $('status').textContent = '현재 화면 링크를 복사했습니다'; }
@@ -3683,6 +3685,7 @@ function frame(now) {
   bg.copy(skyNight); renderer.setClearColor(bg);
   if (PLANETS[0].glow) PLANETS[0].glow.material.opacity = 1 - 0.9 * Math.pow(obsc, 1.5); // in totality only a faint corona-like ring is left
   skyDome.visible = gOn && daySky !== 'stars' && PLANETS[0].world && PLANETS[0].world.y > -0.33;
+  for (const p of PLANETS) if (p.mesh?.material?.uniforms?.skyK) p.mesh.material.uniforms.skyK.value = skyDome.visible && p.world && PLANETS[0].world && p.world.dot(PLANETS[0].world) < 0.99966 ? skyDayK : 0; // not near the Sun: eclipses and transits keep their black silhouette
   if (skyDome.visible) { skyDomeMat.uniforms.sunDir.value.copy(PLANETS[0].world); skyDomeMat.uniforms.k.value = (daySky === 'both' ? 0.75 : 1) * (1 - totality * 0.97); }
   const dim = 1 - day * 0.97; washout = day;
   for (const l of linesGroup.children) l.material.opacity = 0.55 * (1 - day * 0.9);
