@@ -1,7 +1,7 @@
 :root {
   --ink: #ECE6DA; --night: #0C0C0D; --panel: rgba(17,17,18,.94); --panel-solid: #141415;
   --orbit: #E2573F; --violet: #C9A86A; --star: #F3E2A6; --line: #2E2C29; --mute: #8E887D; --brass: #C9A86A;
-  --display: "Noto Serif KR", "Pretendard Variable", Pretendard, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  --display: Manrope, "Pretendard Variable", Pretendard, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
   --sans: "Pretendard Variable", Pretendard, "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
   --mono: "Pretendard Variable", "Malgun Gothic", "Apple SD Gothic Neo", monospace; /* Hangul falls to Pretendard, never GulimChe */
 }
@@ -402,3 +402,6 @@ button.on, .on > button { background: var(--orbit); border-color: var(--orbit); 
 .cc-num { color: var(--brass); }
 .cc-eq { background: #19191a; border: 1px solid var(--line); } .cc-deep summary { color: var(--brass); }
 .cc-eq-h { margin: 14px 0 -4px; font-size: 12px; color: var(--brass); }
+/* the wordmark keeps its original geometric face */
+.wordmark, #brand span { font-family: Manrope, "Pretendard Variable", sans-serif; font-weight: 800; letter-spacing: -0.03em; }
+.wordmark span, #brand em { font-weight: 800; }
