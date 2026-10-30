@@ -602,19 +602,26 @@ const KM_AU = 149597870.7;
 const eclU = { on: { value: 0 }, shadowDir: { value: new THREE.Vector3(0, 0, 1) }, umbR: { value: 0.012 }, penR: { value: 0.022 } };
 const planetMat = (tex, emissive) => new THREE.ShaderMaterial({
   uniforms: { ...eclU, isMoon: { value: 0 }, occ: { value: [0, 1, 2, 3].map(() => new THREE.Vector4()) }, occN: { value: 0 },
-    ringOn: { value: 0 }, ringN: { value: new THREE.Vector3(0, 1, 0) }, ringC: { value: new THREE.Vector3() }, ringR: { value: 1 }, ringMap: { value: null }, map: { value: tex }, ambient: { value: 0.025 }, night: { value: null }, hasNight: { value: 0 }, sunDir: { value: new THREE.Vector3(1, 0, 0) }, emissive: { value: emissive ? 1 : 0 } },
+    ringOn: { value: 0 }, ringN: { value: new THREE.Vector3(0, 1, 0) }, ringC: { value: new THREE.Vector3() }, ringR: { value: 1 }, ringMap: { value: null }, map: { value: tex }, ambient: { value: 0.025 }, night: { value: null }, hasNight: { value: 0 }, sunDir: { value: new THREE.Vector3(1, 0, 0) }, emissive: { value: emissive ? 1 : 0 }, bump: { value: null }, hasBump: { value: 0 }, bumpK: { value: 0 } },
   vertexShader: `#include <common>
     #include <logdepthbuf_pars_vertex>
-    varying vec2 vUv; varying vec3 vN; varying vec3 vW; void main(){ vUv = uv; vN = normalize(mat3(modelMatrix) * normal); vW = (modelMatrix * vec4(position, 1.0)).xyz;
+    varying vec2 vUv; varying vec3 vN; varying vec3 vW; varying vec3 vPole; void main(){ vUv = uv; vN = normalize(mat3(modelMatrix) * normal); vW = (modelMatrix * vec4(position, 1.0)).xyz; vPole = mat3(modelMatrix) * vec3(0.0, 1.0, 0.0);
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
     #include <logdepthbuf_vertex>
     }`,
   fragmentShader: `#include <logdepthbuf_pars_fragment>
     uniform vec4 occ[4]; uniform int occN; uniform float ringOn, ringR; uniform vec3 ringN, ringC; uniform sampler2D ringMap;
     uniform sampler2D map, night; uniform float hasNight, ambient, on, umbR, penR, isMoon; uniform vec3 shadowDir; varying vec3 vW; uniform vec3 sunDir; uniform float emissive; varying vec2 vUv; varying vec3 vN;
+    uniform sampler2D bump; uniform float hasBump, bumpK; varying vec3 vPole;
     void main(){
       #include <logdepthbuf_fragment>
-      float ndl = dot(normalize(vN), sunDir);
+      vec3 n = normalize(vN);
+      if (hasBump > 0.5) { // relief from a height map (LOLA / MOLA): tilt the normal by the local slope, east and north
+        vec3 P = normalize(vPole), e = cross(P, n); float cl = max(0.03, length(e)); e /= cl; vec3 no = cross(n, e);
+        float hx = texture2D(bump, vUv + vec2(1.0 / 4096.0, 0.0)).r - texture2D(bump, vUv - vec2(1.0 / 4096.0, 0.0)).r;
+        float hy = texture2D(bump, vUv + vec2(0.0, 1.0 / 2048.0)).r - texture2D(bump, vUv - vec2(0.0, 1.0 / 2048.0)).r;
+        n = normalize(n - bumpK * (hx / (2.0 * 6.2831853 / 4096.0 * cl) * e + hy / (2.0 * 3.1415927 / 2048.0) * no)); }
+      float ndl = dot(n, sunDir);
       vec3 c = texture2D(map, vUv).rgb; float l = emissive > 0.5 ? 1.2 : max(ndl, 0.0) * 1.15 + ambient;
       // the Sun map is a filtered (orange) image; to the eye the photosphere is near-white, keep only a hint of granulation
       if (emissive > 0.5) { c = mix(vec3(1.0, 0.97, 0.9), c, 0.18); l = 1.25; }
@@ -638,6 +645,14 @@ const planetMat = (tex, emissive) => new THREE.ShaderMaterial({
   depthTest: true, depthWrite: true,
 });
 const texLoader = new THREE.TextureLoader();
+// close to the Moon or Mars (S5): 8k colour and LOLA / MOLA relief. [height range in m, exaggeration]
+const HIRES = { Moon: ['8k_moon.jpg', 'disp_moon.png', 20000, 2], Mars: ['8k_mars.jpg', 'disp_mars.png', 29500, 2] };
+function loadHires(p) {
+  p.hires = true; const [col, disp, range, ex] = HIRES[p.name], u = p.mesh.material.uniforms;
+  texLoader.load('textures/' + col, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; u.map.value = t; });
+  texLoader.load('textures/' + disp, (t) => { t.anisotropy = 4; u.bump.value = t; u.bumpK.value = range / (p.R * 1000) * ex; u.hasBump.value = 1; });
+  $('status').textContent = `${p.ko} 고해상도 표면을 받는 중 (8k 사진, ${p.name === 'Moon' ? 'LRO LOLA' : 'MGS MOLA'} 고도)`;
+}
 const planetGroup = new THREE.Group(); planetScene.add(planetGroup);
 for (const p of PLANETS) {
   p.mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 32), planetMat(p.tex ? p.tex() : rocky('#8a8580', ['#5a5650', '#b0aaa0'], 5), p.emissive));
@@ -1496,6 +1511,7 @@ function updateSpace() {
     if (p.glow) p.glow.scale.setScalar(Math.max(8, 0.15 * view.fov * D2R * d / p.mesh.scale.x));
     p.rpx = Math.atan(p.mesh.scale.x / d) / (view.fov / 2 * D2R) * innerHeight / 2;
   }
+  if (!MOBILE) for (const p of PLANETS) if (HIRES[p.name] && !p.hires && mode.space && p.camDist < bodyR(p) * 8) loadHires(p);
   orbits.position.copy(sp.pos).negate(); trails.position.copy(orbits.position); updateTrails(jd(state.time));
   orbits.visible = $('t-orbits').checked && nearest > 2; trails.visible = orbits.visible; // orbit lines only clutter close-ups
   // orbits smaller than a few dozen pixels (inner planets seen from the outer solar system) collapse into a bright smudge beside the Sun
