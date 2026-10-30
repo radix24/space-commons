@@ -132,3 +132,8 @@ select, input[type=datetime-local] { background: var(--panel-solid); color: inhe
 /* night vision: everything in deep red so dark-adapted eyes stay adapted */
 body.red { filter: grayscale(1) sepia(1) saturate(9) hue-rotate(-45deg) brightness(.7); }
 body { position: fixed; inset: 0; } /* never let focus/scrollIntoView shift the whole page */
+
+/* version */
+.version { margin-top: 2px; padding: 2px 10px; border: 1px solid var(--line); border-radius: 999px; font: 11px var(--mono); color: var(--orbit); letter-spacing: .06em; }
+#version-tag { position: fixed; right: 12px; top: 54px; font: 10px var(--mono); color: var(--mute); opacity: .7; pointer-events: none; }
+@media (max-width: 640px) { #version-tag { display: none; } }

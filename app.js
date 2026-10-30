@@ -668,6 +668,22 @@ function placeProbe(p, rel, earthRel, sunRel, minScale) { // rel: camera->probe 
   p.rpx = Math.atan(p.mesh.scale.x / d) / (view.fov / 2 * D2R) * innerHeight / 2;
 }
 
+// Absolute magnitudes H (V band). Planets: Mallama & Hilton 2018, simplified to a linear phase term; moons and small bodies: JPL.
+const HMAG = { Mercury: [-0.6, 0.038], Venus: [-4.4, 0.012], Mars: [-1.6, 0.016], Jupiter: [-9.4, 0.005], Saturn: [-8.9, 0.044], Uranus: [-7.1, 0.002], Neptune: [-7.0, 0.0],
+  Moon: [0.21, 0.026], Io: [-1.7, 0.02], Europa: [-1.4, 0.02], Ganymede: [-2.1, 0.02], Callisto: [-1.1, 0.02], Titan: [-1.2, 0.02],
+  Ceres: [3.33, 0.03], Vesta: [3.2, 0.03], Pluto: [-0.4, 0.04], Eris: [-1.1, 0.0], Haumea: [0.2, 0.0], Makemake: [-0.2, 0.0] };
+function apparentMag(p, r, delta, alphaDeg) { // r: Sun distance, delta: observer distance (AU)
+  if (p.name === 'Sun') return -26.74 + 5 * Math.log10(delta);
+  if (p.name === 'Halley') return 5.5 + 5 * Math.log10(delta) + 10 * Math.log10(r); // total (coma) magnitude, comet law
+  if (p.probe) return 30;
+  const base = 5 * Math.log10(r * delta), A = alphaDeg;
+  if (p.name === 'Venus' && A > 163.7) return 236.05828 + base - 2.81914 * A + 8.39034e-3 * A ** 2; // near inferior conjunction
+  if (p.name === 'Venus') return -4.384 + base - 0.01044 * A + 3.687e-4 * A ** 2 - 2.814e-6 * A ** 3 + 8.938e-9 * A ** 4; // Mallama & Hilton 2018 (A < 163.7)
+  if (p.name === 'Mercury') return -0.613 + base + 6.328e-2 * A - 1.6336e-3 * A ** 2 + 3.3644e-5 * A ** 3 - 3.4265e-7 * A ** 4 + 1.6893e-9 * A ** 5 - 3.0334e-12 * A ** 6;
+  const h = HMAG[p.name]; if (!h) return 99;
+  return h[0] + 5 * Math.log10(r * delta) + h[1] * alphaDeg;
+}
+
 function updatePlanets() {
   if (mode.space) return updateSpace();
   const T = (jd(state.time) - 2451545.0) / 36525;
@@ -677,7 +693,8 @@ function updatePlanets() {
   geo.Moon = moonGeo(T);
   for (const n of ['Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']) geo[n] = helio(n, T).sub(earth);
   for (const p of PLANETS) if (p.sb) geo[p.name] = sbHelio(p.sb, jd(state.time)).sub(earth);
-  const minAng = view.fov * D2R * 0.0045;
+  const minAng0 = view.fov * D2R * 0.0045;
+  let minAng = minAng0;
   const mo = moonOffsets(T, geo); rotOnly.setFromMatrix4(sky.matrixWorld);
   for (const p of PLANETS) {
     if (p.name === 'Earth') { p.mesh.visible = false; p.world = null; continue; }
@@ -689,7 +706,7 @@ function updatePlanets() {
       const rd = vecToRaDec(gq); p.ra = rd.ra; p.dec = rd.dec;
       const w = eqVec(rd.ra, rd.dec).applyMatrix4(sky.matrixWorld).normalize();
       placeProbe(p, w.clone().multiplyScalar(R_PLANET), new THREE.Vector3(), null, R_PLANET * Math.tan(minAng * 0.4));
-      p.mesh.visible = !(groundOn() && w.y < -0.003); continue;
+      p.mag = 30; p.mesh.visible = $('t-probes').checked && !(groundOn() && w.y < -0.003); continue; // ~30 mag: only as a position marker
     }
     let g = geo[p.name];
     if (p.parent) { // offset is equatorial; rotate back to ecliptic to share the geo[] frame
@@ -697,6 +714,7 @@ function updatePlanets() {
       g = geo[p.name] = geo[p.parent].clone().add(new THREE.Vector3(o.x, o.y * Math.cos(OBL) + o.z * Math.sin(OBL), -o.y * Math.sin(OBL) + o.z * Math.cos(OBL)));
     }
     const eq = ecl2eq(g), dist = g.length();
+    { const r0 = geo.Sun.clone().sub(g).length(), a0 = 0; const m0 = apparentMag(p, r0, dist, a0); minAng = minAng0 * Math.max(0.35, Math.min(1.6, 0.25 * (starMat.uniforms.limit.value - m0) + 0.3)); }
     const sunEq = ecl2eq(geo.Sun.clone().sub(g)).normalize();
     p.eq = eq.clone().normalize(); const rd = vecToRaDec(p.eq); p.ra = rd.ra; p.dec = rd.dec; p.dist = dist;
     p.angR = Math.atan(p.R / KM_AU / dist); // true angular radius (rad)
@@ -704,6 +722,7 @@ function updatePlanets() {
     const R = R_PLANET * (p.name === 'Moon' ? 0.9 : p.name === 'Sun' ? 0.95 : 1); // keep Moon in front of Sun for eclipses
     p.world = world;
     p.phase = (1 + sunEq.dot(p.eq.clone().negate())) / 2; // illuminated fraction
+    p.mag = apparentMag(p, geo.Sun.clone().sub(g).length(), dist, Math.acos(Math.max(-1, Math.min(1, sunEq.dot(p.eq.clone().negate())))) * R2D);
     p.mesh.position.copy(world).multiplyScalar(R);
     p.mesh.scale.setScalar(R * Math.tan(Math.max(p.angR, minAng)));
     if (p.parent) { // true 3D placement around the parent so moons pass in front of / behind it
@@ -713,6 +732,7 @@ function updatePlanets() {
       p.mesh.visible = view.fov < 3;
     } else p.mesh.visible = true;
     if (groundOn() && world.y < -0.003) p.mesh.visible = false;
+    if (p.mag > starMat.uniforms.limit.value + 0.3) p.mesh.visible = false; // fainter than anything visible at this zoom
     p.rpx = Math.atan(p.mesh.scale.x / p.mesh.position.length()) / (view.fov / 2 * D2R) * innerHeight / 2;
     orientBody(p);
     p.mesh.material.uniforms.sunDir.value.copy(sunEq.transformDirection(sky.matrixWorld));
@@ -903,6 +923,7 @@ function select(o) {
     const p = o.p; ra = p.ra; dec = p.dec;
     $('info-title').textContent = `${p.ko} (${p.name})`; $('info-sub').textContent = p.small ? `${p.small} · 궤도: JPL SBDB` : p.name === 'Sun' ? '항성' : p.name === 'Moon' ? '위성' : p.parent ? `${PLANETS.find(q => q.name === p.parent).ko}의 위성 · 위치 근사` : '행성';
     if (p.name !== 'Earth') row('지구로부터 거리', p.name === 'Moon' ? `${(p.dist * KM_AU).toFixed(0)} km` : `${p.dist.toFixed(3)} AU`);
+    if (!mode.space && isFinite(p.mag) && p.mag < 90) row('겉보기 등급', `${p.mag.toFixed(1)}${p.mag > 6.5 ? ' (맨눈으로 안 보임)' : ''}`);
     if (p.name !== 'Earth') row('시직경', fmtAng(p.angR * 2 * R2D)); if (p.name !== 'Sun' && p.name !== 'Earth') row('위상 (밝은 면)', (p.phase * 100).toFixed(1) + '%'); row('반지름', `${p.R.toLocaleString()} km`);
   } else if (o.kindName === 'exo') {
     ra = o.ra; dec = o.dec;
@@ -1254,7 +1275,7 @@ $('dt').onfocus = (e) => { e.target.value = toLocalInput(state.time); };
 const PLACES = { seoul: [37.57, 126.98], busan: [35.18, 129.08], jeju: [33.36, 126.53], tokyo: [35.68, 139.69], newyork: [40.71, -74.01],
   london: [51.51, -0.13], sydney: [-33.87, 151.21], atacama: [-24.63, -70.40], maunakea: [19.82, -155.47], northpole: [89.9, 0] };
 $('place').onchange = (e) => { const v = PLACES[e.target.value]; if (!v) return; [state.lat, state.lon] = v; $('lat').value = v[0]; $('lon').value = v[1]; };
-$('night').onclick = () => { document.body.classList.toggle('red'); $('night').classList.toggle('on'); };
+$('night').onclick = () => { const on = document.body.classList.toggle('red'); $('night').classList.toggle('on', on); $('night').textContent = on ? '야간 시야 끄기' : '야간 시야'; };
 // eyepiece: true field of view of common setups, drawn as a circle; picking one also zooms to fit it
 $('eyepiece').onchange = (e) => { const f = +e.target.value; eyeFov = f || 0; if (f) { view.fov = Math.max(view.fov > f * 1.4 ? f * 1.25 : view.fov, f * 1.1); } };
 let eyeFov = 0;

@@ -21,6 +21,7 @@
   <div class="wordmark">Space <span>Commons</span></div>
   <div class="tagline">땅에서 올려다보고, 우주로 나아가는 모두의 하늘</div>
   <div class="loader-bar"><i></i></div>
+  <div class="version">Alpha 0.0.1a</div>
   <div id="loader-step">별 4만 개와 NGC/IC 천체 1만 2천 개를 불러오는 중</div>
 </div>
 <canvas id="c"></canvas>
@@ -89,6 +90,7 @@
     <label><input type="checkbox" id="t-grid"> 적도 격자</label>
     <label><input type="checkbox" id="t-dso" checked> NGC/IC</label>
     <label><input type="checkbox" id="t-exo" checked> 외계행성</label>
+    <label class="ground-only" title="탐사선은 너무 어두워 실제로는 보이지 않습니다. 위치만 표시합니다."><input type="checkbox" id="t-probes"> 탐사선 위치</label>
     <label><input type="checkbox" id="t-labels" checked> 이름</label>
   </div>
   <div class="row small" id="fovinfo"></div>
@@ -122,6 +124,7 @@
   <div class="row"><button id="tour-prev">이전</button><button id="tour-next">다음</button></div>
 </div>
 
+<div id="version-tag">Space Commons Alpha 0.0.1a</div>
 <div id="help"><span class="ground-only">드래그: 회전 · 휠/핀치: 확대 · 클릭: 선택 · 더블클릭: 이동·확대</span><span class="space-only">드래그: 공전/시점 · 휠: 거리 · W A S D / Q E: 이동 · Shift: 가속 · 더블클릭: 천체로 비행</span><br>행성 텍스처 © <a href="https://www.solarsystemscope.com/textures/" target="_blank" style="color:inherit">Solar System Scope</a> (CC BY 4.0)</div>
 
 <script type="module" src="app.js"></script>
