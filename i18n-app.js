@@ -4,9 +4,9 @@ export const PH_APP = [
   // plain-language layer (ux.js): menu names, descriptions, tutorials
   ['오늘 밤 볼 것', "Tonight's sky"],
   ['우주로 날아가기', 'Fly into space'],
-  ['쉽게 알아보기', 'Learn the easy way'],
-  ['친구·학생과 나누기', 'Share with friends and students'],
-  ['설정·더 보기', 'Settings and more'],
+  ['쉽게 알아보기', 'Learn'],
+  ['친구·학생과 나누기', 'Share'],
+  ['설정·더 보기', 'More'],
   ['나는 처음이에요', "I'm new here"],
   ['처음이세요? 짧은 안내 보기', 'New here? Take a short guide'],
   ['보기', 'Show'],
