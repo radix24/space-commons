@@ -107,6 +107,13 @@ SCENARIOS = {
     'telsim':  ('app.html#m=g&t=2026-10-31T13:00&lat=37.57&lon=126.98&az=58.7&alt=60&fov=60&o=M31', TEL_SIM),
     'telserial': ('app.html', TEL_SERIAL),
     'tleage':  ('app.html', TLE_AGE),
+    # surface landing (landing.js): Earth over Apollo 11, Jezero at local noon and at sunset; then back to space
+    'landmoon':  ('app.html#m=s&t=2026-11-12T03:00&land=Apollo%2011&look=earth', "(async () => { const w = (ms) => new Promise(r => setTimeout(r, ms)); for (let i = 0; i < 120 && !document.querySelector('#land-labels span'); i++) await w(250); await w(1500); const c = document.querySelector('.land-ui .lu-sub:nth-child(3)')?.textContent || ''; console.log('[LAND] ' + c + ' | labels: ' + [...document.querySelectorAll('#land-labels span')].map(s => s.textContent).join(', ')); return document.body.classList.contains('landing') && [...document.querySelectorAll('#land-labels span')].some(s => s.textContent === '지구'); })()"),
+    'landnoon':  ('app.html#m=s&t=2026-11-12T03:00&land=Perseverance&lt=noon&look=sun', "(async () => { const w = (ms) => new Promise(r => setTimeout(r, ms)); for (let i = 0; i < 120 && !document.querySelector('#land-labels span'); i++) await w(250); await w(1500); const c = document.querySelector('.land-ui .lu-sub:nth-child(3)')?.textContent || ''; console.log('[LAND] ' + c + ' | labels: ' + [...document.querySelectorAll('#land-labels span')].map(s => s.textContent).join(', ')); return document.body.classList.contains('landing') && /현지 태양시 1[12]:/.test(c); })()"),
+    'landdusk':  ('app.html#m=s&t=2026-11-12T03:00&land=Perseverance&lt=sunset&look=sun', "(async () => { const w = (ms) => new Promise(r => setTimeout(r, ms)); for (let i = 0; i < 120 && !document.querySelector('#land-labels span'); i++) await w(250); await w(1500); const c = document.querySelector('.land-ui .lu-sub:nth-child(3)')?.textContent || ''; console.log('[LAND] ' + c + ' | labels: ' + [...document.querySelectorAll('#land-labels span')].map(s => s.textContent).join(', ')); return document.body.classList.contains('landing') && /해의 높이 -0\\.[0-9]°/.test(c); })()"),
+    'landexit':  ('app.html#m=s&land=Curiosity', "(async () => { const w = (ms) => new Promise(r => setTimeout(r, ms)); for (let i = 0; i < 120 && !document.getElementById('land-exit'); i++) await w(250); await w(800); document.getElementById('land-exit').click(); await w(1500); return !document.body.classList.contains('landing') && document.body.classList.contains('space') && !document.getElementById('land-ui'); })()"),
+    # no WebXR in headless Chrome: the VR/AR buttons stay hidden and a Korean note says why
+    'xrhide':    ('app.html', READY + " && document.getElementById('vr-btn').hidden && document.getElementById('xrar-btn').hidden && /숨겼습니다/.test(document.getElementById('xr-note').textContent) && !document.getElementById('xr-note').hidden"),
 }
 IGNORE = ('celestrak.org', 'wikipedia.org', 'wikimedia.org', 'fonts.g', 'alasky', 'hips2fits', 'swpc.noaa', 'open-meteo', 'ssd-api.jpl', 'gibs.earthdata', 'favicon.ico')
 
@@ -182,8 +189,8 @@ def run(names):
                     d = p['exceptionDetails']; problems.append('exception: ' + (d.get('exception', {}).get('description') or d.get('text', '')).split('\n')[0])
                 elif m == 'Runtime.consoleAPICalled' and p.get('type') == 'error':
                     txt = ' '.join(str(a.get('value', a.get('description', ''))) for a in p.get('args', []))
-                    if not any(s in txt for s in IGNORE): problems.append('console.error: ' + txt[:200])
-                elif m == 'Runtime.consoleAPICalled' and str(p.get('args', [{}])[0].get('value', '')).startswith('[HANGUL]'): print('        ' + p['args'][0]['value'])
+                    if not any(s in txt for s in IGNORE): problems.append('console.error: ' + txt[:200 if 'Shader' not in txt else 6000])
+                elif m == 'Runtime.consoleAPICalled' and str(p.get('args', [{}])[0].get('value', '')).startswith(('[HANGUL]', '[LAND]')): print('        ' + p['args'][0]['value'])
                 elif m == 'Network.requestWillBeSent': reqs[p['requestId']] = p['request']['url']
                 elif m == 'Network.responseReceived':
                     u, st = p['response']['url'], p['response']['status']

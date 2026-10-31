@@ -807,3 +807,22 @@ dfn { font-style: normal; border-bottom: 1px dotted var(--mute); }
 #tel-reticle i { position: absolute; left: -16px; top: -16px; width: 32px; height: 32px; border: 2px solid var(--orbit); border-radius: 0;
   background: linear-gradient(var(--orbit), var(--orbit)) center / 2px 100% no-repeat, linear-gradient(var(--orbit), var(--orbit)) center / 100% 2px no-repeat; opacity: .85; }
 #tel-reticle b { position: absolute; left: 20px; top: -22px; font: 11px var(--sans); color: var(--orbit); white-space: nowrap; }
+/* landing (landing.js) and WebXR (xr.js) */
+body.landing > :not(canvas):not(#land-ui):not(#land-cap):not(#land-labels):not(script) { display: none !important; }
+#land-cap { position: fixed; inset: 0; z-index: 5; cursor: grab; touch-action: none; }
+#land-cap:active { cursor: grabbing; }
+#land-labels { position: fixed; inset: 0; z-index: 6; pointer-events: none; }
+#land-labels span { position: absolute; left: 0; top: 0; font: 12px var(--sans); color: var(--ink); text-shadow: 0 0 3px #000, 0 0 6px #000; white-space: nowrap; }
+.land-ui { position: fixed; left: 12px; top: 12px; z-index: 10; width: min(320px, calc(100vw - 32px)); padding: 12px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 0; display: flex; flex-direction: column; gap: 7px; }
+.land-ui .lu-title { font: 600 15px var(--display); }
+.land-ui .lu-sub, .land-ui .lu-hint, .land-ui .lu-credit { color: var(--mute); font-size: 12px; }
+.land-ui .lu-credit { font-size: 11px; }
+.land-ui .lu-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.land-ui button { border-radius: 0; }
+.land-ui .lu-exit, .land-here { background: #4C8DF6 !important; border-color: #4C8DF6 !important; color: #fff; }
+.land-ui .lu-exit { margin-left: auto; }
+.xr-note { display: block; max-width: 240px; padding: 4px 9px; color: var(--mute); font-size: 11px; white-space: normal; }
+.xr-note[hidden] { display: none; }
+body.xr-ar > :not(#labels):not(script) { visibility: hidden; }
+body.xr-ar #labels { visibility: visible; }
+@media (max-width: 640px) { .land-ui { top: auto; bottom: 12px; left: 8px; width: calc(100vw - 16px); } .land-ui .lu-hint { display: none; } }
