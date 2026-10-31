@@ -18,7 +18,9 @@ h2.sec { font-size: clamp(30px, 4.2vw, 52px); line-height: 1.2; max-width: 16em;
 header { position: absolute; inset: 0 0 auto; z-index: 5; }
 header .wrap { display: flex; align-items: center; height: 72px; gap: 10px; }
 .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; font-family: Manrope, sans-serif; font-weight: 800; font-size: 19px; letter-spacing: -.03em; }
-.logo b { color: var(--accent); }
+.logo img { width: 26px; height: 26px; margin: 0 2px 0 4px; } /* the mark sits with air around it, as in the app bar */
+footer .logo img { width: 22px; height: 22px; margin-left: 0; }
+.logo b { color: var(--accent); } /* Space in ink, Commons in blue */
 header nav { margin-left: auto; display: flex; gap: 26px; font-size: 15px; align-items: center; }
 header nav a { text-decoration: none; color: #C9CEE3; } header nav a:hover { color: #fff; }
 header nav a[aria-current] { color: #fff; border-bottom: 2px solid var(--accent); padding-bottom: 2px; }
