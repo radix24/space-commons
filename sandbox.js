@@ -98,12 +98,12 @@ function addProbe(r, v, opts = {}) { const b = makeBody(opts.name || 'probe' + D
 // the surface follows the climate: ice spreads from the poles below freezing, oceans boil away, rock darkens and glows when scorching,
 // and a thick atmosphere wraps the planet in cloud tinted by its main gas. Driven every frame from the climate model (updateTempMap).
 function climateMat(m) {
-  const u = { uTeq: { value: 288 }, uTpole: { value: 250 }, uBoil: { value: 373 }, uCloud: { value: 0 }, uCloudCol: { value: new THREE.Color(1, 1, 1) }, uOn: { value: 0 }, uSea: { value: -1 }, uLife: { value: 0 }, uH: { value: null }, uHasH: { value: 0 }, uWater: { value: 1 } };
+  const u = { uTeq: { value: 288 }, uTpole: { value: 250 }, uBoil: { value: 373 }, uCloud: { value: 0 }, uCloudCol: { value: new THREE.Color(1, 1, 1) }, uOn: { value: 0 }, uSea: { value: -1 }, uLife: { value: 0 }, uH: { value: null }, uHasH: { value: 0 }, uWater: { value: 1 }, uTime: { value: 0 } };
   m.userData.climate = u;
   m.onBeforeCompile = (sh) => { Object.assign(sh.uniforms, u);
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vSurf;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvSurf = normalize(position);');
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
-      varying vec3 vSurf; uniform float uTeq, uTpole, uBoil, uCloud, uOn, uSea, uLife, uHasH, uWater; uniform vec3 uCloudCol; uniform sampler2D uH;
+      varying vec3 vSurf; uniform float uTeq, uTpole, uBoil, uCloud, uOn, uSea, uLife, uHasH, uWater, uTime; uniform vec3 uCloudCol; uniform sampler2D uH;
       float ch(vec3 p){ p = fract(p * 0.1031); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); }
       float cn(vec3 p){ vec3 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
         return mix(mix(mix(ch(i), ch(i + vec3(1,0,0)), f.x), mix(ch(i + vec3(0,1,0)), ch(i + vec3(1,1,0)), f.x), f.y), mix(mix(ch(i + vec3(0,0,1)), ch(i + vec3(1,0,1)), f.x), mix(ch(i + vec3(0,1,1)), ch(i + vec3(1,1,1)), f.x), f.y), f.z); }
@@ -127,7 +127,10 @@ function climateMat(m) {
         float ice = uWater * smoothstep(271.0, 245.0, T + (cf(vSurf * 9.0) - 0.5) * 25.0) + smoothstep(160.0, 140.0, T + (cf(vSurf * 9.0) - 0.5) * 12.0); // water ice needs water; CO2 frost needs ~150 K
         c = mix(c, vec3(0.9, 0.94, 0.98), ice * 0.92);
         c = mix(c, c * vec3(0.5, 0.33, 0.26), smoothstep(450.0, 900.0, T) * 0.85);                         // scorched rock
-        float cl = clamp(uCloud * 1.2 - 0.2 + (cf(vSurf * 4.0) - 0.5) * 0.9, 0.0, 1.0);                  // cloud deck from the atmosphere
+        float wa = uTime * (0.02 + 0.03 * (1.0 - lat)), cw = cos(wa), sw2 = sin(wa);                         // clouds drift east, faster near the equator, and slowly change shape
+        vec3 q = vec3(cw * vSurf.x - sw2 * vSurf.z, vSurf.y, sw2 * vSurf.x + cw * vSurf.z);
+        float cl = clamp(uCloud * 1.2 - 0.2 + (cf(q * 4.0 + vec3(0.0, 0.0, uTime * 0.01)) - 0.5) * 0.9, 0.0, 1.0); // cloud deck from the atmosphere
+        c *= 1.0 - 0.25 * clamp(uCloud * 1.5, 0.0, 1.0) * clamp(uCloud * 1.2 - 0.2 + (cf(q * 4.0 + vec3(0.03, 0.0, uTime * 0.01)) - 0.5) * 0.9, 0.0, 1.0); // their shadows on the ground
         c = mix(c, uCloudCol, cl * clamp(uCloud * 1.5, 0.0, 1.0));
         diffuseColor.rgb = c; }`)
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
@@ -270,6 +273,7 @@ function updateTempMap() {
     if (b.surfTex && cu) { const m = b.mesh.children[1].material, t = texOf(b.surfTex); if (m.map !== t) { m.map = t; m.needsUpdate = true; } } // the ground once the clouds are gone
     if (cu && k) { const x = ATM.extremes(k.Ts + impactHeat(b), k.a.P + ((b.sea ?? -1) > -0.5 ? 2 : 0)), top = Object.entries(k.a.mix).sort((p1, p2) => p2[1] - p1[1])[0]?.[0];
       const tl = Math.abs(Math.sin((b.tilt ?? TILT[b.name] ?? 0) * Math.PI / 180)); cu.uWater.value = (k.a.mix.H2O || 0) > 0.001 || (b.sea ?? -1) > -0.5 || b.name === 'Earth' ? 1 : 0; cu.uSea.value = b.sea ?? -1; cu.uLife.value = b.life || 0; if (b.hmap && !cu.uH.value) { cu.uH.value = texOf(b.hmap, '.png'); cu.uHasH.value = 1; } cu.uOn.value = 1; cu.uTeq.value = x.eq - (x.eq - x.pole) * 0.3 * tl; cu.uTpole.value = x.pole + (x.eq - x.pole) * 0.6 * tl; cu.uBoil.value = 373 + 30 * Math.log10(Math.max(k.a.P, 0.01));
+      cu.uTime.value = performance.now() / 1000;
       cu.uCloud.value = Math.max(0, Math.min(1, (Math.log10(Math.max(k.a.P, 1e-4)) - 0.3) / 1.4)) + (k.a.mix.H2O > 0.005 && x.eq > 273 && x.eq < cu.uBoil.value ? 0.25 : 0);
       cu.uCloudCol.value.set(GAS_COL[top] || '#ffffff').lerp(new THREE.Color(0.95, 0.93, 0.86), 0.7); }
     if (!on) { if (lb.dataset.t) { lb.textContent = b.ko; lb.style.color = ''; delete lb.dataset.t; if (dot) dot.material.color.set(b.color); } continue; }
