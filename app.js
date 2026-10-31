@@ -1590,11 +1590,13 @@ function select(o) {
     if (p.name !== 'Earth') row('지구로부터 거리', p.name === 'Moon' ? `${(p.dist * KM_AU).toFixed(0)} km` : `${p.dist.toFixed(3)} AU`);
     if (!mode.space && isFinite(p.mag) && p.mag < 90) row('겉보기 등급', `${p.mag.toFixed(1)}${p.mag > 6.5 ? ' (맨눈으로 안 보임)' : ''}`);
     if (!mode.space && p.magSeen != null && Math.abs(p.magSeen - p.mag) > 0.05) row('대기를 거친 밝기', p.magSeen.toFixed(1));
+    if (LANDABLE.has(p.name)) setTimeout(() => { if (selected !== o || !mode.space) return; const l = document.createElement('button'); l.className = 'land-here'; l.textContent = '여기에 착륙'; l.title = '화면 가운데가 가리키는 곳(표면을 보고 있지 않으면 바로 아래)에 내립니다'; l.onclick = () => landHere(p); $('info-exo').hidden = false; $('info-exo').prepend(l); }, 0);
     if (p.name !== 'Earth') row('시직경', fmtAng(p.angR * 2 * R2D)); if (p.name !== 'Sun' && p.name !== 'Earth') row('위상 (밝은 면)', (p.phase * 100).toFixed(1) + '%'); row('반지름', `${p.R.toLocaleString()} km`);
   } else if (o.kindName === 'site') {
     ra = NaN; $('info-title').textContent = o.ko; $('info-sub').textContent = `${PLANETS.find(p => p.name === o.body).ko} 착륙 지점${o.name === 'MESSENGER' ? ' (충돌)' : ''}`;
     row('도착', o.date); row('위치', `${Math.abs(o.lat).toFixed(2)}°${o.lat >= 0 ? 'N' : 'S'}, ${Math.abs(o.lon).toFixed(2)}°${o.lon >= 0 ? 'E' : 'W'}`); row('설명', o.note);
-    setTimeout(() => { if (selected !== o) return; const b = document.createElement('button'); b.textContent = '표면에 서서 하늘 보기'; b.onclick = () => standOn(o); $('info-exo').innerHTML = ''; $('info-exo').hidden = false; $('info-exo').append(b); }, 0);
+    setTimeout(() => { if (selected !== o) return; const b = document.createElement('button'); b.textContent = '표면에 서서 하늘 보기'; b.onclick = () => standOn(o); $('info-exo').innerHTML = ''; $('info-exo').hidden = false; $('info-exo').append(b);
+      if (LANDABLE.has(o.body)) { const l = document.createElement('button'); l.className = 'land-here'; l.textContent = '여기에 착륙'; l.onclick = () => landAt(o); $('info-exo').prepend(l); } }, 0);
     if (isFinite(o.camDist)) row('현재 위치에서', fmtDist(o.camDist));
   } else if (o.kindName === 'sat') {
     const st = o.st; ({ ra, dec } = o.world ? vecToRaDec(o.world.clone().applyMatrix4(new THREE.Matrix4().copy(sky.matrixWorld).invert())) : { ra: NaN, dec: NaN });
@@ -2058,6 +2060,8 @@ function readHash() {
     setMode(true);
     const p = PLANETS.find(x => x.name === q.get('at'));
     if (p) { updateSkyMatrix(); computeHelio(); if (helioPos[p.name]) { sp.target = p; sp.dist = +q.get('d') || bodyR(p) * 4; $('sp-target').textContent = `${p.ko} 주위 공전`; } }
+    const ls = q.get('land') && sites.find(x => x.name === q.get('land') && LANDABLE.has(x.body)); // land=<site>&lt=noon|sunset|sunrise&look=earth|sun
+    if (ls) landAt(ls, { lt: q.get('lt'), look: q.get('look'), instant: true });
   }
   const o = q.get('o');
   if (o) setTimeout(() => { const mk = searchIndex.get(o.toLowerCase().replace(/\s+/g, '')); if (mk) { const x = mk(); if (!x.planet || x.p.world) select(x); } }, 300);
@@ -3295,6 +3299,70 @@ function updateStanding() {
   const k = 1 / Math.max(1e-12, sp.nearestAll || 1); marsSky.scale.setScalar(5 / k); marsSky.position.set(0, 0, 0);
   marsSkyMat.uniforms.up.value.copy(siteUp); marsSkyMat.uniforms.sunDir.value.copy(helioPos.Mars).negate().normalize();
 }
+// ---------- C6. landing on the Moon and Mars (landing.js) and WebXR (xr.js), both loaded on first use ----------
+const LANDABLE = new Set(['Moon', 'Mars']);
+let landMod = null, xrMod = null, xrLoop = false, xrAR = false;
+const xrSupport = { vr: false, ar: false };
+function landApi() {
+  return { renderer, state, helioPos, PLANETS, starData, marsSkyMat, status: (t) => { $('status').textContent = t; },
+    withTime(t, fn) { const t0 = state.time; state.time = t; computeHelio(); try { return fn(); } finally { state.time = t0; computeHelio(); } },
+    bodyQuat(name) { const p = PLANETS.find(q => q.name === name); orientBody(p); return p.mesh.quaternion.clone(); },
+    refresh() { computeHelio(); }, xrFloorless: () => !!xrMod?.isFloorless(), xrTick: (sc, cam) => { if (xrMod?.presenting()) xrMod.tick(sc, cam); },
+    vrSupported: () => xrSupport.vr, startVR: () => startXR('vr'),
+    onExit(b) { xrMod?.stop(); sp.target = b; sp.dist = bodyR(b) * 3; standing = null; $('sp-target').textContent = `${b.ko} 주위 공전`; $('status').textContent = `${b.ko} 궤도로 돌아왔습니다`; } };
+}
+async function landAt(site, opts = {}) {
+  if (!mode.space) setMode(true);
+  try { landMod ??= await import('./landing.js'); } catch { $('status').textContent = '착륙 기능을 불러오지 못했습니다'; return; }
+  select(null); sp.flight = null; sp.replay = null;
+  await landMod.enter(landApi(), site, opts).catch((e) => { console.warn(e); $('status').textContent = '지형 자료를 불러오지 못했습니다'; landMod.exit(true); });
+}
+function landHere(p) { // the point under the middle of the screen, or straight below when the view misses the body
+  computeHelio(); const c = helioPos[p.name], R = bodyR(p), o = sp.pos.clone().sub(c), d = camFwd();
+  const b = o.dot(d), disc = b * b - (o.lengthSq() - R * R); let n = o.clone().normalize();
+  if (disc > 0 && -b - Math.sqrt(disc) > 0) n = o.clone().addScaledVector(d, -b - Math.sqrt(disc)).normalize();
+  orientBody(p); const l = n.applyQuaternion(p.mesh.quaternion.clone().invert());
+  const lat = Math.asin(l.y) * R2D, lon = Math.atan2(-l.z, l.x) * R2D;
+  landAt({ body: p.name, lat, lon, ko: `${p.ko} ${Math.abs(lat).toFixed(1)}°${lat >= 0 ? 'N' : 'S'} ${Math.abs(lon).toFixed(1)}°${lon >= 0 ? 'E' : 'W'}` });
+}
+$('land-btn').onclick = () => {
+  if (selected?.kindName === 'site' && LANDABLE.has(selected.body)) return landAt(selected);
+  const p = PLANETS.filter(q => LANDABLE.has(q.name) && q.camDist).sort((a, b) => a.camDist / bodyR(a) - b.camDist / bodyR(b))[0];
+  if (!p || p.camDist > bodyR(p) * 30) { $('status').textContent = '달이나 화성에 가까이 간 뒤, 또는 착륙 지점을 고른 뒤 누르세요'; return; }
+  landHere(p);
+};
+// WebXR: buttons only where a session can actually start; otherwise a plain explanation
+async function detectXR() {
+  const x = navigator.xr, phone = matchMedia('(pointer: coarse)').matches && 'DeviceOrientationEvent' in window;
+  if (x && isSecureContext) { try { xrSupport.vr = await x.isSessionSupported('immersive-vr'); } catch {} try { xrSupport.ar = await x.isSessionSupported('immersive-ar'); } catch {} }
+  $('vr-btn').hidden = !xrSupport.vr; $('xrar-btn').hidden = !(xrSupport.ar || phone);
+  const why = !isSecureContext ? 'VR·AR 보기는 https 주소에서만 쓸 수 있어 단추를 숨겼습니다.'
+    : !x ? '이 브라우저는 WebXR을 지원하지 않아 VR·AR 보기 단추를 숨겼습니다. Quest 브라우저나 안드로이드 크롬에서 열어 보세요.'
+    : !xrSupport.vr && !xrSupport.ar ? (phone ? '이 휴대폰에서는 VR을 쓸 수 없어 VR 단추를 숨겼습니다. AR로 보기는 하늘 비추기와 카메라 겹치기로 대신합니다.' : '연결된 VR 헤드셋이 없어 VR·AR 보기 단추를 숨겼습니다.')
+    : !xrSupport.ar && phone ? '이 브라우저는 AR(immersive-ar)을 지원하지 않아, AR로 보기는 하늘 비추기와 카메라 겹치기로 대신합니다.' : '';
+  $('xr-note').textContent = why; $('xr-note').hidden = !why; document.body.dataset.xr = (xrSupport.vr ? 'vr ' : '') + (xrSupport.ar ? 'ar' : '');
+}
+async function startXR(k) {
+  if (k === 'ar' && !xrSupport.ar) { if (!gyro) await $('gyro').onclick(); if (gyro && !arStream) setAR(true); return; } // fallback: the existing gyro mode with the camera behind
+  try { xrMod ??= await import('./xr.js'); } catch { $('status').textContent = 'VR·AR 기능을 불러오지 못했습니다'; return; }
+  const landed = landMod?.isActive();
+  if (!landed && mode.space) setMode(false);
+  xrAR = k === 'ar' && !landed;
+  const ok = await xrMod.start({ renderer, status: (t) => { $('status').textContent = t; }, rig: landed ? landMod.rig() : null,
+    startYaw: () => landed ? landMod.yaw() : -view.az * D2R,
+    pickDir: (d) => landMod?.isActive() ? landMod.pickDir(d) : pickDir(d),
+    loop(on) { xrLoop = on; if (on) renderer.setAnimationLoop(frame); else { renderer.setAnimationLoop(null); resize(); requestAnimationFrame(frame); } },
+    onEnd() { xrAR = false; } }, k);
+  if (!ok) xrAR = false;
+}
+function pickDir(d) { // what a controller points at: the screen picker, run with the camera turned along the ray
+  const q = camera.quaternion.clone(), par = camera.parent; if (par) par.remove(camera);
+  camera.position.set(0, 0, 0); camera.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, -1), d.clone().normalize()); camera.updateMatrixWorld(true);
+  const o = pick(innerWidth / 2, innerHeight / 2); camera.quaternion.copy(q); if (par) par.add(camera); camera.updateMatrixWorld(true);
+  if (o) select(o); return o ? (o.name || o.p?.ko || '') : null;
+}
+$('vr-btn').onclick = () => startXR('vr'); $('xrar-btn').onclick = () => startXR('ar');
+detectXR();
 // ---------- B2. telescope control: LX200 commands over Web Serial (most go-to mounts), or ASCOM Alpaca over the network ----------
 // Coordinates are sent as J2000 with precession to the date applied (mounts work in the equinox of date).
 const scope = { port: null, writer: null, alpaca: '' };
@@ -3418,7 +3486,7 @@ function tourMaker() {
 $('tourmk-btn').onclick = () => tourMaker();
 // ---------- top bar: the most used tools stay visible, the rest go into three menus (fixed pop-ups, so the scrolling bar on phones does not clip them) ----------
 (function groupMenus() {
-  const groups = [['관측', ['today-btn', 'obs-btn', 'exp-btn', 'night', 'gyro', 'ar']], ['배우기', ['tour-btn', 'tourmk-btn', 'cine-btn', 'sizes-btn', 'hist-btn', 'ls-btn']], ['저장·공유', ['share', 'shot', 'rec-btn', 'offline-btn', 'addon-btn', 'full']]];
+  const groups = [['관측', ['today-btn', 'obs-btn', 'exp-btn', 'night', 'gyro', 'ar', 'vr-btn', 'xrar-btn', 'xr-note']], ['배우기', ['tour-btn', 'tourmk-btn', 'cine-btn', 'sizes-btn', 'hist-btn', 'ls-btn']], ['저장·공유', ['share', 'shot', 'rec-btn', 'offline-btn', 'addon-btn', 'full']]];
   const tools = $('tools'), lang = $('lang'), pops = [];
   for (const [name, ids] of groups) {
     const wrap = document.createElement('div'), btn = document.createElement('button'), pop = document.createElement('div');
@@ -4024,7 +4092,7 @@ function drawLabels() {
 const skyNight = new THREE.Color(0x02040a), skyDay = new THREE.Color(0x3d72b8), skyTwi = new THREE.Color(0x1a2a50), bg = new THREE.Color();
 function frame(now) {
   if (!sandboxOn) { frameTick(now); lazyTextures(now); }
-  if (sandboxOn) { state.lastReal = now; requestAnimationFrame(frame); return; } // the sandbox draws itself
+  if (sandboxOn) { state.lastReal = now; nextFrame(); return; } // the sandbox draws itself
   const dt = now - state.lastReal; state.lastReal = now;
   state.time += dt * state.speed;
   updateSkyMatrix();
@@ -4038,7 +4106,7 @@ function frame(now) {
 
   // brightness / limiting magnitudes scale with zoom
   const zoom = Math.log10(70 / view.fov);
-  const gOn = groundOn(); ground.visible = gOn && !arStream;
+  const gOn = groundOn(); ground.visible = gOn && !arStream && !xrAR;
   // daylight: how bright the sky is from the Sun's altitude; the day-sky setting decides what it does
   const daySky = $('daysky').value, sunlight = gOn && PLANETS[0].world ? Math.min(1, Math.max(0, (Math.asin(PLANETS[0].world.y) * R2D + 12) / 14)) : 0;
   const obsc = gOn ? solarObscuration() : 0, totality = obsc >= 0.999 ? 1 : obsc * 0.96; // sky light follows the uncovered part of the Sun
@@ -4061,7 +4129,7 @@ function frame(now) {
     u.lp.value = (bortle - 1) / 8; u.k.value = 1 - skyDayK; updateAuroraGround(u); }
   const atmo = gOn && $('t-refr').checked; atmoU.refractOn.value = atmo ? 1 : 0; atmoU.extK.value = atmo ? 0.25 : 0;
   if (gOn && bortle > 3) bg.lerp(new THREE.Color(0x2a2620), (bortle - 3) / 6 * 0.35 * (1 - skyDayK)); renderer.setClearColor(bg); // skyglow
-  if (arStream) { renderer.setClearColor(bg, 0); skyDome.visible = false; nightGlow.visible = false; milkyWay.visible = false; }
+  if (arStream || xrAR) { renderer.setClearColor(bg, 0); skyDome.visible = false; nightGlow.visible = false; milkyWay.visible = false; }
   starMat.uniforms.limit.value = Math.min(view.fov > 30 ? 8.5 : MOBILE ? 11 : view.fov < 8 ? 13.5 : 12.5, (gOn ? NELM[bortle - 1] : 6.4) + (view.fov > 30 ? 2.2 : 3) * zoom) - day * 5; // deeper when zoomed: Gaia tiles
   mwMat.uniforms.gain.value = 3.5 * dim * MWK[bortle - 1] / Math.max(1, Math.sqrt(70 / view.fov) * 0.6);
   if (mwMat.uniforms.photo.value) mwMat.uniforms.gain.value *= Math.max(0, Math.min(1, (view.fov - 6) / 24));
@@ -4072,6 +4140,8 @@ function frame(now) {
   dsoMat.uniforms.pxPerDeg.value = innerHeight / view.fov; dsoMat.uniforms.pr.value = renderer.getPixelRatio();
   dsoMat.uniforms.limit.value = 7 - (gOn ? (bortle - 1) * 0.45 : 0) + 3.2 * zoom; dsoMat.uniforms.dim.value = Math.max(0.05, dim);
 
+  if (landMod?.isActive()) { landMod.frame(now, dt); $('clock').textContent = clockText(state.time) + (state.speed !== 1 ? `  (×${state.speed})` : ''); nextFrame(); return; } // standing on the Moon or Mars (landing.js)
+  if (xrMod?.presenting()) xrMod.tick(scene, camera);
   renderer.clear();
   renderer.render(scene, camera);
   pcam.quaternion.copy(camera.quaternion); pcam.fov = camera.fov;
@@ -4101,10 +4171,11 @@ function frame(now) {
     const c = dirToAzAlt(fw);
     $('fovinfo').textContent = `시야 ${fmtAng(view.fov)} · 방위 ${c.az.toFixed(1)}° 고도 ${c.alt.toFixed(1)}° · RA ${fmtRA(rd.ra)} Dec ${fmtDec(rd.dec)}`;
   }
-  requestAnimationFrame(frame);
+  nextFrame();
 }
 
 // ---------- boot ----------
+function nextFrame() { if (!xrLoop) requestAnimationFrame(frame); } // in a WebXR session the session's own loop calls frame()
 startTranslator();
 updateSkyMatrix(); requestAnimationFrame(frame);
 (async () => {

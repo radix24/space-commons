@@ -57,6 +57,28 @@ export const PH_APP = [
   ['채색 천문도 (조선 필사본, 퍼블릭 도메인, 인터넷 아카이브)를 겹칩니다. 먹선은 밝게, 붉은 별점은 그대로 바꿔 그렸습니다. 손으로 그린 지도라 별 위치가 군데군데 어긋납니다.', 'Overlays a coloured star chart (Joseon manuscript, public domain, Internet Archive). The ink lines are brightened and the red star dots kept as they are. Because the map is hand-drawn, star positions are off in places.'],
   ['천상열차분야지도 (조선 태조 4년 1395년 각석, 목판본 인쇄, 퍼블릭 도메인)를 겹칩니다. 고구려 시대 원본을 바탕으로 해서 별 위치가 서기 600년 무렵 하늘과 가장 잘 맞고, 지금 하늘과는 조금씩 어긋납니다.', 'Overlays the Cheonsang Yeolcha Bunyajido (carved in stone in 1395, the 4th year of King Taejo of Joseon; woodblock print, public domain). It is based on a Goguryeo-era original, so its star positions best match the sky around AD 600 and drift a little from today\'s sky.'],
   ['지평선', 'Horizon'], ['오늘 극대', 'peak today'],
+  // landing (landing.js) and VR/AR (xr.js)
+  ['여기에 착륙', 'Land here'], ['우주로', 'Back to space'], ['VR로 보기', 'View in VR'], ['AR로 보기', 'View in AR'],
+  ['해 뜰 녘', 'Sunrise'], ['한낮', 'Noon'], ['해 질 녘', 'Sunset'], ['높이 과장', 'Height exaggeration'], ['실제 높이', 'True height'], ['1.5배', '1.5×'], ['2배', '2×'], ['3배', '3×'],
+  ['지구 보기', 'Look at Earth'], ['해 보기', 'Look at the Sun'], ['태양', 'Sun'], ['포보스', 'Phobos'], ['데이모스', 'Deimos'],
+  ['화면을 끌어서 둘러보고, W A S D나 방향키로 걷습니다. Shift를 누르고 있으면 빨리 걷습니다.', 'Drag the view to look around, and walk with W A S D or the arrow keys. Hold Shift to walk faster.'],
+  ['고도: NASA LRO LOLA · 표면 사진: Solar System Scope 8k', 'Elevation: NASA LRO LOLA · Surface images: Solar System Scope 8k'],
+  ['고도: NASA MGS MOLA · 표면 사진: Solar System Scope 8k', 'Elevation: NASA MGS MOLA · Surface images: Solar System Scope 8k'],
+  ['고른 착륙 지점이나, 가까이 있는 달·화성의 화면 가운데 지점에 내려가 표면에 섭니다', 'Go down to the chosen landing site, or to the spot in the middle of the screen on the nearby Moon or Mars, and stand on the surface'],
+  ['화면 가운데가 가리키는 곳(표면을 보고 있지 않으면 바로 아래)에 내립니다', 'Lands where the middle of the screen points (straight below if you are not looking at the surface)'],
+  ['VR 헤드셋으로 하늘(착륙 중이면 행성 표면)을 둘러봅니다', 'Look around the sky (or the surface, when landed) in a VR headset'],
+  ['휴대폰 카메라 화면 위에 별자리와 이름을 겹칩니다', 'Overlays constellations and names on the phone camera view'],
+  ['달이나 화성에 가까이 간 뒤, 또는 착륙 지점을 고른 뒤 누르세요', 'Get close to the Moon or Mars, or choose a landing site, and then press this.'],
+  ['착륙 기능을 불러오지 못했습니다', 'Could not load the landing feature.'], ['지형 자료를 불러오지 못했습니다', 'Could not load the terrain data.'], ['VR·AR 기능을 불러오지 못했습니다', 'Could not load the VR and AR feature.'],
+  ['VR·AR 보기는 https 주소에서만 쓸 수 있어 단추를 숨겼습니다.', 'VR and AR views only work on https addresses, so their buttons are hidden.'],
+  ['이 브라우저는 WebXR을 지원하지 않아 VR·AR 보기 단추를 숨겼습니다. Quest 브라우저나 안드로이드 크롬에서 열어 보세요.', 'This browser does not support WebXR, so the VR and AR buttons are hidden. Try the Quest browser or Chrome on Android.'],
+  ['이 휴대폰에서는 VR을 쓸 수 없어 VR 단추를 숨겼습니다. AR로 보기는 하늘 비추기와 카메라 겹치기로 대신합니다.', 'VR is not available on this phone, so the VR button is hidden. View in AR uses sky pointing with the camera overlay instead.'],
+  ['연결된 VR 헤드셋이 없어 VR·AR 보기 단추를 숨겼습니다.', 'No VR headset is connected, so the VR and AR buttons are hidden.'],
+  ['이 브라우저는 AR(immersive-ar)을 지원하지 않아, AR로 보기는 하늘 비추기와 카메라 겹치기로 대신합니다.', 'This browser does not support AR (immersive-ar), so View in AR uses sky pointing with the camera overlay instead.'],
+  ['AR을 시작할 수 없습니다. 카메라 권한이나 기기 지원을 확인해 주세요.', 'AR could not start. Please check the camera permission and whether your device supports it.'],
+  ['VR을 시작할 수 없습니다. 헤드셋이 연결되어 있는지 확인해 주세요.', 'VR could not start. Please check that a headset is connected.'],
+  ['AR: 휴대폰을 하늘로 들어 보세요. 화면을 누르면 가리킨 천체 이름이 나옵니다.', 'AR: hold your phone up to the sky. Tap the screen to see the name of what you are pointing at.'],
+  ['VR: 고개를 돌려 둘러보고, 컨트롤러로 천체를 가리킨 뒤 방아쇠를 당기면 이름이 나옵니다.', 'VR: turn your head to look around. Point a controller at an object and pull the trigger to see its name.'],
 ];
 const DIR = { '북': 'N', '북동': 'NE', '동': 'E', '남동': 'SE', '남': 'S', '남서': 'SW', '서': 'W', '북서': 'NW' };
 export const RX_APP = [
@@ -77,6 +99,11 @@ export const RX_APP = [
   [/(\d{1,2})시 (\d{1,2})분/g, '$1:$2'],
   [/^(\d{1,2})시( 낮| 박명)?$/, (m, h, k) => `${h}:00${k === ' 낮' ? ' day' : k ? ' twilight' : ''}`],
   [/(\d{1,2})시부터/g, 'from $1:00'],
+  [/^(.+?)에 내려가는 중 · (LRO LOLA|MGS MOLA) 고도 자료로 지형을 만드는 중$/, 'Going down to $1 · building the terrain from $2 elevation data'],
+  [/^(.+?)에 내렸습니다 · 끌어서 둘러보고 W A S D로 걷습니다$/, 'Landed at $1 · drag to look around, walk with W A S D'],
+  [/^(.+?) 궤도로 돌아왔습니다$/, 'Back in orbit around $1'],
+  [/^현지 태양시 (\d\d):(\d\d) · 해의 높이 (-?[\d.]+)°$/, 'Local solar time $1:$2 · Sun altitude $3°'],
+  [/^(.+?) 표면$/, 'Surface of $1'],
 ];
 // mission milestones (content.js JOURNEYS), same order
 export const JOURNEY_EN = {
