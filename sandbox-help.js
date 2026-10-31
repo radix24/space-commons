@@ -122,8 +122,9 @@ const anim = { on: false, t: 0, p0: null, p1: null, q0: null, q1: null, u0: null
 export function homeView() {
   const B = A.sim.bodies.filter(b => !b.dead && !b.test); if (!B.length) return;
   const c = B.filter(b => b.kind === 'star' || b.kind === 'bh').sort((a, b) => b.m - a.m)[0] || B.sort((a, b) => b.m - a.m)[0];
-  let ext = 0; for (const b of B) if (b !== c) ext = Math.max(ext, Math.hypot(b.r[0] - c.r[0], b.r[1] - c.r[1], b.r[2] - c.r[2]));
-  const d = Math.min(Math.max(ext > 0 ? ext * 1.6 : 4, 1e-4), 300), V = A.THREE.Vector3;
+  // frame the middle of the system (median distance of the heavier bodies), so far-off dwarf planets do not shrink the view
+  const ds = B.filter(b => b !== c && b.m > 1e-7 * c.m).map(b => Math.hypot(b.r[0] - c.r[0], b.r[1] - c.r[1], b.r[2] - c.r[2])).sort((x, y) => x - y), med = ds.length ? ds[Math.floor(ds.length / 2)] : 0;
+  const d = Math.min(Math.max(med > 0 ? med * 1.5 : 4, 1e-4), 300), V = A.THREE.Vector3;
   anim.p0 = A.camera.position.clone(); anim.q0 = A.controls.target.clone(); anim.u0 = A.camera.up.clone();
   anim.q1 = new V(...c.r); anim.p1 = new V(c.r[0] + d * 0.25, c.r[1] - d * 0.8, c.r[2] + d * 0.55); anim.focus = c.name; anim.t = 0; anim.on = true; A.view.focus = null;
 }

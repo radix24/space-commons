@@ -325,7 +325,6 @@ export const PH_SB = [
   ["산소", "oxygen"],
   ["수소", "hydrogen"],
   ["얼음 (기압이 삼중점보다 낮아 녹지 않고 승화)", "Ice (the pressure is below the triple point, so it sublimates instead of melting)"], ["얼음이 승화해 사라짐 (기압이 삼중점보다 낮음)", "Ice sublimates away (the pressure is below the triple point)"], ["액체 물 불가 (기압이 물의 삼중점 0.0061 bar보다 낮음)", "No liquid water (the pressure is below water's triple point, 0.0061 bar)"], ["액체 물 없음 (임계 온도 647 K보다 뜨거움)", "No liquid water (hotter than the critical temperature, 647 K)"], ["판정 불가 (이 모형의 지원 범위 밖: 50~647 K, 220.64 bar 이하)", "Cannot tell (outside this model's range: 50-647 K, up to 220.64 bar)"], ["판정 불가 (값이 올바르지 않음)", "Cannot tell (invalid values)"],
-  [/^액체 물 가능 \(기압이 이 온도의 포화 증기압 ([\d.]+) bar보다 높음\)$/, "Liquid water possible (the pressure is above the saturation vapour pressure at this temperature, $1 bar)"], [/^끓음: 액체로 머물 수 없음 \(포화 증기압 ([\d.]+) bar가 기압보다 높음\)$/, "Boils: water cannot stay liquid (the saturation vapour pressure, $1 bar, is above the pressure)"],
   ["액체 물 가능", "liquid water possible"],
   ["얼음", "ice"],
   ["천체를 두 번 누르면 그 천체가 중심이 됩니다", "Double-click a body to center on it"],
@@ -751,6 +750,7 @@ export const PH_SB = [
   ["먼저 행성을 하나 누르세요", "Click a planet first"],
 ];
 export const RX_SB = [
+  [/^액체 물 가능 \(기압이 이 온도의 포화 증기압 ([\d.]+) bar보다 높음\)$/, "Liquid water possible (the pressure is above the saturation vapour pressure at this temperature, $1 bar)"], [/^끓음: 액체로 머물 수 없음 \(포화 증기압 ([\d.]+) bar가 기압보다 높음\)$/, "Boils: water cannot stay liquid (the saturation vapour pressure, $1 bar, is above the pressure)"],
   [new RegExp("^(.+?)이\\(가\\) (.+?)의 사건의 지평선 안으로 떨어졌습니다$", ""), "$1 fell past the event horizon of $2"],
   [new RegExp("^(.+?)이\\(가\\) (.+?)에 충돌했습니다$", ""), "$1 crashed into $2"],
   [new RegExp("^(.+?)이\\(가\\) (.+?)와 합쳐졌습니다 · 충돌 에너지 (\\S+) J \\(TNT (\\S+?)조톤\\)$", ""), "$1 merged with $2 · impact energy $3 J ($4 teratons of TNT)"],
