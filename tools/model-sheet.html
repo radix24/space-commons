@@ -24,9 +24,10 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { buildCraft } from '../craft.js';
-const KR = ['KOMPSAT', 'KOMPSAT-5', 'GEO-KOMPSAT', 'GEO-KOMPSAT-B', 'Koreasat', 'CAS500', 'Danuri', 'Microsat', 'CubeSat'];
+const KR = ['KOMPSAT', 'KOMPSAT-5', 'GEO-KOMPSAT', 'GEO-KOMPSAT-B', 'Koreasat', 'CAS500', 'Danuri', 'Microsat', 'CubeSat', 'Nuri'];
 const ALL = [...KR, 'Cassini', 'Rosetta', 'Dawn', 'MESSENGER', 'OSIRIS-REx', 'Hayabusa2', 'DART', 'Ulysses', 'Solar Orbiter', 'BepiColombo', 'Juice', 'Europa Clipper', 'Lucy', 'Psyche', 'Tiangong'];
-const names = new URLSearchParams(location.search).get('only') === 'kr' ? KR : ALL;
+const only = new URLSearchParams(location.search).get('only'), names = only === 'kr' ? KR : only ? only.split(',') : ALL;
+if (only && only !== 'kr') document.getElementById('grid').style.gridTemplateColumns = `repeat(${names.length}, 1fr)`; // ?only=Nuri for a close look
 const W = 480, H = 360, renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); renderer.setSize(W, H); renderer.toneMapping = THREE.ACESFilmicToneMapping;
 const pm = new THREE.PMREMGenerator(renderer), env = pm.fromScene(new RoomEnvironment(), 0.04).texture;
 const report = [];

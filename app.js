@@ -3574,9 +3574,10 @@ let nuriRun = 0;
 function nuriReplay() {
   if (!mode.space) setMode(true); camHold = true; const id = ++nuriRun, speed = 18, start = performance.now();
   state.time = NURI.t0; state.speed = 0; computeHelio();
-  const rocket = new THREE.Group(); const body = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 6, 12), new THREE.MeshStandardMaterial({ color: 0xf2f2f2, roughness: 0.6 }));
-  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.4, 12), new THREE.MeshStandardMaterial({ color: 0xf2f2f2 })); nose.position.y = 3.7; rocket.add(body, nose);
-  const flame = new THREE.Mesh(new THREE.ConeGeometry(0.45, 2.4, 10), new THREE.MeshBasicMaterial({ color: 0xffb04a, transparent: true, opacity: 0.85 })); flame.rotation.x = Math.PI; flame.position.y = -4.2; rocket.add(flame);
+  const rocket = new THREE.Group(), nuri = buildCraft('Nuri'), st = nuri.userData.stages; nuri.position.y = -23.6; rocket.add(nuri); // model in metres, centred on its middle
+  const flame = new THREE.Mesh(new THREE.ConeGeometry(1.6, 12, 16, 1, true), new THREE.MeshBasicMaterial({ color: 0xffb04a, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false }));
+  flame.rotation.x = Math.PI; rocket.add(flame);
+  const dropped = []; const drop = (part) => { if (!part.parent || part.userData.gone) return; part.userData.gone = true; const w = new THREE.Vector3(); part.getWorldPosition(w); dropped.push({ part, t: 0 }); };
   planetGroup.add(rocket); const trailPts = []; const trail = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xffd36a })); trail.frustumCulled = false; planetGroup.add(trail);
   const prof = (s) => { const P = NURI.pts; let i = 0; while (i < P.length - 2 && P[i + 1][0] < s) i++; const [s0, h0, d0] = P[i], [s1, h1, d1] = P[i + 1], u = Math.min(1, Math.max(0, (s - s0) / (s1 - s0))); return [h0 + (h1 - h0) * u, d0 + (d1 - d0) * u]; };
   const posAt = (s) => { const [h, d] = prof(s), la = NURI.site[0] * D2R, lo = NURI.site[1] * D2R, az = NURI.az * D2R, a = d / 6371;
@@ -3588,7 +3589,11 @@ function nuriReplay() {
     const s = Math.min(945, (performance.now() - start) / 1000 * speed); state.time = NURI.t0 + s * 1000; computeHelio();
     const E = helioPos.Earth, p = E.clone().add(posAt(s)), up = posAt(s).normalize(), fwd = posAt(s + 5).sub(posAt(s)).normalize();
     const camD = 0.0004 + s * 0.0000025; // 400 km behind and above, pulling back to about 2,800 km by orbit
-    rocket.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), s < 20 ? up : fwd); rocket.scale.setScalar(camD * 0.012); // drawn larger than life so it stays visible as the camera pulls back
+    rocket.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), s < 20 ? up : fwd); rocket.scale.setScalar(camD * 0.012 * 7 / 47.2); // drawn larger than life so it stays visible as the camera pulls back
+    // stage events: each spent part falls away and fades; the flame moves up to the stage now burning
+    if (s >= 127 && !st.s1.userData.gone) drop(st.s1); if (s >= 233 && !st.fairing.userData.gone) { drop(st.fairing); st.payload.visible = true; } if (s >= 274 && !st.s2.userData.gone) drop(st.s2);
+    for (const d of dropped) { d.t += 1; d.part.position.y -= 0.25 * d.t; d.part.rotation.z += 0.004; d.part.traverse(m => { if (m.material) { m.material.transparent = true; m.material.opacity = Math.max(0, 1 - d.t / 90); } }); if (d.t > 90) d.part.visible = false; }
+    const base = s < 127 ? -23.6 : s < 274 ? -23.6 + 21.6 : -23.6 + 33.3; flame.position.y = base - 6; flame.scale.setScalar(s < 127 ? 1.2 : s < 274 ? 0.9 : 0.4);
     flame.visible = !(s > 783); trailPts.push(p.clone()); trail.geometry.dispose(); trail.geometry = new THREE.BufferGeometry().setFromPoints(trailPts.map(v => v.clone().sub(sp.pos)));
     const back = fwd.clone().multiplyScalar(-0.7).add(up.clone().multiplyScalar(0.7)).normalize(); sp.flight = null; sp.target = null; // looking down past the rocket at the Earth
     sp.pos.copy(p).addScaledVector(back, camD); sp.quat.copy(lookQuat(p.clone().sub(sp.pos).normalize(), up)); rocket.position.copy(p).sub(sp.pos);

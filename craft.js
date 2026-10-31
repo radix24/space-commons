@@ -822,6 +822,49 @@ const BUILDERS = {
     return g;
   },
   // generic lander for sites without a public model: deck, four legs with pads, antenna mast
+  // Nuri (KSLV-II): 47.2 m, three stages. Stage 1: 3.5 m across, four clustered 75-tonne engines; stage 2: 2.9 m, one 75-tonne engine;
+  // stage 3: 2.6 m, one 7-tonne engine, under a 2.6 m fairing. White body, "대한민국" and the national flag on the first stage (KARI published figures).
+  // Built along +Y with the base at y = 0; userData.stages lets a launch replay drop each part at its real time.
+  'Nuri'() {
+    const g = new THREE.Group(), paint = std(0xf4f4f1, 0.05, 0.55), dark = std(0x1d1f24, 0.3, 0.6), metal = std(0x8d9097, 0.8, 0.35), nozzleM = std(0x3a3532, 0.7, 0.45, { side: THREE.DoubleSide });
+    const nozzle = (parent, r, len, x, y, z) => { const n = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.35, r, len, 20, 1, true), nozzleM); n.position.set(x, y - len / 2, z); parent.add(n); return n; };
+    const lettering = () => { // flag above "대한민국" written top to bottom, as on the real rocket
+      const cv = document.createElement('canvas'); cv.width = 256; cv.height = 1024; const x = cv.getContext('2d');
+      x.fillStyle = '#f4f4f1'; x.fillRect(0, 0, 256, 1024);
+      x.save(); x.translate(128, 120); x.fillStyle = '#ffffff'; x.fillRect(-96, -64, 192, 128); x.strokeStyle = '#bbb'; x.lineWidth = 2; x.strokeRect(-96, -64, 192, 128);
+      x.beginPath(); x.arc(0, 0, 32, Math.PI, 0); x.fillStyle = '#cd2e3a'; x.fill(); x.beginPath(); x.arc(0, 0, 32, 0, Math.PI); x.fillStyle = '#0047a0'; x.fill();
+      x.fillStyle = '#111'; for (const [dx, dy, a] of [[-62, -40, -0.98], [62, -40, 0.98], [-62, 40, 0.98], [62, 40, -0.98]]) { x.save(); x.translate(dx, dy); x.rotate(a); for (let k = -1; k <= 1; k++) x.fillRect(-15, k * 7 - 2, 30, 4); x.restore(); }
+      x.restore(); x.fillStyle = '#1a1c22'; x.font = 'bold 150px "Pretendard Variable", "Malgun Gothic", sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+      [...'대한민국'].forEach((ch, k) => x.fillText(ch, 128, 330 + k * 175));
+      const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t; };
+    // stage 1: 0-21.6 m
+    const s1 = new THREE.Group(); g.add(s1);
+    const body1 = new THREE.Mesh(new THREE.CylinderGeometry(1.75, 1.75, 21.6, 40), paint); body1.position.y = 10.8; s1.add(body1);
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(1.753, 1.753, 11, 24, 1, true, 0.25, 0.9), std(0xffffff, 0.05, 0.55, { map: lettering(), transparent: false })); band.position.y = 12.5; s1.add(band); // faces +X+Z
+    const race = new THREE.Mesh(new THREE.BoxGeometry(0.22, 40.5, 0.16), std(0xdedfda, 0.1, 0.6)); race.position.set(-1.76 * Math.sin(0.3), 21.6, -1.76 * Math.cos(0.3)); g.add(race); // cable raceway down the side
+    for (const y of [7, 15.5]) { const r = new THREE.Mesh(new THREE.TorusGeometry(1.755, 0.025, 6, 48), dark); r.rotation.x = Math.PI / 2; r.position.y = y; s1.add(r); } // tank weld lines
+    for (const y of [0.4, 21.3]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(1.77, 1.77, 0.5, 40), dark); r.position.y = y; s1.add(r); }
+    const skirt = new THREE.Mesh(new THREE.CylinderGeometry(1.75, 1.9, 1.2, 40), metal); skirt.position.y = 0.2; s1.add(skirt);
+    for (const [x, z] of [[0.75, 0.75], [-0.75, 0.75], [0.75, -0.75], [-0.75, -0.75]]) nozzle(s1, 0.58, 2.0, x, 0, z); // four 75 t engines
+    // interstage and stage 2: 21.6-33.3 m
+    const s2 = new THREE.Group(); g.add(s2);
+    const inter = new THREE.Mesh(new THREE.CylinderGeometry(1.45, 1.75, 1.6, 40), dark); inter.position.y = 22.4; s2.add(inter);
+    const body2 = new THREE.Mesh(new THREE.CylinderGeometry(1.45, 1.45, 10.1, 40), paint); body2.position.y = 28.25; s2.add(body2);
+    nozzle(s2, 0.75, 2.4, 0, 23.2, 0); // hidden inside the interstage until stage 1 drops
+    // stage 3 and fairing: 33.3-47.2 m
+    const s3 = new THREE.Group(); g.add(s3);
+    const body3 = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.3, 4.0, 40), paint); body3.position.y = 35.3; s3.add(body3);
+    const ring3 = new THREE.Mesh(new THREE.CylinderGeometry(1.32, 1.45, 0.6, 40), dark); ring3.position.y = 33.6; s3.add(ring3);
+    nozzle(s3, 0.38, 1.3, 0, 33.6, 0);
+    const fairing = new THREE.Group(); s3.add(fairing);
+    const fCyl = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.3, 4.6, 40), paint); fCyl.position.y = 39.6; fairing.add(fCyl);
+    const ogive = []; for (let i = 0; i <= 16; i++) { const t = i / 16; ogive.push(new THREE.Vector2(1.3 * Math.sqrt(1 - t * t) * (1 - 0.08 * t), 5.3 * t)); }
+    const nose = new THREE.Mesh(new THREE.LatheGeometry(ogive, 40), paint); nose.position.y = 41.9; fairing.add(nose);
+    const payload = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.4, 1.2), foil(0xd6a843, 0.38)); payload.position.y = 39.4; payload.visible = false; s3.add(payload); // NEXTSat-2, shown once the fairing opens
+    g.userData.stages = { s1, s2, s3, fairing, payload, engines: { s1: 0, s2: 23.2 - 21.6, s3: 33.6 - 33.3 } };
+    g.userData.length = 47.2;
+    return g;
+  },
   'lander'() {
     const g = new THREE.Group();
     cyl(g, 0.9, 0.5, M.gold(), 'y', 0, 1.0, 0, 8);
