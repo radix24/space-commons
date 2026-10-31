@@ -21,8 +21,8 @@
 .hero { position: relative; min-height: min(100vh, 1040px); display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; background: #05070f url(textures/eso_milkyway_2k.jpg) center 30% / cover; }
 .hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5,7,15,.55) 0%, rgba(5,7,15,.15) 40%, rgba(5,7,15,0) 60%); }
 /* the app's 360° horizon silhouette, stretched 4x so the low relief reads; the band under it stays short */
-.hero .ridge { position: absolute; left: 0; right: 0; bottom: 0; height: 9vw; background: url(textures/land_sobaeksan.webp) -112vw -63.4vw / 260vw auto repeat-x; filter: brightness(.45) saturate(.6); }
-.hero .ridge::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(7,10,22,0) 40%, var(--night) 100%); }
+/* Sobaeksan ridge traced from the app's terrain horizon (about/img/ridge-sobaeksan.svg), heights doubled */
+.hero .ridge { position: absolute; left: 0; right: 0; bottom: -1px; height: 10vw; background: url(about/img/ridge-sobaeksan.svg) -117vw 100% / 260vw 100% repeat-x; }
 .hero .txt { position: relative; padding-top: 140px; padding-bottom: calc(9vw + 56px); }
 .hero h1 { font-size: clamp(40px, 6.6vw, 88px); line-height: 1.1; max-width: 13em; }
 .hero h1 span { color: #9FC2FF; }
@@ -71,7 +71,6 @@
 .ties { margin-top: 56px; }
 .ties h3 { font-size: 22px; }
 .ties .facts { margin-top: 20px; }
-.local .note { margin-top: 16px; color: var(--mute); font-size: 14px; }
 .selected { margin-top: 40px; display: flex; align-items: center; gap: 16px; padding: 22px 0; border-top: 1px solid var(--line2); border-bottom: 1px solid var(--line2); font-size: 15px; font-weight: 600; line-height: 1.45; }
 .selected img { height: 40px; width: auto; }
 .selected small { display: block; font-weight: 400; color: var(--mute); font-size: 13px; }
@@ -84,7 +83,7 @@
 
 @media (max-width: 860px) {
   .hero .read { right: 16px; font-size: 11px; }
-  .hero .ridge { height: 16vw; background-size: 420vw auto; background-position: -180vw -103.5vw; }
+  .hero .ridge { height: 16vw; background-size: 420vw 100%; background-position: -230vw 100%; }
   .hero .txt { padding-bottom: calc(16vw + 56px); padding-top: 110px; }
   .hero .lead { font-size: 16px; }
   .track, .korea, .local { padding: 80px 0; }
@@ -207,7 +206,7 @@
       <div class="town-txt">
         <p class="town-lead">약 90분, 보호자와 함께하는 소규모 체험. 과학 해설, 관찰 또는 자료 탐구, 직접 기록하고 질문 나누기로 이어집니다.</p>
         <ol class="evening">
-          <li><span class="mono">모이기 전</span><p><b>앱으로 그날 하늘을 미리 봅니다.</b> 모일 장소와 시각을 넣으면 달의 모양과 행성이 어디쯤 뜨는지, 산 능선 위로 얼마나 올라오는지 압니다. 볼 수 없는 천체를 볼 수 있다고 안내하지 않습니다.</p></li>
+          <li><span class="mono">모이기 전</span><p><b>앱으로 그날 하늘을 미리 봅니다.</b> 모일 장소와 시각을 넣으면 달의 모양과 행성이 어디쯤 뜨는지, 산 능선 위로 얼마나 올라오는지 압니다.</p></li>
           <li><span class="mono">현장에서</span><p><b>하늘과 화면을 번갈아 봅니다.</b> 눈으로 본 것을 화면에서 확인하고, 그 별로 날아가 보며 설명을 듣습니다. 날씨가 나쁘면 같은 하늘을 화면에 펼쳐 실내 프로그램으로 바꿉니다.</p></li>
           <li><span class="mono">돌아가서</span><p><b>링크 하나로 그날의 하늘을 다시 엽니다.</b> 개념 카드와 퀴즈로 이어 가고, 그날 담은 장면은 투어로 만들어 다시 재생합니다. 다음 계절에는 다른 하늘을 주제로 다시 만납니다.</p></li>
         </ol>
@@ -221,9 +220,7 @@
         <div><dt>과학문화 자원</dt><dd>서대문자연사박물관 등 지역 자원과의 연계 가능성을 살피고 있습니다</dd></div>
         <div><dt>생활권 공간</dt><dd>도서관과 주민공간의 접근성, 운영 시간, 주변 조명과 시야를 확인해 첫 거점을 정합니다</dd></div>
         <div><dt>운영 방식</dt><dd>기관이 장소와 모집을 맡는 회차 계약을 먼저 검증하고, 가족 참가권 판매를 병행합니다. 야외·야간 활동에는 보조 진행자를 둡니다</dd></div>
-      </dl>
-      <p class="note">협력 기관과 거점은 협의가 확정된 뒤에 이곳에 알립니다. 아직 확보하지 않은 협력을 실적으로 적지 않습니다.</p>
-    </div>
+      </dl>    </div>
 
     <div class="selected"><img src="about/modoo-logo-light.png" alt="모두의 창업"><span>모두의 창업 2기 선정사업<small>로컬 · 생활 분야</small></span></div>
   </div>
