@@ -17,9 +17,11 @@ h2.sec { font-size: clamp(30px, 4.2vw, 52px); line-height: 1.2; max-width: 16em;
 /* header */
 header { position: absolute; inset: 0 0 auto; z-index: 5; }
 header .wrap { display: flex; align-items: center; height: 72px; gap: 10px; }
-.logo { display: flex; align-items: center; gap: 10px; text-decoration: none; font-family: Manrope, sans-serif; font-weight: 800; font-size: 19px; letter-spacing: -.03em; }
-.logo img { width: 26px; height: 26px; margin: 0 2px 0 0; } /* small mark with air to its right; its left edge stays on the page's text edge */
-footer .logo img { width: 22px; height: 22px; }
+.logo { display: flex; align-items: center; gap: 10px; text-decoration: none; font-family: Manrope, sans-serif; font-weight: 800; font-size: 19px; letter-spacing: -.03em; line-height: 1; }
+/* the mark is about 60% of the button beside it (as in the app bar), with even air above and below; its left edge stays on the page's text edge */
+.logo img { width: 22px; height: 22px; margin: 0 2px 0 0; flex: none; }
+.logo span { display: block; padding-top: 1px; } /* Manrope sits a hair high in its box; this centres the words on the mark */
+footer .logo img { width: 20px; height: 20px; }
 .logo b { color: var(--accent); } /* Space in ink, Commons in blue */
 .logo span { word-spacing: .22em; } /* the negative letter-spacing eats the space between the two words; same as the app bar */
 header nav { margin-left: auto; display: flex; gap: 26px; font-size: 15px; align-items: center; }
