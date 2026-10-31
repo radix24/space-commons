@@ -7,7 +7,7 @@
 | 항목 | 내용 |
 |---|---|
 | 서비스 | https://radix24.github.io/space-commons/ |
-| 버전 | Alpha 0.0.3c |
+| 버전 | Alpha 0.1.0a |
 | 언어 | 한국어, English (상단 버튼 또는 `?lang=en`) |
 | 브랜드 | [BRAND.md](BRAND.md) |
 

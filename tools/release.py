@@ -5,7 +5,7 @@
 What it does:
   version.js    next letter (Alpha 0.0.12s -> 0.0.12t; after z the middle number goes up and the letter starts at a)
   sw.js         cache name +1, so browsers drop the old offline copy
-  README.md     adds a row at the top of the "버전 기록" table (version | summary)
+  README.md     updates the version line at the top and adds a row at the top of the "버전 기록" table (version | summary)
   CHANGELOG.md  adds a dated section at the top with the summary and every bullet
 Options: --version "Alpha 0.1.0a" sets the version instead of the next letter; --dry prints without writing.
 Then commit as usual; the commit message can reuse the summary.
@@ -36,7 +36,8 @@ write('version.js', vj.replace(cur[0], new, 1))
 sw = read('sw.js'); m = re.search(r"space-commons-v(\d+)", sw)
 write('sw.js', sw.replace(m[0], f'space-commons-v{int(m[1]) + 1}', 1))
 
-rd = read('README.md'); h = rd.index('## 버전 기록'); t = rd.index('|---|---|', h) + len('|---|---|')
+rd = re.sub(r'\| 버전 \| Alpha [0-9.]+[a-z] \|', f'| 버전 | {new} |', read('README.md'), count=1)  # the version line at the top
+h = rd.index('## 버전 기록'); t = rd.index('|---|---|', h) + len('|---|---|')
 row = f"\n| {short} | {summary.replace('|', '/')} |"
 write('README.md', rd[:t] + row + rd[t:])
 
