@@ -1,7 +1,7 @@
 // Space Commons service worker: keeps the app and its catalogs for offline use.
 // App files: cache first, refreshed in the background. Live data (satellites, Wikipedia, sky images): network first, cache as fallback.
-const CACHE = 'space-commons-v106';
-const SHELL = ['./', 'app.html', 'version.js', 'style.css', 'app.js', 'i18n.js', 'craft.js', 'moon.js', 'bodyinfo.js', 'bodyinfo-en.js', 'sizes.js', 'labs2.js', 'atmos.js', 'quiz2.js', 'history.js', 'cards-en.js', 'data/smallbodies.json', 'orbits.js', 'sandbox.js', 'cards.js', 'content.js', 'content-missions.js', 'perf.js', 'kr-missions.js', 'manifest.webmanifest', 'assets/sc-mark.svg', 'assets/favicon.svg',
+const CACHE = 'space-commons-v107';
+const SHELL = ['./', 'app.html', 'version.js', 'style.css', 'app.js', 'observing.js', 'telescope.js', 'tle.js', 'i18n.js', 'craft.js', 'moon.js', 'bodyinfo.js', 'bodyinfo-en.js', 'sizes.js', 'labs2.js', 'atmos.js', 'quiz2.js', 'history.js', 'cards-en.js', 'data/smallbodies.json', 'orbits.js', 'sandbox.js', 'cards.js', 'content.js', 'content-missions.js', 'perf.js', 'kr-missions.js', 'manifest.webmanifest', 'assets/sc-mark.svg', 'assets/favicon.svg',
   'assets/icon-192.png', 'data/probes.json', 'data/exoplanets.json', 'data/flybys.json', 'data/orbiters.json', 'data/korea.tle', 'data/asteroids.json', 'data/korean-constellations.json'];
 const LIVE = /celestrak\.org|wikipedia\.org|alasky|hips2fits|gibs\.earthdata|swpc\.noaa|open-meteo|ssd-api\.jpl/; // network first, last copy when offline
 // survey tiles and other third-party images: cache first (they never change), so places you have looked at stay sharp offline
@@ -13,7 +13,7 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const req = e.request; if (req.method !== 'GET') return;
   if (LIVE.test(req.url)) {
-    e.respondWith(fetch(req).then((r) => { const c = r.clone(); caches.open(CACHE).then((cc) => cc.put(req, c)); return r; }).catch(() => caches.match(req)));
+    e.respondWith(fetch(req).then((r) => { const c = r.clone(); caches.open(CACHE).then((cc) => cc.put(req, c)); return r; }).catch(() => caches.match(req).then((h) => h && new Response(h.body, { status: h.status, headers: [...h.headers, ['x-sc-cache', '1']] }))));
     return;
   }
   // our own files: newest first so an update shows on the next load; the cache only covers being offline

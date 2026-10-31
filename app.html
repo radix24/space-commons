@@ -104,6 +104,8 @@
     <label>경도 <input id="lon" type="number" step="0.01" value="126.98"></label>
     <button id="geo-btn" title="이 기기의 위치로 관측지를 정합니다. 위치는 기기 안에서만 씁니다.">내 위치</button>
     <button id="wx-btn" title="관측지의 오늘 밤 구름·습도·시정 예보 (Open-Meteo)">날씨</button>
+    <button id="obs-score-btn" class="ground-only" title="오늘 밤 시간마다 관측하기 좋은 정도와 알림">관측 적합도</button>
+    <button id="tel-btn" class="ground-only" title="고투 망원경을 USB·와이파이로 연결하거나 연습 모드로 해 봅니다">망원경 연결</button>
   </div>
   <div class="row toggles">
     <label class="ground-only"><input type="checkbox" id="t-ground" checked> 지면</label>
@@ -201,6 +203,27 @@
   <div class="small">예보: Open-Meteo. 관측지의 위도·경도(소수 둘째 자리)만 보냅니다. 시상(대기 흔들림)은 브라우저에서 받을 수 있는 공개 예보가 없어 넣지 않았습니다.</div>
 </div>
 
+<div id="obs-score" class="side" hidden>
+  <button class="x" id="os-close">×</button>
+  <h2>오늘 밤 관측 적합도</h2>
+  <div id="os-sub" class="small"></div>
+  <div id="os-verdict" class="wx-sum"></div>
+  <div id="os-strip" class="os-strip" aria-label="시간별 관측 적합도 (0~100점)"></div>
+  <div class="small">0~100점. 구름(Open-Meteo 예보), 달의 높이와 밝기, 박명(해가 진 뒤 남은 빛), 광공해 단계, 고른 천체의 높이를 함께 따집니다.</div>
+  <div id="os-note" class="small"></div>
+  <h3 class="small">알림</h3>
+  <ul id="os-events"></ul>
+  <div class="row"><button id="os-notify">알림 켜기</button><button id="os-ics">캘린더에 추가</button><button id="os-refresh">다시 계산</button></div>
+  <div id="os-alert-st" class="small"></div>
+  <div class="small">알림을 보내는 서버가 없습니다. 앱 알림은 이 앱(또는 설치한 앱)이 열려 있을 때만 옵니다. 앱을 닫아도 알림을 받으려면 "캘린더에 추가"로 휴대폰 캘린더에 넣어 주세요. 위치는 구름 예보를 받을 때 Open-Meteo에만 보냅니다.</div>
+</div>
+
+<div id="tel" class="side" hidden>
+  <button class="x" id="tel-close">×</button>
+  <h2>망원경 연결</h2>
+  <div id="tel-body"></div>
+</div>
+
 <div id="gear" class="side" hidden>
   <button class="x" id="gear-close">×</button>
   <h2>내 장비</h2>
@@ -217,12 +240,7 @@
   </div>
   <div class="row"><label><input type="checkbox" id="g-eye" checked> 접안렌즈 시야 원</label><label><input type="checkbox" id="g-cam" checked> 사진 구도 사각형</label></div>
   <table id="gear-out" class="pltable"></table>
-  <h3 class="small">망원경 연결 (고투 가대)</h3>
-  <div class="small">USB·직렬 케이블: LX200 명령을 쓰는 가대(미드, 셀레스트론 일부, SynScan 등). 네트워크: ASCOM Alpaca 서버 주소. 위험한 동작을 막기 위해 해가 떠 있을 때는 태양 쪽으로 보내지 마세요.</div>
-  <div class="row"><select id="scope-baud"><option>9600</option><option>115200</option></select><button id="scope-serial">직렬 포트 연결</button></div>
-  <div class="row"><input id="scope-url" placeholder="http://192.168.0.10:11111"><button id="scope-alpaca">Alpaca 연결</button></div>
-  <div class="row"><button id="scope-goto">고른 천체로 망원경 보내기</button></div>
-  <div id="scope-st" class="small"></div>
+  <div class="small">고투 망원경을 움직이려면 아래 메뉴의 "망원경 연결"을 누르세요. 단계별로 안내합니다.</div>
   <h3 class="small">접안렌즈별 비교 (같은 망원경)</h3>
   <table id="gear-eps" class="pltable"></table>
 </div>

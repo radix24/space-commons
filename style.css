@@ -742,3 +742,45 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px rg
 @media (max-width: 760px) { .sb-transport .sb-scale-t i { font-size: 0; padding: 0; } .sb-transport > .sb-gauge { padding-bottom: 4px; } }
 
 #kvn header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; } #kvn p { font-size: 13px; line-height: 1.65; margin: 0 0 8px; }
+
+/* observing score strip and telescope wizard (observing.js, telescope.js) */
+.os-strip { display: flex; gap: 2px; align-items: flex-end; height: 104px; margin: 8px 0; border-bottom: 1px solid var(--line); }
+.os-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 2px; min-width: 0; }
+.os-bar { display: block; width: 100%; background: var(--orbit); border-radius: 0; }
+.os-n { font: 10px var(--mono); color: var(--ink); }
+.os-h { font: 10px var(--mono); color: var(--mute); }
+#os-events li { padding: 3px 0; border-bottom: 1px solid var(--line); }
+#obs-score-btn, #tel-btn.on { border-color: var(--orbit); }
+#tel h3 { font: 700 14px var(--display); margin: 10px 0 6px; }
+.tel-steps { display: flex; gap: 4px; list-style: none; padding: 0; margin: 6px 0; font-size: 11px; color: var(--mute); }
+.tel-steps li { flex: 1; padding: 3px 4px; border-top: 2px solid var(--line); }
+.tel-steps li.done { border-color: var(--mute); color: var(--ink); }
+.tel-steps li.on { border-color: var(--orbit); color: var(--ink); font-weight: 700; }
+.tel-choices { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
+.tel-choices.tel-row { flex-direction: row; flex-wrap: wrap; gap: 12px; }
+.tel-choices button { text-align: left; padding: 8px 10px; }
+.tel-choices button span { display: block; color: var(--mute); font-size: 11px; }
+.tel-shapes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.tel-shapes button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px; color: var(--ink); }
+.tel-shapes button span { font-size: 11px; color: var(--mute); }
+.tel-link { border: none; background: none; color: var(--orbit); padding: 4px 0; text-decoration: underline; }
+.tel-nav { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+button.primary { background: var(--orbit); border-color: var(--orbit); color: #fff; }
+.tel-list { padding-left: 18px; margin: 6px 0; }
+.tel-list li { margin: 3px 0; }
+.tel-gloss { color: var(--mute); font-size: 11px; }
+dfn { font-style: normal; border-bottom: 1px dotted var(--mute); }
+.tel-err { border: 1px solid #E0796B; padding: 8px; margin: 8px 0; }
+.tel-err div { color: var(--mute); margin-top: 4px; }
+.tel-warn { border: 1px solid var(--star); padding: 8px; margin: 8px 0; }
+.tel-warn p { margin: 4px 0 6px; }
+.tel-input { width: 100%; background: var(--panel-solid); color: inherit; border: 1px solid var(--line); border-radius: 0; padding: 5px 7px; font: 12px var(--mono); }
+.tel-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; width: 210px; margin: 6px 0; }
+.tel-pad select { background: var(--panel-solid); color: inherit; border: 1px solid var(--line); border-radius: 0; font-size: 11px; }
+.tel-eyepiece { position: relative; width: 120px; height: 120px; border-radius: 50%; border: 1px solid var(--line); background: #000; margin: 6px auto; overflow: hidden; }
+.tel-eyepiece b { position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; margin: -7px; border: 1px solid var(--orbit); }
+.tel-eyepiece i { position: absolute; width: 5px; height: 5px; margin: -2.5px; background: #fff; border-radius: 50%; box-shadow: 0 0 4px #fff; }
+#tel-reticle { position: fixed; left: 0; top: 0; pointer-events: none; z-index: 3; }
+#tel-reticle i { position: absolute; left: -16px; top: -16px; width: 32px; height: 32px; border: 2px solid var(--orbit); border-radius: 0;
+  background: linear-gradient(var(--orbit), var(--orbit)) center / 2px 100% no-repeat, linear-gradient(var(--orbit), var(--orbit)) center / 100% 2px no-repeat; opacity: .85; }
+#tel-reticle b { position: absolute; left: 20px; top: -22px; font: 11px var(--sans); color: var(--orbit); white-space: nowrap; }
