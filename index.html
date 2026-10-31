@@ -8,7 +8,7 @@
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
-<meta name="theme-color" content="var(--night)">
+<meta name="theme-color" content="#070A16">
 <title>Space Commons</title>
 <meta name="description" content="땅에서 올려다보고, 우주로 나아가는 모두의 하늘. 설치 없이 브라우저에서 쓰는 한국어 천체 관측·우주 비행·중력 실험실, 그리고 서대문에서 시작하는 지역 과학문화 프로그램.">
 <meta property="og:type" content="website">
@@ -25,11 +25,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="vendor/pretendard/pretendardvariable.min.css">
-<link rel="stylesheet" href="about/about.css?v=8">
+<link rel="stylesheet" href="about/about.css?v=9">
 <style>
 /* hero: a real sky over a real ridge */
 .hero { position: relative; min-height: min(100vh, 1040px); display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; background: var(--night) url(textures/eso_milkyway_2k.jpg) center 30% / cover; }
-.hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgb(10 13 28 / .55) 0%, rgb(10 13 28 / .15) 40%, rgb(10 13 28 / 0) 60%); }
+.hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgb(7 10 22 / .55) 0%, rgb(7 10 22 / .15) 40%, rgb(7 10 22 / 0) 60%); }
 /* the app's 360° horizon silhouette, stretched 4x so the low relief reads; the band under it stays short */
 /* Sobaeksan ridge traced from the app's terrain horizon (about/img/ridge-sobaeksan.svg), heights doubled */
 .hero .ridge { position: absolute; left: 0; right: 0; bottom: -1px; height: 10vw; background: url(about/img/ridge-sobaeksan.svg) -117vw 100% / 260vw 100% repeat-x; }

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
-<meta name="theme-color" content="var(--night)">
+<meta name="theme-color" content="#070A16">
 <title>Space Commons 기능</title>
 <meta name="description" content="지상 관측, 우주 비행, 중력 샌드박스, 개념 카드와 실습, 실제 데이터, 접근성까지. Space Commons의 기능을 한 페이지에 정리했습니다.">
 <meta property="og:type" content="website">
@@ -21,11 +21,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../vendor/pretendard/pretendardvariable.min.css">
-<link rel="stylesheet" href="about.css?v=8">
+<link rel="stylesheet" href="about.css?v=9">
 <style>
 /* hero with the Moon */
 .hero { position: relative; min-height: min(78vh, 760px); display: flex; align-items: center; overflow: hidden; padding: 140px 0 80px; }
-.hero .moon { position: absolute; right: -9vw; top: 50%; width: min(62vh, 42vw, 600px); height: min(62vh, 42vw, 600px); max-width: 640px; max-height: 640px; transform: translateY(-50%); border-radius: 50%; background: url(img/moon.webp) 38% 50% / 230% auto; box-shadow: inset -70px -40px 120px rgb(10 13 28 / .92), inset 10px 10px 40px rgb(238 240 250 / .08); opacity: .8; }
+.hero .moon { position: absolute; right: -9vw; top: 50%; width: min(62vh, 42vw, 600px); height: min(62vh, 42vw, 600px); max-width: 640px; max-height: 640px; transform: translateY(-50%); border-radius: 50%; background: url(img/moon.webp) 38% 50% / 230% auto; box-shadow: inset -70px -40px 120px rgb(7 10 22 / .92), inset 10px 10px 40px rgb(233 236 246 / .08); opacity: .8; }
 .hero .txt { position: relative; width: 100%; } /* starts on the logo's edge; the lines themselves stay narrow */
 .hero .txt > * { max-width: 620px; }
 .hero h1 { font-size: clamp(38px, 5.6vw, 72px); line-height: 1.1; }
@@ -57,14 +57,14 @@ section.f + section.f { border-top: 1px solid var(--rule); }
 
 /* space: planet row */
 .planets { margin-top: 64px; display: flex; align-items: flex-end; gap: 3.2%; }
-.planets div { border-radius: 50%; background-size: 220% auto; background-position: 40% 50%; box-shadow: inset -22px -12px 40px rgb(10 13 28 / .85), inset 4px 4px 14px rgb(238 240 250 / .08); position: relative; }
+.planets div { border-radius: 50%; background-size: 220% auto; background-position: 40% 50%; box-shadow: inset -22px -12px 40px rgb(7 10 22 / .85), inset 4px 4px 14px rgb(233 236 246 / .08); position: relative; }
 .planets div::after { content: attr(data-n); position: absolute; left: 50%; top: 100%; transform: translateX(-50%); margin-top: 10px; font: 500 12px var(--f-mono); color: var(--mute); white-space: nowrap; }
 /* Saturn: banded ring, C ring to A ring with the Cassini division; the far half passes behind the globe, the near half in front */
 .planets .ring { position: relative; overflow: visible; }
 .planets .ring i { position: absolute; left: -62%; right: -62%; top: 50%; aspect-ratio: 1 / .24; transform: translateY(-50%) rotate(-14deg); border-radius: 50%; pointer-events: none;
-  background: radial-gradient(closest-side, transparent 52%, rgba(150,135,110,.35) 53%, rgba(150,135,110,.45) 62%, rgba(226,210,172,.95) 63%, rgba(240,226,190,.95) 78%, rgb(10 13 28 / .6) 79%, rgb(10 13 28 / .6) 81%, rgba(205,190,155,.85) 82%, rgba(190,175,140,.8) 95%, transparent 96%); }
+  background: radial-gradient(closest-side, transparent 52%, rgba(150,135,110,.35) 53%, rgba(150,135,110,.45) 62%, rgba(226,210,172,.95) 63%, rgba(240,226,190,.95) 78%, rgb(7 10 22 / .6) 79%, rgb(7 10 22 / .6) 81%, rgba(205,190,155,.85) 82%, rgba(190,175,140,.8) 95%, transparent 96%); }
 .planets div.ring { background: none !important; box-shadow: none; margin: 0 4.5%; }
-.planets .ring b { position: absolute; inset: 0; border-radius: 50%; background: inherit; background: var(--g) 40% 50% / 220% auto; box-shadow: inset -22px -12px 40px rgb(10 13 28 / .85), inset 4px 4px 14px rgb(238 240 250 / .08); }
+.planets .ring b { position: absolute; inset: 0; border-radius: 50%; background: inherit; background: var(--g) 40% 50% / 220% auto; box-shadow: inset -22px -12px 40px rgb(7 10 22 / .85), inset 4px 4px 14px rgb(233 236 246 / .08); }
 .planets .ring i.back { clip-path: polygon(0 0, 100% 0, 100% 50%, 0 50%); }
 .planets .ring i.front { clip-path: polygon(0 50%, 100% 50%, 100% 100%, 0 100%); }
 .planets { padding-bottom: 36px; }
@@ -248,10 +248,10 @@ section.f + section.f { border-top: 1px solid var(--rule); }
           <ellipse cx="800" cy="350" rx="150" ry="60"/><ellipse cx="800" cy="350" rx="260" ry="104"/><ellipse cx="800" cy="350" rx="400" ry="160"/><ellipse cx="800" cy="350" rx="560" ry="224"/>
           <ellipse cx="900" cy="350" rx="700" ry="200" stroke="#4C8DF6" stroke-dasharray="6 8"/>
         </g>
-        <circle cx="800" cy="350" r="26" fill="#EEF0FA"/>
+        <circle cx="800" cy="350" r="26" fill="#E9ECF6"/>
         <circle cx="950" cy="350" r="6" fill="#B6BBD2"/><circle cx="560" cy="330" r="9" fill="#4C8DF6"/><circle cx="1180" cy="420" r="11" fill="#8D93B3"/><circle cx="330" cy="290" r="8" fill="#B6BBD2"/>
         <circle cx="1580" cy="300" r="7" fill="#4C8DF6"/>
-        <g transform="translate(260 520)"><circle r="22" fill="#0A0D1C" stroke="#4C8DF6" stroke-width="2"/><circle r="36" stroke="#4C8DF6" stroke-opacity=".35"/></g>
+        <g transform="translate(260 520)"><circle r="22" fill="#070A16" stroke="#4C8DF6" stroke-width="2"/><circle r="36" stroke="#4C8DF6" stroke-opacity=".35"/></g>
       </svg>
     </div>
 

@@ -3,17 +3,17 @@
    Manrope for headings and heading numbers, Pretendard for Korean body text, IBM Plex Mono for data; square corners. */
 :root {
   /* palette: night background, ink and mute text, accent; the rest are steps between night and ink */
-  --night: #0A0D1C;
-  --paper: #0F1328;   /* alternate section background, one step above night */
+  --night: #070A16;
+  --paper: #0C1022;   /* alternate section background, one step above night */
   --deep: #0D1124;
   --rule: #222842;    /* thin dividers */
   --line2: #3A4266;   /* stronger dividers, outlines */
   --mute: #8D93B3;
   --soft: #B6BBD2;    /* secondary text */
-  --ink: #EEF0FA;
+  --ink: #E9ECF6;
   --text: var(--ink);
   --accent: #4C8DF6;
-  --veil: rgb(10 13 28 / .55);   /* night over photographs */
+  --veil: rgb(7 10 22 / .55);   /* night over photographs */
   /* type */
   --f-head: Manrope, 'Pretendard Variable', Pretendard, sans-serif;  /* Manrope for Latin and numbers, Pretendard for Hangul */
   --f-body: 'Pretendard Variable', Pretendard, system-ui, sans-serif;
@@ -62,7 +62,7 @@ header nav a[aria-current] { color: var(--ink); border-bottom-color: var(--accen
 .btn.ghost:hover { filter: none; border-color: var(--ink); }
 
 /* badge */
-.badge { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 26px; padding: 7px 14px 7px 8px; background: rgb(238 240 250 / .08); border: 1px solid rgb(238 240 250 / .22); text-decoration: none; font-size: 14px; font-weight: 600; color: var(--ink); backdrop-filter: blur(4px); }
+.badge { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 26px; padding: 7px 14px 7px 8px; background: rgb(233 236 246 / .08); border: 1px solid rgb(233 236 246 / .22); text-decoration: none; font-size: 14px; font-weight: 600; color: var(--ink); backdrop-filter: blur(4px); }
 .badge img { height: 22px; width: auto; }
 
 /* ruled definition rows */
