@@ -48,8 +48,14 @@ section.f + section.f { border-top: 1px solid var(--rule); }
 .planets { margin-top: 64px; display: flex; align-items: flex-end; gap: 3.2%; }
 .planets div { border-radius: 50%; background-size: 220% auto; background-position: 40% 50%; box-shadow: inset -22px -12px 40px rgba(0,0,0,.85), inset 4px 4px 14px rgba(255,255,255,.08); position: relative; }
 .planets div::after { content: attr(data-n); position: absolute; left: 50%; top: 100%; transform: translateX(-50%); margin-top: 10px; font: 500 12px 'IBM Plex Mono', 'Pretendard Variable', Pretendard, sans-serif; color: var(--mute); white-space: nowrap; }
-.planets .ring { position: relative; }
-.planets .ring::before { content: ''; position: absolute; left: -38%; right: -38%; top: 50%; height: 24%; transform: translateY(-50%) rotate(-12deg); border-radius: 50%; border: 6px solid rgba(220,205,170,.45); border-top-color: rgba(220,205,170,.18); pointer-events: none; }
+/* Saturn: banded ring, C ring to A ring with the Cassini division; the far half passes behind the globe, the near half in front */
+.planets .ring { position: relative; overflow: visible; }
+.planets .ring i { position: absolute; left: -62%; right: -62%; top: 50%; aspect-ratio: 1 / .24; transform: translateY(-50%) rotate(-14deg); border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, transparent 52%, rgba(150,135,110,.35) 53%, rgba(150,135,110,.45) 62%, rgba(226,210,172,.95) 63%, rgba(240,226,190,.95) 78%, rgba(20,20,30,.6) 79%, rgba(20,20,30,.6) 81%, rgba(205,190,155,.85) 82%, rgba(190,175,140,.8) 95%, transparent 96%); }
+.planets div.ring { background: none !important; box-shadow: none; margin: 0 4.5%; }
+.planets .ring b { position: absolute; inset: 0; border-radius: 50%; background: inherit; background: var(--g) 40% 50% / 220% auto; box-shadow: inset -22px -12px 40px rgba(0,0,0,.85), inset 4px 4px 14px rgba(255,255,255,.08); }
+.planets .ring i.back { clip-path: polygon(0 0, 100% 0, 100% 50%, 0 50%); }
+.planets .ring i.front { clip-path: polygon(0 50%, 100% 50%, 100% 100%, 0 100%); }
 .planets { padding-bottom: 36px; }
 
 /* sandbox: orbit sketch */
@@ -115,7 +121,7 @@ section.f + section.f { border-top: 1px solid var(--rule); }
 <section class="hero">
   <div class="moon" aria-hidden="true"></div>
   <div class="wrap txt">
-    <div class="kicker"><span class="mono">기능</span><span>Alpha 0.0.12k</span></div>
+    <div class="kicker"><span class="mono">기능</span><span>Alpha 0.0.12s</span></div>
     <h1>하나의 하늘을<br><span>세 가지 방법으로</span></h1>
     <p class="lead">지상에서 올려다보고, 우주로 날아가고, 중력을 직접 다룹니다. 세 모드는 같은 시각과 같은 데이터를 쓰므로 어디서든 이어집니다. 여기에 배움의 자료와 실제 관측 데이터, 누구나 쓸 수 있게 하는 설정이 더해집니다.</p>
     <nav class="toc"><a href="#ground">지상</a><a href="#space">우주</a><a href="#sandbox">샌드박스</a><a href="#learn">배움</a><a href="#data">데이터</a><a href="#access">누구나</a></nav>
@@ -136,7 +142,8 @@ section.f + section.f { border-top: 1px solid var(--rule); }
         <div><dt>대기</dt><dd>굴절과 소광, 별의 반짝임, 낮 하늘. 광공해는 보틀 1~9단계로 고르거나 위성 야간 영상으로 판정합니다</dd></div>
       </dl>
       <dl class="facts big">
-        <div><dt>인공위성</dt><dd>한국 위성 68기의 궤도 요소와 한국어 이름표 48개, 국제우주정거장을 비롯한 밝은 위성의 지나감</dd></div>
+        <div><dt>인공위성</dt><dd>한국 위성 68기의 궤도 요소와 한국어 이름표 48개, 국제우주정거장을 비롯한 밝은 위성의 지나감. 오늘 밤 맨눈으로 볼 수 있는 한국 위성은 따로 목록으로 보여 줍니다</dd></div>
+        <div><dt>한국 위성 카드</dt><dd>위성을 누르면 발사일, 궤도, 운영 기관, 탑재체를 담은 카드가 열립니다. 한국 우주 개발 연표와 누리호 3차 발사 다시 보기, 정지궤도 위성의 눈으로 지구를 내려다보는 화면이 이어집니다</dd></div>
         <div><dt>천문 현상</dt><dd>앞으로 90일의 천문 달력, 유성우 13개, 2026년부터 2035년까지 일식·월식 22건과 일식 지도, 안내 투어 6개</dd></div>
         <div><dt>오로라</dt><dd>NOAA 예보 자료로 지금 오로라가 보일 범위를 그립니다</dd></div>
         <div><dt>검색</dt><dd>별, 별자리, 행성, 성운·성단·은하, 위성을 이름으로 찾아 하늘에서 바로 가리킵니다</dd></div>
@@ -169,7 +176,7 @@ section.f + section.f { border-top: 1px solid var(--rule); }
         <figure><img src="img/allsky_xray.webp" alt="X선으로 본 전천" loading="lazy"><figcaption class="mono"><b>X선</b>뜨거운 가스</figcaption></figure>
         <figure><img src="img/allsky_gamma.webp" alt="감마선으로 본 전천" loading="lazy"><figcaption class="mono"><b>감마선</b>가장 높은 에너지</figcaption></figure>
       </div>
-      <p class="caption">확대하면 DSS2, 2MASS, SDSS9, AllWISE 네 가지 관측 사진(HiPS)이 화면 조각 단위로 내려와 실제 사진 위에서 별을 봅니다.</p>
+      <p class="caption">확대하면 DSS2, 2MASS, SDSS9, AllWISE 네 가지 관측 사진(HiPS)이 화면 조각 단위로 내려와 실제 사진 위에서 별을 봅니다. 더 들어가면 가이아 별이 G 13등급까지 약 428만 개 더 나타납니다.</p>
     </div>
   </div>
 </section>
@@ -186,7 +193,7 @@ section.f + section.f { border-top: 1px solid var(--rule); }
       <div data-n="지구" style="width:7.4%;aspect-ratio:1;background-image:url(img/earth.webp)"></div>
       <div data-n="화성" style="width:5.6%;aspect-ratio:1;background-image:url(img/mars.webp)"></div>
       <div data-n="목성" style="width:20%;aspect-ratio:1;background-image:url(img/jupiter.webp)"></div>
-      <div data-n="토성" class="ring" style="width:17%;aspect-ratio:1;background-image:url(img/saturn.webp)"></div>
+      <div data-n="토성" class="ring" style="width:17%;aspect-ratio:1;--g:url(img/saturn.webp)"><i class="back"></i><b></b><i class="front"></i></div>
       <div data-n="천왕성" style="width:10%;aspect-ratio:1;background-image:url(img/uranus.webp)"></div>
       <div data-n="해왕성" style="width:9.6%;aspect-ratio:1;background-image:url(img/neptune.webp)"></div>
     </div>
@@ -234,7 +241,9 @@ section.f + section.f { border-top: 1px solid var(--rule); }
       </dl>
       <dl class="facts big">
         <div><dt>대기</dt><dd>기압(0.001~160기압), 구름 반사율, 기체 8종의 비율을 바꾸면 온실 효과로 표면 온도가 어떻게 달라지는지 계산합니다. 금성·지구·화성에 맞춘 모형이고, 본보기 5개가 있습니다</dd></div>
-        <div><dt>기체 붙잡기와 테라포밍</dt><dd>행성의 질량과 온도에 따라 어떤 기체를 붙잡을 수 있는지 보여 줍니다. 화성과 금성은 다섯 단계로 바꿔 가며 실제 저지대에 바다가 차오르는 모습을 봅니다</dd></div>
+        <div><dt>기체 붙잡기와 테라포밍</dt><dd>행성의 질량과 온도에 따라 어떤 기체를 붙잡을 수 있는지 보여 줍니다. 화성과 금성은 다섯 단계로 바꿔 가며 바다가 차오르는 모습을 봅니다. 금성의 바다는 마젤란 탐사선의 실제 고도 자료를 따라 낮은 평원부터 채워집니다</dd></div>
+        <div><dt>살아 있는 행성</dt><dd>구름은 동쪽으로 흐르며 모양을 바꾸고 땅에 그림자를 드리웁니다. 대기가 있는 행성은 가장자리가 기체의 색으로 빛납니다</dd></div>
+        <div><dt>실험 옆의 배움</dt><dd>테라포밍, 별의 나이, 점화 창에서 관련 개념 카드로 바로 넘어가고, 확인 문제로 이해했는지 점검합니다</dd></div>
         <div><dt>저장과 공유</dt><dd>장면을 저장하고 링크로 보냅니다. 받은 사람은 같은 장면에서 이어서 실험합니다</dd></div>
       </dl>
     </div>
@@ -267,6 +276,7 @@ section.f + section.f { border-top: 1px solid var(--rule); }
     <div class="cols">
       <dl class="facts big">
         <div><dt>수업 링크</dt><dd>시각, 장소, 방향, 고른 천체를 담은 링크 하나로 같은 장면을 엽니다. 수업 자료에 붙이면 학생이 그 하늘을 그대로 봅니다</dd></div>
+        <div><dt>투어 만들기</dt><dd>지금 보이는 화면을 하나씩 담고, 장면마다 설명 한 줄과 멈춤 시간을 붙여 차례로 재생합니다. 만든 투어는 애드온 파일로 저장해 다른 사람과 나눕니다</dd></div>
         <div><dt>발표 스크립트</dt><dd>애드온 파일로 장면과 설명을 순서대로 묶어 발표합니다. 예시: 2027년 8월 2일 개기일식 둘러보기</dd></div>
       </dl>
       <dl class="facts big">
@@ -285,6 +295,8 @@ section.f + section.f { border-top: 1px solid var(--rule); }
       <thead><tr><th>항목</th><th>규모</th><th>설명</th></tr></thead>
       <tbody>
         <tr><td>가이아 별 목록</td><td class="q">약 3,020,000</td><td class="s">확대하면 불러옵니다. 맨눈 별 41,000개는 처음부터 표시합니다</td></tr>
+        <tr><td>가이아 G 13등급까지</td><td class="q">약 4,280,000</td><td class="s">더 깊이 확대하면 그 자리의 조각만 이어서 불러옵니다</td></tr>
+        <tr><td>한국 위성 카드</td><td class="q">25종</td><td class="s">아리랑, 천리안, 무궁화, 차세대중형위성, 누리호로 오른 위성 등의 발사일, 궤도, 운영 기관, 탑재체</td></tr>
         <tr><td>성운·성단·은하</td><td class="q">12,000</td><td class="s">NGC/IC 목록 전체</td></tr>
         <tr><td>관측 사진</td><td class="q">4 surveys</td><td class="s">DSS2, 2MASS, SDSS9, AllWISE HiPS 타일을 확대에 맞춰 불러옵니다</td></tr>
         <tr><td>전천 파장 사진</td><td class="q">6 bands</td><td class="s">전파, 마이크로파, 적외선, H-알파, X선, 감마선</td></tr>
@@ -307,6 +319,7 @@ section.f + section.f { border-top: 1px solid var(--rule); }
       <dl class="facts big">
         <div><dt>오프라인</dt><dd>한 번 누르면 기본 자료 205개(약 44 MB)를 받아 두어, 인터넷 없이도 별과 행성, 지형, 작은 모델까지 씁니다. 업데이트가 와도 받아 둔 자료는 유지됩니다</dd></div>
         <div><dt>앱처럼</dt><dd>홈 화면에 추가하면 전체 화면으로 열립니다. 설치 파일도, 계정도 없습니다</dd></div>
+        <div><dt>느린 기기에서도</dt><dd>화면이 끊기면 그리는 해상도를 스스로 낮춰 부드럽게 움직입니다. 휴대폰 화면 배치도 다듬었습니다</dd></div>
         <div><dt>언어</dt><dd>한국어가 기본이고 영어로 바꿀 수 있습니다</dd></div>
       </dl>
       <dl class="facts big">
