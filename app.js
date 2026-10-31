@@ -10,6 +10,7 @@ import { BODY_INFO } from './bodyinfo.js';
 import { BODY_INFO_EN } from './bodyinfo-en.js';
 import { SHOWERS, TOURS, MOON_STATES, FLYBY_INFO, ECLIPSES, JOURNEYS } from './content.js';
 import { KR_SATS, ORBITERS, SITES } from './content-missions.js';
+import { krMission, KR_TIMELINE } from './kr-missions.js';
 
 // ---------- constants & helpers ----------
 const D2R = Math.PI / 180, R2D = 180 / Math.PI;
@@ -1589,6 +1590,15 @@ function select(o) {
       for (const v of [`${f(p.rise)} ~ ${new Date(p.set).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit', hour12: false })}`, `${p.max.toFixed(0)}°`, p.lit && p.dark ? '예' : '아니오']) tr.insertCell().textContent = v; }
     if (!ps.length) tb.insertRow().insertCell().textContent = mode.space ? '통과 예보는 지상 모드에서 볼 수 있습니다' : '3일 안에 10° 위로 지나가지 않습니다';
     $('info-exo').innerHTML = ''; $('info-exo').append(tb); $('info-exo').hidden = false;
+    const km = o.korea && krMission(o.id);
+    if (o.korea) { const ab = $('info-about'), box = document.createElement('div'); box.className = 'krcard'; ab.hidden = false; ab.innerHTML = '';
+      if (km) { const [, title, launch, orbit, op, pay, text] = km; box.innerHTML = `<b>${title}</b><p>${text}</p><dl><dt>발사</dt><dd>${launch}</dd><dt>궤도</dt><dd>${orbit}</dd><dt>운영</dt><dd>${op}</dd><dt>탑재체</dt><dd>${pay}</dd></dl>`; }
+      const acts = document.createElement('div'); acts.className = 'kracts';
+      const tlb = document.createElement('button'); tlb.textContent = '한국 우주개발 연표'; tlb.onclick = () => { const ul = box.querySelector('.krtl') || box.appendChild(Object.assign(document.createElement('ul'), { className: 'krtl' })); ul.innerHTML = KR_TIMELINE.map(([d, t]) => `<li><span>${d}</span>${t}</li>`).join(''); };
+      acts.append(tlb);
+      if (o.rec.no < 0.0055) /* about one turn a day: geostationary */ { const gv = document.createElement('button'); gv.textContent = '이 위성의 눈으로 지구 보기'; gv.onclick = () => satEyeView(o); acts.append(gv); }
+      const nr = document.createElement('button'); nr.textContent = '누리호 3차 발사 다시 보기'; nr.onclick = () => nuriReplay(); acts.append(nr);
+      box.append(acts); ab.append(box); }
     if (ps.length && 'Notification' in window) { const nb = document.createElement('button'); nb.textContent = alerts.has(o.id) ? '통과 알림 끄기' : '다음 통과 5분 전에 알림'; nb.onclick = () => togglePassAlert(o, ps, nb); $('info-exo').append(nb); }
   } else if (o.kindName === 'const') {
     ra = o.ra; dec = o.dec;
@@ -1636,7 +1646,8 @@ function select(o) {
     row('위치각', o.pa ? o.pa + '°' : ''); row('허블 분류', o.hubble); row('적색편이 z', o.z);
   }
   { const key = o.planet && !o.p.probe ? o.p.name : o.kindName === 'star' ? (starData.proper[o.i] || o.name) : null, B = key && ((EN && BODY_INFO_EN[key]) || BODY_INFO[key]), ab = $('info-about');
-    ab.hidden = !B; ab.innerHTML = B ? `<p>${B.d}</p>${B.n?.length ? `<b>${EN ? 'Worth noticing' : '주목할 점'}</b><ul>${B.n.map(x => `<li>${x}</li>`).join('')}</ul>` : ''}` : ''; }
+    if (o.kindName !== 'sat' || !o.korea) ab.hidden = !B, ab.innerHTML = '';
+    if (B) { ab.hidden = !B; ab.innerHTML = B ? `<p>${B.d}</p>${B.n?.length ? `<b>${EN ? 'Worth noticing' : '주목할 점'}</b><ul>${B.n.map(x => `<li>${x}</li>`).join('')}</ul>` : ''}` : ''; } }
   if (isFinite(ra)) { row('적경 (J2000)', fmtRA(ra)); row('적위 (J2000)', fmtDec(dec)); }
   else if (o.kindName === 'sat') row('지금', '지평선 아래 (아래 표에서 다음 통과 시각을 확인하세요)');
   if (!mode.space && !(o.kindName === 'sat' && !o.world)) { const aa = dirToAzAlt(worldOf(o)); row('방위 / 고도', `${aa.az.toFixed(1)}° / ${aa.alt.toFixed(1)}°`); }
@@ -2018,7 +2029,9 @@ function writeHash() {
     history.replaceState(null, '', '#' + q.toString());
   }, 300);
 }
+let camHold = false; // a replay is driving the camera: links written meanwhile must not pull it back
 function readHash() {
+  if (camHold) return;
   const q = new URLSearchParams(location.hash.slice(1)); if (![...q.keys()].length) return;
   if (q.get('t')) { const t = Date.parse(q.get('t') + 'Z'); if (!isNaN(t)) { state.time = t; state.speed = 0; document.querySelectorAll('[data-speed]').forEach(x => x.classList.toggle('on', x.dataset.speed === '0')); } }
   if (q.get('lat')) { state.lat = +q.get('lat'); state.lon = +q.get('lon'); $('lat').value = state.lat; $('lon').value = state.lon; }
@@ -2118,6 +2131,11 @@ function tonight() { // what is up right now: planets, the Moon and bright Messi
   }
   if (!list.length) ul.innerHTML = '<li><span>지평선 위 15° 이상에 밝은 천체가 없습니다</span></li>';
   $('tonight').hidden = false;
+  setTimeout(() => { const kr = krTonight(); if (!kr.length) return; // Korean satellites crossing a dark sky in the next 24 hours, sunlit so they can be seen
+    const h = document.createElement('li'); h.className = 'tn-head'; h.textContent = '맨눈으로 볼 수 있는 한국 위성 (24시간 안)'; ul.append(h);
+    for (const { s, p } of kr) { const li = document.createElement('li'), b = document.createElement('button'), m = document.createElement('span');
+      b.textContent = s.name; m.textContent = `${new Date(p.rise).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit', hour12: false })} · 최고 ${p.max.toFixed(0)}°`;
+      b.onclick = () => { state.time = p.tMax; state.speed = 1; select(s); }; li.append(b, m); ul.append(li); } }, 30);
 }
 $('tonight-btn').onclick = () => $('tonight').hidden ? tonight() : ($('tonight').hidden = true);
 $('tonight-close').onclick = () => $('tonight').hidden = true;
@@ -2314,7 +2332,7 @@ async function loadSats() {
   if (!window.satellite) return 0;
   const seen = new Set();
   for (const g of ['data/korea.tle', 'stations', 'visual']) { // Korean list first so their names win
-    let txt = ''; try { txt = await fetch(g.startsWith('data/') ? g : `https://celestrak.org/NORAD/elements/gp.php?GROUP=${g}&FORMAT=tle`, { signal: AbortSignal.timeout(6000) /* a slow CelesTrak must not hold the loading screen */ }).then(r => r.ok ? r.text() : ''); } catch {}
+    let txt = ''; try { txt = await fetch(g.startsWith('data/') ? g : `https://celestrak.org/NORAD/elements/gp.php?GROUP=${g}&FORMAT=tle`, g.startsWith('data/') ? {} : { signal: AbortSignal.timeout(6000) /* a slow CelesTrak must not hold the loading screen; our own Korean list always waits */ }).then(r => r.ok ? r.text() : ''); } catch {}
     const L = txt.split(/\r?\n/);
     for (let i = 0; i + 2 < L.length; i += 3) {
       const l1 = L[i + 1], l2 = L[i + 2]; if (!l1?.startsWith('1 ') || !l2?.startsWith('2 ')) continue;
@@ -3486,7 +3504,7 @@ $('addon-btn').onclick = () => { const f = document.createElement('input'); f.ty
 async function offlinePack() {
   if (!('caches' in window)) { $('status').textContent = '이 브라우저는 오프라인 저장을 지원하지 않습니다'; return; }
   const pack = await fetch('data/offline-pack.json').then(r => r.json()), cache = await caches.open('space-commons-pack'); // kept across service-worker updates
-  let done = 0, bytes = 0; const list = ['./', 'index.html', ...pack.files], N = list.length;
+  let done = 0, bytes = 0; const list = ['./', 'app.html', ...pack.files], N = list.length;
   for (let i = 0; i < N; i += 6) { await Promise.all(list.slice(i, i + 6).map(async (f) => { try { const r = await fetch(f, { cache: 'reload' }); if (r.ok) { await cache.put(f, r.clone()); bytes += +(r.headers.get('content-length') || 0); } } catch {} done++; }));
     $('status').textContent = `오프라인용으로 받는 중 ${done}/${N} (${(bytes / 1e6).toFixed(0)} MB)`; }
   try { localStorage.setItem('space-commons-offline', new Date().toISOString()); } catch {}
@@ -3495,6 +3513,47 @@ async function offlinePack() {
 $('offline-btn').onclick = () => offlinePack();
 const NEEDS_NET = '인터넷 없음: 위성 목록, 오로라, 오늘의 지구, 날씨, 확대 사진은 마지막으로 받은 것만 보입니다';
 addEventListener('offline', () => { $('status').textContent = NEEDS_NET; }); if (!navigator.onLine) setTimeout(() => { $('status').textContent = NEEDS_NET; }, 3000);
+// ---------- Korean satellites: see Earth from a geostationary satellite, and replay Nuri's third launch ----------
+function satEyeView(o) { // camera at the satellite, looking at the centre of the Earth (a geostationary disc is about 17.4 degrees across)
+  if (!mode.space) setMode(true); state.speed = 0; computeHelio();
+  const pv = satellite.propagate(o.rec, new Date(state.time)); if (!pv?.position) return;
+  const E = helioPos.Earth, r = new THREE.Vector3(pv.position.x, pv.position.y, pv.position.z).divideScalar(1e6), p = E.clone().add(r.clone().multiplyScalar(1.004));
+  sp.flight = null; sp.target = null; sp.pos.copy(p); sp.quat.copy(lookQuat(E.clone().sub(p).normalize(), new THREE.Vector3(0, 0, 1))); view.fov = 26 / Math.min(1, innerWidth / innerHeight); // the whole disc with a margin, also on a tall phone screen
+  $('status').textContent = `${o.name}의 자리에서 본 지구 · 정지궤도 ${Math.round(r.length() * 1e6 - 6371).toLocaleString()} km · 시간을 흘리면 낮과 밤의 경계가 지나갑니다`;
+}
+// Nuri (KSLV-II) flight 3, 25 May 2023, from the Naro Space Center: a profile from the published flight sequence (times, altitudes); the ground track is simplified
+const NURI = { t0: Date.UTC(2023, 4, 25, 9, 24), az: 172, site: [34.431, 127.535],
+  pts: [[0, 0, 0], [60, 12, 8], [127, 59, 70], [233, 191, 330], [274, 258, 450], [500, 450, 1300], [783, 550, 2500], [945, 550, 3300]], // s, altitude km, downrange km
+  ev: [[0, '이륙: 나로우주센터, 1단 75톤 엔진 4기 점화'], [127, '1단 분리 · 고도 약 59 km'], [233, '페어링 분리 · 고도 약 191 km'], [274, '2단 분리 · 고도 약 258 km, 3단 7톤 엔진 점화'], [783, '3단 엔진 정지 · 고도 약 550 km, 궤도 진입'], [800, '차세대소형위성 2호 분리, 이어서 큐브샛 7기 분리']] };
+let nuriRun = 0;
+function nuriReplay() {
+  if (!mode.space) setMode(true); camHold = true; const id = ++nuriRun, speed = 18, start = performance.now();
+  state.time = NURI.t0; state.speed = 0; computeHelio();
+  const rocket = new THREE.Group(); const body = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 6, 12), new THREE.MeshStandardMaterial({ color: 0xf2f2f2, roughness: 0.6 }));
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.4, 12), new THREE.MeshStandardMaterial({ color: 0xf2f2f2 })); nose.position.y = 3.7; rocket.add(body, nose);
+  const flame = new THREE.Mesh(new THREE.ConeGeometry(0.45, 2.4, 10), new THREE.MeshBasicMaterial({ color: 0xffb04a, transparent: true, opacity: 0.85 })); flame.rotation.x = Math.PI; flame.position.y = -4.2; rocket.add(flame);
+  planetGroup.add(rocket); const trailPts = []; const trail = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xffd36a })); trail.frustumCulled = false; planetGroup.add(trail);
+  const prof = (s) => { const P = NURI.pts; let i = 0; while (i < P.length - 2 && P[i + 1][0] < s) i++; const [s0, h0, d0] = P[i], [s1, h1, d1] = P[i + 1], u = Math.min(1, Math.max(0, (s - s0) / (s1 - s0))); return [h0 + (h1 - h0) * u, d0 + (d1 - d0) * u]; };
+  const posAt = (s) => { const [h, d] = prof(s), la = NURI.site[0] * D2R, lo = NURI.site[1] * D2R, az = NURI.az * D2R, a = d / 6371;
+    const lat = Math.asin(Math.sin(la) * Math.cos(a) + Math.cos(la) * Math.sin(a) * Math.cos(az)), lon = lo + Math.atan2(Math.sin(az) * Math.sin(a) * Math.cos(la), Math.cos(a) - Math.sin(la) * Math.sin(lat));
+    const gm = satellite.gstime(new Date(NURI.t0 + s * 1000)), rr = (6371 + h) / 1e6, L = lon + gm;
+    return new THREE.Vector3(rr * Math.cos(lat) * Math.cos(L), rr * Math.cos(lat) * Math.sin(L), rr * Math.sin(lat)); };
+  let evi = 0;
+  const step = () => { if (id !== nuriRun || !mode.space) { planetGroup.remove(rocket, trail); if (id === nuriRun) { camHold = false; caption(''); } return; }
+    const s = Math.min(945, (performance.now() - start) / 1000 * speed); state.time = NURI.t0 + s * 1000; computeHelio();
+    const E = helioPos.Earth, p = E.clone().add(posAt(s)), up = posAt(s).normalize(), fwd = posAt(s + 5).sub(posAt(s)).normalize();
+    const camD = 0.0004 + s * 0.0000025; // 400 km behind and above, pulling back to about 2,800 km by orbit
+    rocket.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), s < 20 ? up : fwd); rocket.scale.setScalar(camD * 0.012); // drawn larger than life so it stays visible as the camera pulls back
+    flame.visible = !(s > 783); trailPts.push(p.clone()); trail.geometry.dispose(); trail.geometry = new THREE.BufferGeometry().setFromPoints(trailPts.map(v => v.clone().sub(sp.pos)));
+    const back = fwd.clone().multiplyScalar(-0.7).add(up.clone().multiplyScalar(0.7)).normalize(); sp.flight = null; sp.target = null; // looking down past the rocket at the Earth
+    sp.pos.copy(p).addScaledVector(back, camD); sp.quat.copy(lookQuat(p.clone().sub(sp.pos).normalize(), up)); rocket.position.copy(p).sub(sp.pos);
+    while (evi < NURI.ev.length && NURI.ev[evi][0] <= s) { caption(`T+${Math.round(NURI.ev[evi][0])}초 · ${NURI.ev[evi][1]}`); evi++; }
+    if (s < 945) requestAnimationFrame(step); else { caption(''); camHold = false; $('status').textContent = '누리호 3차 발사 재생이 끝났습니다 (궤적은 공개된 비행 순서를 바탕으로 한 근사입니다)'; setTimeout(() => planetGroup.remove(rocket, trail), 8000); } };
+  $('status').textContent = '누리호 3차 발사 · 2023년 5월 25일 18시 24분 · 18배속'; step();
+}
+// tonight's visible passes of the Korean satellites, for the "tonight" panel
+function krTonight() { const out = []; for (const s of sats) { if (!s.korea || !krMission(s.id)) continue; for (const p of satPasses(s, 3)) if (p.lit && p.dark && p.rise - state.time < 86400e3) out.push({ s, p }); }
+  return out.sort((a, b) => a.p.rise - b.p.rise).slice(0, 6); }
 // ---------- NASA-Eyes-style mission timeline (space mode): 1950-2050 with every mission event; drag to move time, click an event to go there ----------
 const MT = { el: null, t0: Date.UTC(1950, 0, 1), t1: Date.UTC(2050, 11, 31), drag: false, events: [] };
 function buildMissionTimeline() {

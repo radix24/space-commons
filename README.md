@@ -78,7 +78,7 @@
 | 달 위치 | Meeus, Astronomical Algorithms 47장 (astronomia 라이브러리에서 이식, MIT) |
 | 날씨 예보 | Open-Meteo (실시간) |
 | 은하수 사진 | ESO/S. Brunier, The Milky Way panorama (eso0932a, CC BY 4.0) |
-| 확대 시 어두운 별 | ESA Gaia DR3 (G 8~12등급 약 302만 개, 하늘 1,668개 구역으로 나눠 저장) |
+| 확대 시 어두운 별 | ESA Gaia DR3 (ESA/Gaia/DPAC, CC BY-SA 3.0 IGO): G 8~12등급 약 302만 개, 더 확대하면 G 12~13등급 약 428만 개 (NASA/IPAC 적외선 과학 아카이브 IRSA의 gaia_dr3_source 사본에서 받음). 하늘 1,668개 구역으로 나눠 저장 |
 | 별자리 그림 | Johan Meuris, Stellarium "modern" 별자리 문화 (Free Art License 1.3, 별도 파일과 라이선스 안내) |
 | 달·화성 고해상도 표면 | Solar System Scope 8k (CC BY 4.0), 고도: LRO LOLA (NASA SVS), MGS MOLA (NASA PDS) |
 | 한국 별자리 그림 | 천상열차분야지도 (1395년 조선 태조 때 각석, 고구려 시대 원본 바탕) 목판본 (퍼블릭 도메인, Wikimedia Commons). 한국 별자리 선과 겹쳐 맞춘 극좌표 변환으로 하늘에 표시 | 채색 천문도 (조선 필사본, 퍼블릭 도메인, 인터넷 아카이브 / Wikimedia Commons)도 선택 가능

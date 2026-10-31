@@ -611,3 +611,9 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px rg
 .sb-scale { bottom: auto; top: 112px; left: 16px; }
 .sb-root.drawer .sb-scale { left: 336px; }
 @media (max-width: 760px) { .sb-scale { top: 150px; left: 10px; } .sb-root.drawer .sb-scale { left: 10px; } }
+
+.krcard b { display: block; font-size: 15px; margin-bottom: 4px; } .krcard p { margin: 0 0 8px; line-height: 1.6; }
+.krcard dl { display: grid; grid-template-columns: 64px 1fr; gap: 3px 8px; margin: 0 0 8px; font-size: 12.5px; } .krcard dt { color: var(--mute); } .krcard dd { margin: 0; }
+.kracts { display: flex; flex-wrap: wrap; gap: 4px; } .kracts button { font-size: 12px; }
+.krtl { list-style: none; margin: 8px 0 0; padding: 0; font-size: 12.5px; } .krtl li { padding: 3px 0; border-top: 1px solid var(--line); } .krtl span { display: inline-block; width: 86px; color: var(--mute); font-family: var(--mono, monospace); }
+.tn-head { padding: 10px 0 4px; font-size: 12px; color: var(--mute); border-top: 1px solid var(--line); margin-top: 6px; }
