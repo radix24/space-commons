@@ -13,6 +13,9 @@ import { KR_SATS, ORBITERS, SITES } from './content-missions.js';
 import { krMission, KR_TIMELINE } from './kr-missions.js';
 import { watchRenderer, frameTick } from './perf.js';
 import { initClassSync } from './classsync.js';
+import { initTelescope } from './telescope.js';
+import { initObserving } from './observing.js';
+import { tleEpoch, tleAge, tleNotes } from './tle.js';
 
 // ---------- constants & helpers ----------
 const D2R = Math.PI / 180, R2D = 180 / Math.PI;
@@ -1666,6 +1669,7 @@ function select(o) {
   { const key = o.planet && !o.p.probe ? o.p.name : o.kindName === 'star' ? (starData.proper[o.i] || o.name) : null, B = key && ((EN && BODY_INFO_EN[key]) || BODY_INFO[key]), ab = $('info-about');
     if (o.kindName !== 'sat' || !o.korea) ab.hidden = !B, ab.innerHTML = '';
     if (B) { ab.hidden = !B; ab.innerHTML = B ? `<p>${B.d}</p>${B.n?.length ? `<b>${EN ? 'Worth noticing' : '주목할 점'}</b><ul>${B.n.map(x => `<li>${x}</li>`).join('')}</ul>` : ''}` : ''; } }
+  if (o.kindName === 'sat' && o.epoch) for (const [k, v] of tleNotes(o, state.time)) row(k, v);
   if (isFinite(ra)) { row('적경 (J2000)', fmtRA(ra)); row('적위 (J2000)', fmtDec(dec)); }
   else if (o.kindName === 'sat') row('지금', '지평선 아래 (아래 표에서 다음 통과 시각을 확인하세요)');
   if (!mode.space && !(o.kindName === 'sat' && !o.world)) { const aa = dirToAzAlt(worldOf(o)); row('방위 / 고도', `${aa.az.toFixed(1)}° / ${aa.alt.toFixed(1)}°`); }
@@ -2162,7 +2166,7 @@ function tonight() { // what is up right now: planets, the Moon and bright Messi
   setTimeout(() => { const kr = krTonight(); if (!kr.length) return; // Korean satellites crossing a dark sky in the next 24 hours, sunlit so they can be seen
     const h = document.createElement('li'); h.className = 'tn-head'; h.textContent = '맨눈으로 볼 수 있는 한국 위성 (24시간 안)'; ul.append(h);
     for (const { s, p } of kr) { const li = document.createElement('li'), b = document.createElement('button'), m = document.createElement('span');
-      b.textContent = s.name; m.textContent = `${new Date(p.rise).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit', hour12: false })} · 최고 ${p.max.toFixed(0)}°`;
+      b.textContent = s.name; m.textContent = `${new Date(p.rise).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit', hour12: false })} · 최고 ${p.max.toFixed(0)}°${p.conf === 'aging' ? ' · 신뢰도 낮음 (오래된 궤도 자료)' : ''}`;
       b.onclick = () => { state.time = p.tMax; state.speed = 1; select(s); }; li.append(b, m); ul.append(li); } }, 30);
 }
 $('tonight-btn').onclick = () => $('tonight').hidden ? tonight() : ($('tonight').hidden = true);
@@ -2360,13 +2364,13 @@ async function loadSats() {
   if (!window.satellite) return 0;
   const seen = new Set();
   for (const g of ['data/korea.tle', 'stations', 'visual']) { // Korean list first so their names win
-    let txt = ''; try { txt = await fetch(g.startsWith('data/') ? g : `https://celestrak.org/NORAD/elements/gp.php?GROUP=${g}&FORMAT=tle`, g.startsWith('data/') ? {} : { signal: AbortSignal.timeout(6000) /* a slow CelesTrak must not hold the loading screen; our own Korean list always waits */ }).then(r => r.ok ? r.text() : ''); } catch {}
+    let txt = '', meta = {}; try { txt = await fetch(g.startsWith('data/') ? g : `https://celestrak.org/NORAD/elements/gp.php?GROUP=${g}&FORMAT=tle`, g.startsWith('data/') ? {} : { signal: AbortSignal.timeout(6000) /* a slow CelesTrak must not hold the loading screen; our own Korean list always waits */ }).then(r => { if (!r.ok) return ''; meta = { fetched: Date.parse(r.headers.get('last-modified') || r.headers.get('date') || '') || Date.now(), source: g.startsWith('data/') ? 'bundled' : r.headers.get('x-sc-cache') ? 'cache' : 'network' }; return r.text(); }); } catch {}
     const L = txt.split(/\r?\n/);
     for (let i = 0; i + 2 < L.length; i += 3) {
       const l1 = L[i + 1], l2 = L[i + 2]; if (!l1?.startsWith('1 ') || !l2?.startsWith('2 ')) continue;
       const id = +l1.slice(2, 7); if (seen.has(id)) continue; seen.add(id);
       const korea = g === 'data/korea.tle';
-      try { sats.push({ kindName: 'sat', id, korea, name: EN ? ({ 25544: 'International Space Station', 48274: 'Tiangong', 20580: 'Hubble Space Telescope' }[id] || L[i].trim()) : KR_SATS[id] || SAT_KO[id] || L[i].trim(), rec: satellite.twoline2satrec(l1, l2), iss: id === 25544, star: !!SAT_KO[id], tle: L[i].trim() }); } catch {}
+      try { sats.push({ kindName: 'sat', id, korea, name: EN ? ({ 25544: 'International Space Station', 48274: 'Tiangong', 20580: 'Hubble Space Telescope' }[id] || L[i].trim()) : KR_SATS[id] || SAT_KO[id] || L[i].trim(), rec: satellite.twoline2satrec(l1, l2), iss: id === 25544, star: !!SAT_KO[id], tle: L[i].trim(), epoch: tleEpoch(l1), ...meta }); } catch {}
     }
   }
   return sats.length;
@@ -2432,10 +2436,11 @@ function updateSats() {
 }
 function satPasses(s, n = 4) { // next passes above 10 degrees within 3 days
   const out = []; let cur = null; const t0 = state.time;
+  if (s.epoch && tleAge(s.epoch, t0).level === 'stale') return out; // FIX-07: elements over 14 days from the simulated time are not used for passes (see tle.js)
   for (let t = t0; t < t0 + 3 * 86400e3 && out.length < n; t += 30e3) {
     const sunEqU = ecl2eq(geoAt(t).Sun).normalize(), st = satState(s, t, sunEqU); if (!st) break;
     if (st.el > 10) { if (!cur) cur = { rise: t, max: st.el, tMax: t, lit: st.lit, sunAlt: 0 }; if (st.el > cur.max) { cur.max = st.el; cur.tMax = t; cur.lit = st.lit; } }
-    else if (cur) { cur.set = t; const sa = sunMoonAt(cur.tMax); cur.dark = altOf(sa.Sun, cur.tMax) < -6; out.push(cur); cur = null; }
+    else if (cur) { cur.set = t; cur.conf = s.epoch ? tleAge(s.epoch, cur.tMax).level : 'fresh'; if (cur.conf === 'stale') break; const sa = sunMoonAt(cur.tMax); cur.dark = altOf(sa.Sun, cur.tMax) < -6; out.push(cur); cur = null; }
   }
   return out;
 }
@@ -3296,34 +3301,25 @@ function updateStanding() {
   const k = 1 / Math.max(1e-12, sp.nearestAll || 1); marsSky.scale.setScalar(5 / k); marsSky.position.set(0, 0, 0);
   marsSkyMat.uniforms.up.value.copy(siteUp); marsSkyMat.uniforms.sunDir.value.copy(helioPos.Mars).negate().normalize();
 }
-// ---------- B2. telescope control: LX200 commands over Web Serial (most go-to mounts), or ASCOM Alpaca over the network ----------
-// Coordinates are sent as J2000 with precession to the date applied (mounts work in the equinox of date).
-const scope = { port: null, writer: null, alpaca: '' };
+// ---------- B2. telescope wizard (telescope.js) and observing score + alerts (observing.js): app.js only supplies the sky ----------
+// Coordinates go to mounts in the equinox of date (precessToDate); the catalogue is J2000.
 function precessToDate(ra, dec, ms) { // IAU 1976 precession, rigorous enough for pointing (< 1')
   const T = (jd(ms) - 2451545) / 36525, z = (2306.2181 * T + 1.09468 * T * T) / 3600 * D2R, ze = (2306.2181 * T + 0.30188 * T * T) / 3600 * D2R, th = (2004.3109 * T - 0.42665 * T * T) / 3600 * D2R;
   const a = ra * D2R, d = dec * D2R, A = Math.cos(d) * Math.sin(a + ze), B = Math.cos(th) * Math.cos(d) * Math.cos(a + ze) - Math.sin(th) * Math.sin(d), C = Math.sin(th) * Math.cos(d) * Math.cos(a + ze) + Math.cos(th) * Math.sin(d);
   return { ra: ((Math.atan2(A, B) + z) * R2D + 360) % 360, dec: Math.asin(C) * R2D };
 }
-async function scopeConnectSerial() {
-  if (!navigator.serial) { $('scope-st').textContent = '이 브라우저는 Web Serial을 지원하지 않습니다 (크롬·엣지 데스크톱에서 가능)'; return; }
-  try { scope.port = await navigator.serial.requestPort(); await scope.port.open({ baudRate: +$('scope-baud').value }); scope.writer = scope.port.writable.getWriter(); $('scope-st').textContent = '직렬 포트 연결됨 (LX200 명령)'; }
-  catch (e) { $('scope-st').textContent = '연결하지 못했습니다: ' + (e.message || e); }
-}
-async function scopeGoto(o) {
-  if (!mode.space && PLANETS[0].world && worldOf(o).normalize().dot(PLANETS[0].world.clone().normalize()) > Math.cos(15 * D2R)) { $('scope-st').textContent = '태양에서 15° 안쪽이라 보내지 않습니다: 필터 없이 태양을 향하면 눈과 장비가 상합니다'; return; }
-  const w = worldOf(o).applyMatrix4(new THREE.Matrix4().copy(sky.matrixWorld).invert()), { ra, dec } = vecToRaDec(w), p = precessToDate(ra, dec, state.time);
-  if (scope.writer) { const pad = (n, k) => String(Math.floor(n)).padStart(k, '0'), h = p.ra / 15, dd = Math.abs(p.dec);
-    const cmd = `:Sr${pad(h, 2)}:${pad((h % 1) * 60, 2)}:${pad(((h * 60) % 1) * 60, 2)}#:Sd${p.dec < 0 ? '-' : '+'}${pad(dd, 2)}*${pad((dd % 1) * 60, 2)}:${pad(((dd * 60) % 1) * 60, 2)}#:MS#`;
-    await scope.writer.write(new TextEncoder().encode(cmd)); $('scope-st').textContent = `보냄: ${objLabel(o)} (${cmd})`; return; }
-  if (scope.alpaca) { const base = scope.alpaca.replace(/\/$/, '') + '/api/v1/telescope/0/';
-    try { const body = new URLSearchParams({ RightAscension: (p.ra / 15).toFixed(5), Declination: p.dec.toFixed(5), ClientID: '7', ClientTransactionID: String(Date.now() % 1e6) });
-      const r = await fetch(base + 'slewtocoordinatesasync', { method: 'PUT', body }); const j = await r.json(); $('scope-st').textContent = j.ErrorNumber ? `망원경 오류: ${j.ErrorMessage}` : `${objLabel(o)}(으)로 움직이는 중 (Alpaca)`; }
-    catch (e) { $('scope-st').textContent = 'Alpaca 서버에 닿지 못했습니다 (주소, CORS 허용 여부 확인)'; } return; }
-  $('scope-st').textContent = '먼저 망원경을 연결하세요';
-}
-$('scope-serial').onclick = scopeConnectSerial;
-$('scope-alpaca').onclick = () => { scope.alpaca = $('scope-url').value.trim(); $('scope-st').textContent = scope.alpaca ? `Alpaca 주소 설정: ${scope.alpaca}` : ''; };
-$('scope-goto').onclick = () => { if (selected) scopeGoto(selected); else $('scope-st').textContent = '하늘에서 천체를 먼저 고르세요'; };
+const skyCtx = {
+  $, state, LOCALE, EN, label: (o) => objLabel(o), selected: () => selected, bortle: () => +$('bortle').value,
+  sunMoonAt, altOf, moonPhase: moonPhaseInfo, precessToDate, isGround: () => !mode.space && !sandboxOn,
+  showers: () => showers, daysToPeak, occultations, krPasses: () => (sats.length ? krTonight() : []),
+  azAlt: (ra, dec, t) => azAltAt(eqVec(ra, dec), t),
+  raDecToScreen: (ra, dec) => { const w = eqVec(ra, dec).applyMatrix4(sky.matrixWorld).normalize(); return w.dot(camera.getWorldDirection(new THREE.Vector3())) > 0 ? toScreen(w) : null; },
+  sunRaDec: () => vecToRaDec(sunMoonAt(state.time).Sun), moonRaDec: () => vecToRaDec(sunMoonAt(state.time).Moon),
+  zenithJ2000: () => ({ ra: lstDeg(state.time, state.lon), dec: state.lat }),
+  selRaDec: (o) => { if (o.kindName === 'sat' || o.kindName === 'site') return null; return vecToRaDec(worldOf(o).applyMatrix4(new THREE.Matrix4().copy(sky.matrixWorld).invert())); },
+  targetEqAt: (o, t) => { if (o.kindName === 'sat' || o.kindName === 'site') return null; if (o.planet) { const g = geoAt(t)[o.p.name]; return g ? ecl2eq(g) : null; } return o.v ? o.v.clone() : null; },
+};
+initTelescope(skyCtx); initObserving(skyCtx);
 // ---------- E5. accessibility: large text, colour-blind-safe palette (Okabe-Ito blue/orange), less motion; remembered in this browser ----------
 const A11Y_KEY = 'space-commons-a11y';
 (function a11y() {
