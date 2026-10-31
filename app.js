@@ -1954,7 +1954,7 @@ $('lang').textContent = EN ? '한국어' : 'EN'; $('lang').onclick = () => setLa
 // third mode: the gravity sandbox and orbital-mechanics labs (sandbox.js, loaded on first use)
 let sandboxOn = false, sandboxMod = null;
 async function setSandbox(on) {
-  sandboxOn = on; document.body.classList.toggle('sandbox', on); if (on) document.querySelector('.guide')?.remove(); // the sky guide does not belong over the sandbox
+  sandboxOn = on; document.body.classList.toggle('sandbox', on); if (on) { document.querySelector('.guide')?.remove(); if ($('tourmk')) $('tourmk').hidden = true; } // sky panels do not belong over the sandbox
   document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('on', on ? b.dataset.mode === 'sandbox' : (b.dataset.mode === 'space') === mode.space));
   if (on) { sandboxMod ||= await import('./sandbox.js'); sandboxMod.openSandbox({ helio, jdNow: () => jd(state.time), small: (n, j) => { const s = PLANETS.find(x => x.name === n)?.sb; if (!s) return null; const v = smallHelio({ el: [s.a, s.e, s.i, s.om, s.w, s.ma, s.epoch] }, j); return [v.x, v.y, v.z]; } }); }
   else sandboxMod?.closeSandbox();
@@ -3368,9 +3368,41 @@ function cometLabels() {
   for (const d of cometGroup.children) { if (!d.userData.comet) continue; v.copy(d.userData.pos).sub(sp.pos).normalize(); if (v.dot(fwd) < 0.2) continue;
     const p = toScreen(v); if (p) label(p[0], p[1], d.userData.comet.name.replace(/\s*\(.*\)/, ''), 'small comet'); }
 }
+// ---------- tour maker: capture views one by one, add a sentence to each, play them back, save as an add-on file ----------
+{ const b = document.createElement('button'); b.id = 'tourmk-btn'; b.title = '지금 보이는 화면을 차례로 담아 발표를 만듭니다'; b.textContent = '투어 만들기'; $('tools').append(b); }
+const tourSteps = [];
+function tourMaker() {
+  let box = $('tourmk'); if (!box) { box = document.createElement('div'); box.id = 'tourmk'; box.className = 'panel'; document.body.append(box); }
+  box.hidden = false;
+  const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+  box.innerHTML = `<header><b>투어 만들기</b><button class="tm-x" title="닫기">닫기</button></header>
+    <p class="small">하늘을 원하는 대로 맞춘 뒤 "지금 화면 담기"를 누르세요. 장면마다 설명을 적고 머무를 시간을 정하면, 장면 사이를 천천히 옮겨 가며 자막과 함께 보여 줍니다.</p>
+    <ol class="tm-list">${tourSteps.map((s, i) => `<li data-i="${i}"><div class="tm-head"><span>${s.t.replace('T', ' ')} · ${s.o ? esc(s.o) + ' · ' : ''}방위 ${s.az}° 고도 ${s.alt}° 시야 ${s.fov}°</span><button class="tm-up" title="위로">↑</button><button class="tm-del" title="지우기">×</button></div>
+      <textarea rows="2" placeholder="이 장면에서 할 말">${esc(s.say || '')}</textarea><label>머무름 <input type="number" min="1" max="600" value="${s.wait}"> 초</label></li>`).join('')}</ol>
+    ${tourSteps.length ? '' : '<p class="small tm-empty">아직 담은 장면이 없습니다.</p>'}
+    <div class="row"><button class="tm-add">지금 화면 담기</button><button class="tm-play" ${tourSteps.length ? '' : 'disabled'}>재생</button><button class="tm-save" ${tourSteps.length ? '' : 'disabled'}>파일로 저장</button><button class="tm-clear" ${tourSteps.length ? '' : 'disabled'}>모두 지우기</button></div>
+    <p class="small">저장한 파일은 "저장·공유 → 애드온·발표 불러오기"로 다시 열 수 있습니다. 투어는 지상 모드의 시점을 담습니다.</p>`;
+  box.querySelector('.tm-x').onclick = () => { box.hidden = true; };
+  box.querySelectorAll('.tm-list li').forEach(li => { const i = +li.dataset.i;
+    li.querySelector('textarea').oninput = (e) => { tourSteps[i].say = e.target.value.slice(0, 300); };
+    li.querySelector('input').onchange = (e) => { tourSteps[i].wait = Math.min(600, Math.max(1, +e.target.value || 6)); };
+    li.querySelector('.tm-del').onclick = () => { tourSteps.splice(i, 1); tourMaker(); };
+    li.querySelector('.tm-up').onclick = () => { if (i) { [tourSteps[i - 1], tourSteps[i]] = [tourSteps[i], tourSteps[i - 1]]; tourMaker(); } }; });
+  box.querySelector('.tm-add').onclick = () => {
+    if (mode.space) setMode(false);
+    const o = selected && (selected.planet ? selected.p.name : selected.messier || selected.name);
+    tourSteps.push({ t: new Date(state.time).toISOString().slice(0, 16), lat: +state.lat.toFixed(3), lon: +state.lon.toFixed(3), az: +view.az.toFixed(1), alt: +view.alt.toFixed(1), fov: +view.fov.toPrecision(3), ...(o ? { o } : {}), pan: tourSteps.length ? 3 : 0, say: '', wait: 6 });
+    tourMaker(); box.querySelector('.tm-list li:last-child textarea')?.focus(); };
+  box.querySelector('.tm-play').onclick = () => { box.hidden = true; runScript(tourSteps.map(s => ({ ...s }))).then(() => { if (!sandboxOn) box.hidden = false; }); };
+  box.querySelector('.tm-clear').onclick = () => { tourSteps.length = 0; tourMaker(); };
+  box.querySelector('.tm-save').onclick = () => { const name = (prompt('투어 이름', '나의 하늘 투어') || '나의 하늘 투어').slice(0, 60);
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({ name, script: tourSteps }, null, 1)], { type: 'application/json' }));
+    a.download = name.replace(/[\\/:*?"<>|]/g, '_') + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); };
+}
+$('tourmk-btn').onclick = () => tourMaker();
 // ---------- top bar: the most used tools stay visible, the rest go into three menus (fixed pop-ups, so the scrolling bar on phones does not clip them) ----------
 (function groupMenus() {
-  const groups = [['관측', ['today-btn', 'obs-btn', 'exp-btn', 'night', 'gyro', 'ar']], ['배우기', ['tour-btn', 'cine-btn', 'sizes-btn', 'hist-btn', 'ls-btn']], ['저장·공유', ['share', 'shot', 'rec-btn', 'offline-btn', 'addon-btn', 'full']]];
+  const groups = [['관측', ['today-btn', 'obs-btn', 'exp-btn', 'night', 'gyro', 'ar']], ['배우기', ['tour-btn', 'tourmk-btn', 'cine-btn', 'sizes-btn', 'hist-btn', 'ls-btn']], ['저장·공유', ['share', 'shot', 'rec-btn', 'offline-btn', 'addon-btn', 'full']]];
   const tools = $('tools'), lang = $('lang'), pops = [];
   for (const [name, ids] of groups) {
     const wrap = document.createElement('div'), btn = document.createElement('button'), pop = document.createElement('div');

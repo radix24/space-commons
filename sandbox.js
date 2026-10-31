@@ -630,6 +630,32 @@ const TERRA = {
     ['초록 행성', '바다 주변에서 식물이 자라 산소를 만듭니다. 이론으로는 가능하지만 수천 년과 엄청난 에너지가 드는, 가장 어려운 테라포밍입니다.', (b) => { b.atm.mix = { N2: 0.75, O2: 0.2, CO2: 0.02, H2O: 0.02, Ar: 0.01 }; b.life = 1; }],
   ] },
 };
+// concept cards and short check questions next to the experiments, so trying something leads to the idea behind it
+const CARD_NAMES = { visviva: '활력 방정식', hohmann: '호만 전이', oberth: '오베르트 효과', stellar: '항성 진화', hrdiagram: 'H-R도', remnants: '별의 최후', teq: '평형 온도와 온실 효과', hz: '생명 가능 지대', atmos: '대기를 붙잡는 힘' };
+const CHECK = {
+  Mars: [['화성에 물이 생기면 북반구에 바다가 먼저 생기는 까닭은?', ['북쪽 평원이 남쪽 고지대보다 평균 수 km 낮아서', '북반구가 태양에 더 가까워서', '북반구에만 얼음이 있어서'], 0, '궤도선 MOLA의 고도 자료를 보면 북쪽 평원은 남쪽 고지대보다 평균 5 km쯤 낮습니다. 물은 낮은 곳으로 모입니다.'],
+    ['화성에 대기를 두껍게 만들어도 오래 붙잡아 두기 어려운 까닭은?', ['중력이 약하고 전체를 감싸는 자기장이 없어 태양풍에 조금씩 깎여서', '화성이 너무 뜨거워 기체가 끓어 나가서', '기체가 땅속으로 모두 스며들어서'], 0, '화성의 중력은 지구의 약 38%이고, 행성 전체 자기장이 없어 태양풍이 위층 대기를 벗겨 냅니다. MAVEN 궤도선이 이 과정을 관측했습니다.'],
+    ['온실 기체를 늘리면 표면이 따뜻해지는 까닭은?', ['땅이 내보내는 적외선을 대기가 흡수했다가 다시 땅 쪽으로 내보내서', '햇빛을 더 많이 반사해서', '기체가 타면서 열을 내서'], 0, '햇빛은 대부분 대기를 통과해 땅을 데우고, 데워진 땅이 내는 적외선은 이산화탄소와 수증기가 붙잡습니다.']],
+  Venus: [['태양에서 더 먼 금성이 수성보다 뜨거운 까닭은?', ['두꺼운 이산화탄소 대기의 온실 효과', '내부가 더 뜨거워서', '자전이 빨라서'], 0, '금성의 대기압은 지구의 약 92배이고 대부분 이산화탄소입니다. 표면은 밤낮없이 약 465 °C입니다.'],
+    ['금성 테라포밍의 첫 단계로 거론되는 태양 가리개가 하는 일은?', ['들어오는 햇빛을 줄여 대기가 식게 한다', '대기를 우주로 날려 보낸다', '자전을 빠르게 만든다'], 0, '햇빛을 줄이면 평형 온도가 내려가고, 충분히 식으면 이산화탄소가 얼거나 바위에 묶이게 할 수 있습니다.'],
+    ['금성의 자전이 테라포밍을 어렵게 만드는 까닭은?', ['243일에 한 번 거꾸로 돌아 낮과 밤이 각각 두 달 가까이 이어져서', '자전이 너무 빨라 바람이 세서', '자전축이 옆으로 누워 있어서'], 0, '금성의 하루(해가 다시 뜰 때까지)는 지구 날로 약 117일입니다. 식물이 자라기에는 낮과 밤이 너무 깁니다.']],
+  star: [['무거운 별일수록 수명이 어떻게 될까요?', ['훨씬 짧아진다', '훨씬 길어진다', '질량과 상관없다'], 0, '연료는 질량에 비례하지만 밝기는 대략 질량의 3~4제곱으로 커져서, 무거운 별은 연료를 훨씬 빨리 씁니다.'],
+    ['태양이 주계열을 떠난 뒤 겪는 순서로 맞는 것은?', ['적색거성 → 행성상 성운 → 백색왜성', '초신성 → 중성자별', '블랙홀 → 백색왜성'], 0, '태양 정도의 별은 초신성이 되지 않고, 바깥층을 부드럽게 내보낸 뒤 지구만 한 백색왜성으로 남습니다.'],
+    ['적색거성이 된 별의 색이 붉은 까닭은?', ['부풀어 오른 표면의 온도가 낮아져서', '별이 멀어져서', '먼지에 가려서'], 0, '표면 온도가 낮을수록 빛의 정점이 긴 파장(붉은색) 쪽으로 옮겨 갑니다. 흑체 복사 카드에서 직접 바꿔 볼 수 있습니다.']],
+};
+function learnLinks(box, ids, quiz) {
+  box.innerHTML = '<span class="small">개념 카드</span> ' + ids.map(id => `<button class="sb-cardlink" data-card="${id}">${CARD_NAMES[id] || id}</button>`).join('') + (quiz ? '<button class="sb-quizlink">확인 문제</button><div class="sb-quiz" hidden></div>' : '');
+  box.querySelectorAll('.sb-cardlink').forEach(b => { b.onclick = () => openCards({ card: b.dataset.card, openLab: (n) => openLab(n) }); });
+  const qb = box.querySelector('.sb-quizlink'); if (qb) qb.onclick = () => checkQuiz(box.querySelector('.sb-quiz'), CHECK[quiz]);
+}
+function checkQuiz(box, qs, k = 0, score = 0) {
+  box.hidden = false; if (k >= qs.length) { box.innerHTML = `<p><b>${qs.length}문제 중 ${score}개를 맞혔습니다.</b></p><button class="sb-qagain">다시 풀기</button>`; box.querySelector('.sb-qagain').onclick = () => checkQuiz(box, qs); return; }
+  const [q, opts, a, why] = qs[k], order = opts.map((_, i) => i).sort(() => Math.random() - 0.5);
+  box.innerHTML = `<p><b>${k + 1}.</b> ${q}</p>` + order.map(i => `<button class="sb-qopt" data-i="${i}">${opts[i]}</button>`).join('') + '<p class="sb-qwhy" hidden></p>';
+  box.querySelectorAll('.sb-qopt').forEach(b => { b.onclick = () => { const ok = +b.dataset.i === a; box.querySelectorAll('.sb-qopt').forEach(x => { x.disabled = true; if (+x.dataset.i === a) x.classList.add('ok'); }); if (!ok) b.classList.add('no');
+    const w = box.querySelector('.sb-qwhy'); w.hidden = false; w.textContent = (ok ? '맞았습니다. ' : '아쉽습니다. ') + why;
+    const nx = document.createElement('button'); nx.textContent = k + 1 < qs.length ? '다음 문제' : '결과 보기'; nx.onclick = () => checkQuiz(box, qs, k + 1, score + ok); box.append(nx); }; });
+}
 function terraform(name) {
   let b = byName(name); if (!b) { root.querySelector('.sb-now').click(); b = byName(name); } if (!b) return;
   const T = TERRA[name]; ATM.atmOf(b); if (name === 'Mars') b.hmap = 'disp_mars'; b.terraStep = 0; select(b); focus(name, b.Rkm / O.AU_KM * 5);
@@ -639,7 +665,9 @@ function terraform(name) {
     box.innerHTML = `<header><b>${T.ko} 테라포밍</b><span>${i} / ${T.steps.length}</span><button class="sb-tx">닫기</button></header>
       <ol>${T.steps.map((x, k) => `<li class="${k < i ? 'done' : k === i ? 'next' : ''}">${x[0]}</li>`).join('')}</ol>
       ${name === 'Mars' && (b.sea ?? -1) > -0.5 ? `<div class="sb-prop"><label>해수면 (해발)</label><input class="sb-seam" type="number" step="100" value="${marsM(b.sea)}"><span class="u">m</span><input class="sb-sear" type="range" min="-8000" max="4000" step="50" value="${marsM(b.sea)}"></div>` : ''}
-      ${s ? `<p>${s[1]}</p><button class="sb-tgo">${i + 1}단계: ${s[0]}</button>` : `<p>모든 단계를 마쳤습니다. 오른쪽 정보 창에서 표면 온도와 물 상태를 확인하고, 시간을 흘려 보세요.</p>`}`;
+      ${s ? `<p>${s[1]}</p><button class="sb-tgo">${i + 1}단계: ${s[0]}</button>` : `<p>모든 단계를 마쳤습니다. 오른쪽 정보 창에서 표면 온도와 물 상태를 확인하고, 시간을 흘려 보세요.</p>`}
+      <div class="sb-learn"></div>`;
+    learnLinks(box.querySelector('.sb-learn'), ['teq', 'hz', 'atmos'], name);
     box.querySelector('.sb-tx').onclick = () => { box.hidden = true; };
     const sm = box.querySelector('.sb-seam'), sr = box.querySelector('.sb-sear'), setSea = (m) => { b.sea = marsSea(m); sm.value = m; sr.value = m; };
     if (sm) { sm.onchange = () => setSea(Math.max(-8000, Math.min(4000, +sm.value))); sr.oninput = () => setSea(+sr.value); }
@@ -1289,8 +1317,10 @@ function buildUI() {
         <tr class="sb-burnrow"><th>분사 Δv</th><td><input class="sb-dvp" type="number" step="10" value="0" title="진행 방향 (+ 빨라짐)"><input class="sb-dvr" type="number" step="10" value="0" title="바깥쪽"><input class="sb-dvn" type="number" step="10" value="0" title="궤도면 위쪽"><span class="u">m/s</span></td></tr>
         <tr class="sb-burnrow"><th></th><td class="small">진행 · 바깥 · 위쪽 방향. 미리 보기는 초록 점선</td></tr>
         <tr class="sb-burnrow"><th></th><td><button class="sb-burnprev">미리 보기</button><button class="sb-burngo">분사</button></td></tr>
+        <tr class="sb-burnrow"><th></th><td class="sb-learn" data-cards="visviva hohmann oberth"></td></tr>
         <tr class="sb-agerow"><th>별의 나이</th><td><input class="sb-age" type="number" min="0" step="0.1"><span class="u">억 년</span><span class="small sb-stage"></span></td></tr>
         <tr class="sb-agerow"><th></th><td><input class="sb-ager" type="range" min="0" max="1000" value="460"></td></tr>
+        <tr class="sb-agerow"><th></th><td class="sb-learn" data-cards="stellar hrdiagram remnants" data-quiz="star"></td></tr>
         <tr><th>별에서 거리</th><td><input class="sb-dnum" type="number" min="0.05" step="any"><span class="u">AU</span><button class="sb-dgo">옮기기</button></td></tr>
       </table>
       <input class="sb-mass" type="range" min="-3" max="3" step="0.05" value="0" hidden><div class="small sb-massv"></div>
@@ -1383,6 +1413,7 @@ function buildUI() {
   ruler.lb = q('.sb-rulerlb');
   q('.sb-burnprev').onclick = previewBurn;
   q('.sb-burngo').onclick = () => { const b = selected; if (!b) return; const x = burnVec(b); if (!x) return; b.v = add(b.v, x.dv); burnPrev.clear(); sim.E0 = energy(); showNums(); toast('분사했습니다. 새 궤도를 따라갑니다'); };
+  root.querySelectorAll('td.sb-learn').forEach(td => learnLinks(td, td.dataset.cards.split(' '), td.dataset.quiz));
   q('.sb-age').onchange = () => { if (selected?.kind === 'star') { setAge(selected, +q('.sb-age').value); showNums(); } };
   q('.sb-ager').oninput = () => { if (selected?.kind === 'star') { setAge(selected, +q('.sb-ager').value / 10); q('.sb-age').value = +(selected.age).toFixed(1); q('.sb-stage').textContent = ' ' + starStage(selected).name; } };
   const setG = (g) => { sim.G = Math.max(0, Math.min(10, g)); q('.sb-g').value = +sim.G.toFixed(2); q('.sb-gr').value = sim.G <= 0 ? 0 : 500 + Math.log10(sim.G) * 500; sim.E0 = energy(); };

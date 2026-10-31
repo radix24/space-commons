@@ -631,3 +631,21 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px rg
   .sb-dock button { flex: 1 0 auto; white-space: nowrap; padding: 8px 10px; }
   .sb-dock button b { white-space: nowrap; }
 }
+
+/* concept-card links and check questions beside sandbox experiments */
+.sb-learn { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-top: 6px; }
+.sb-learn .small { color: var(--mute); margin-right: 2px; }
+.sb-learn button { height: 26px; padding: 0 8px; font-size: 12px; }
+.sb-quiz { flex: 1 0 100%; margin-top: 6px; padding: 8px; border: 1px solid var(--line); background: rgba(255, 255, 255, .03); }
+.sb-quiz p { margin: 0 0 6px; font-size: 12.5px; line-height: 1.55; }
+.sb-quiz .sb-qopt { display: block; width: 100%; height: auto; min-height: 28px; margin-bottom: 4px; padding: 5px 8px; text-align: left; white-space: normal; }
+.sb-quiz .sb-qopt.ok { border-color: #5fb37c; color: #bfe8cc; } .sb-quiz .sb-qopt.no { border-color: #d0705a; color: #f2c0b4; }
+/* tour maker */
+#tourmk { position: fixed; top: 60px; right: 12px; background: var(--panel); border: 1px solid var(--line); color: var(--text, #EEF0FA); width: min(380px, calc(100vw - 24px)); max-height: calc(100vh - 220px); overflow: auto; z-index: 30; padding: 12px; }
+#tourmk header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+#tourmk .tm-list { margin: 8px 0; padding-left: 20px; } #tourmk .tm-list li { margin-bottom: 10px; }
+#tourmk .tm-head { display: flex; gap: 4px; align-items: center; font-size: 11.5px; color: var(--mute); } #tourmk .tm-head span { flex: 1; }
+#tourmk .tm-head button { height: 22px; min-width: 22px; padding: 0 5px; }
+#tourmk textarea { width: 100%; box-sizing: border-box; margin: 4px 0; resize: vertical; font: inherit; font-size: 13px; background: rgba(255, 255, 255, .04); color: inherit; border: 1px solid var(--line); padding: 5px 7px; }
+#tourmk label { font-size: 12px; color: var(--mute); } #tourmk label input { width: 56px; }
+#tourmk .row { display: flex; flex-wrap: wrap; gap: 4px; }
