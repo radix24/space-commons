@@ -59,11 +59,11 @@ const NOISE = `float h1(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 
 function terrainMaterial(map, mars) {
   return new THREE.ShaderMaterial({
     uniforms: { map: { value: map }, sunDir: { value: new THREE.Vector3(0, 1, 0) }, sunI: { value: 1 }, amb: { value: new THREE.Vector3() }, haze: { value: new THREE.Vector3() },
-      hazeK: { value: 0 }, camPos: { value: new THREE.Vector3() }, target: { value: mars ? 0.2 : 0.17 } },
+      hazeK: { value: 0 }, camPos: { value: new THREE.Vector3() }, crop: { value: new THREE.Vector4(0, 0, 1, 1) }, target: { value: mars ? 0.2 : 0.17 } },
     vertexShader: `#include <common>
       #include <logdepthbuf_pars_vertex>
-      varying vec2 vUv; varying vec3 vN, vW;
-      void main() { vUv = uv; vN = normalize(mat3(modelMatrix) * normal); vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz;
+      uniform vec4 crop; varying vec2 vUv; varying vec3 vN, vW;
+      void main() { vUv = (uv - crop.xy) / crop.zw; vN = normalize(mat3(modelMatrix) * normal); vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz;
         gl_Position = projectionMatrix * viewMatrix * w;
         #include <logdepthbuf_vertex>
       }`,
@@ -79,7 +79,7 @@ function terrainMaterial(map, mars) {
         vec2 cell = floor(vW.xz / 0.6), f = fract(vW.xz / 0.6) - 0.5 + (vec2(h1(cell + 7.0), h1(cell + 3.0)) - 0.5) * 0.5;
         float rock = step(0.955, h1(cell)) * (1.0 - smoothstep(0.08, 0.15 + 0.12 * h1(cell + 11.0), length(f)));
         vec3 col = base * mix(1.0, 0.72 + 0.56 * d, 0.15 + 0.85 * fine) * (1.0 - rock * fine * 0.5);
-        float lam = max(dot(normalize(vN), sunDir), 0.0);
+        vec3 N = normalize(vN); if (N.y < 0.0) N = -N; float lam = max(dot(N, sunDir), 0.0);
         col = col * (lam * sunI + amb);
         col = mix(col, haze, 1.0 - exp(-dist * hazeK));
         gl_FragColor = vec4(col, 1.0);
@@ -164,13 +164,22 @@ export async function enter(appApi, target, opts = {}) {
   L = { body, b, R, lat0: target.lat * D2R, lon0: target.lon * D2R, target, dem, ex: 1, levels: LEVELS.map(() => ({})), keys: new Set(), yaw: 0, pitch: 0.05, owned: [] };
   L.h0 = 0; L.h0 = (demAt(dem, (L.lon0 / (2 * Math.PI) + 0.5) * dem.w - 0.5, (0.5 - L.lat0 / Math.PI) * dem.h - 0.5));
   // colour: reuse the 8k map if the planet already has it, otherwise load it now (and free it on exit)
-  const have = b.mesh.material.uniforms?.map?.value;
-  let map = have?.image?.width >= 8192 ? have : null;
-  if (!map) { map = await new THREE.TextureLoader().loadAsync(COLOR[body]).catch(() => have); if (map !== have) L.owned.push(map); }
+  // colour: only the part of the 8k map around the site, cut into a 2048 px canvas (the whole map would take ~180 MB of video memory)
+  const im = new Image(); im.src = COLOR[body]; await im.decode().catch(() => {});
   if (!L) return; // left while loading
-  map.colorSpace = THREE.SRGBColorSpace; map.wrapS = THREE.RepeatWrapping; map.anisotropy = api.renderer.capabilities.getMaxAnisotropy(); map.needsUpdate = true;
+  const du = 70000 / (2 * Math.PI * R * Math.max(0.1, Math.cos(L.lat0))), dv = 70000 / (Math.PI * R), uC = L.lon0 / (2 * Math.PI) + 0.5, vC = 0.5 + L.lat0 / Math.PI;
+  const crop = new THREE.Vector4(uC - du, vC - dv, 2 * du, 2 * dv), cv = document.createElement('canvas'); cv.width = cv.height = 2048; const cx = cv.getContext('2d');
+  // the 8k photo, or the planet's own (smaller) map if the big one could not be decoded
+  const src = im.naturalWidth ? im : b.mesh.material.uniforms?.map?.value?.image, W = src?.naturalWidth || src?.width || 0, H = src?.naturalHeight || src?.height || 0;
+  cx.fillStyle = body === 'Mars' ? '#8a5a3c' : '#8a8a86'; cx.fillRect(0, 0, 2048, 2048);
+  if (W) { const sx = crop.x * W, sy = (1 - crop.y - crop.w) * H, sw = crop.z * W, sh = crop.w * H;
+    for (const k of [-1, 0, 1]) { const x0 = Math.max(0, sx + k * W), x1 = Math.min(W, sx + sw + k * W), y0 = Math.max(0, sy), y1 = Math.min(H, sy + sh); if (x1 <= x0 || y1 <= y0) continue;
+      cx.drawImage(src, x0, y0, x1 - x0, y1 - y0, (x0 - sx - k * W) / sw * 2048, (y0 - sy) / sh * 2048, (x1 - x0) / sw * 2048, (y1 - y0) / sh * 2048); } }
+  console.log(`[LAND] colour map ${W}x${H}`);
+  const map = new THREE.CanvasTexture(cv); L.owned.push(map);
+  map.colorSpace = THREE.SRGBColorSpace; map.anisotropy = api.renderer.capabilities.getMaxAnisotropy();
   const scene = L.scene = new THREE.Scene();
-  L.terrainMat = terrainMaterial(map, body === 'Mars');
+  L.terrainMat = terrainMaterial(map, body === 'Mars'); L.terrainMat.uniforms.crop.value.copy(crop);
   L.rig = new THREE.Group(); scene.add(L.rig);
   L.cam = new THREE.PerspectiveCamera(60, 1, 0.05, 3e5); L.cam.rotation.order = 'YXZ'; L.cam.position.y = EYE; L.rig.add(L.cam);
   updateLevels(true);
@@ -248,8 +257,9 @@ export function setLocalTime(kind) {
 }
 function aimAt(name, snap) {
   const f = frameAt(api.state.time), d = dirOf(name, f); if (!d) return;
-  const loc = toLocal(d, f); L.yaw = Math.atan2(-loc.x, -loc.z); L.pitch = Math.max(-1.4, Math.min(1.45, Math.asin(loc.y) + (name === 'sun' && loc.y < 0.1 ? 0.12 : 0)));
+  const loc = toLocal(d, f); L.yaw = Math.atan2(-loc.x, -loc.z); L.pitch = name === 'sun' ? Math.min(0.2, Math.max(0.1, Math.asin(loc.y) + 0.12)) : Math.max(-1.4, Math.min(1.45, Math.asin(loc.y))); // the Sun: face its direction with the horizon in view
   if (snap) L.pitch0 = L.pitch;
+  if (L.cam) L.cam.fov = name === 'earth' ? 9 : 60; // Earth is about 2 degrees across from the Moon: zoom in to see its phase
 }
 function dirOf(name, f) {
   if (name === 'sun') return f.sun.clone();
@@ -290,7 +300,7 @@ export function frame(now, dt) {
     const rel = hp.clone().sub(f.obs), dist = rel.length(), dir = rel.divideScalar(dist), rad = (o.p.R / 1e6) / dist, D = SKY_R * 0.8;
     o.dir = dir; o.mesh.position.copy(dir).multiplyScalar(D); o.mesh.scale.setScalar(D * rad); o.mesh.material.uniforms.sunDir.value.copy(hp.clone().negate().normalize());
     if (o.name === 'Earth' && L.body === 'Moon') o.mesh.quaternion.copy(f.earthQ);
-    const big = rad > 0.0006; o.mesh.visible = big; o.dot.visible = !big || rad < 0.002; o.dot.position.copy(o.mesh.position);
+    const big = rad > 0.0006; o.mesh.visible = big; o.dot.visible = !big; o.dot.position.copy(o.mesh.position);
     o.dot.scale.setScalar(D * (big ? rad * 3 : 0.0035)); o.dot.material.opacity = (big ? 0.35 : 1) * (mars ? 1 - day * (o.name === 'Phobos' || o.name === 'Deimos' ? 0.6 : 0.95) : 1); }
   // light on the ground: sunlight, plus sky light on Mars and earthshine on the Moon
   const u = L.terrainMat.uniforms; u.sunDir.value.copy(sunL); u.camPos.value.copy(eye);
@@ -300,7 +310,11 @@ export function frame(now, dt) {
     u.sunI.value = 1.25 * sunVis; const es = 0.012 + 0.05 * ph * Math.max(0, toLocal(e?.dir || f.up, f).y); u.amb.value.set(es, es, es * 1.1); u.haze.value.set(0, 0, 0); u.hazeK.value = 0; }
   r.setClearColor(0x000000, 1);
   if (api.xrTick) api.xrTick(L.scene, L.cam);
-  r.clear(); r.render(L.scene, L.cam);
+  // two passes: the sky first, then the ground over it (the sky's transparent layers would otherwise be drawn after, on top of the ground)
+  const ac = r.autoClear; r.autoClear = false; r.clear();
+  for (const lv of L.levels) lv.mesh.visible = false; L.skyLocal.visible = true; r.render(L.scene, L.cam);
+  for (const lv of L.levels) lv.mesh.visible = true; L.skyLocal.visible = false; r.render(L.scene, L.cam);
+  L.skyLocal.visible = true; r.autoClear = ac;
   if (!xr) drawLabels(f); else L.labels.textContent = '';
   updateUI(f);
 }
@@ -343,7 +357,7 @@ function updateUI(f) {
   L.clock.textContent = `현지 태양시 ${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')} · 해의 높이 ${alt.toFixed(1)}°`;
 }
 function drawLabels(f) {
-  const out = [], v = new THREE.Vector3(), push = (dirEq, text) => { v.copy(toLocal(dirEq, f)); if (v.y < -0.02) return; v.multiplyScalar(1000).add(L.cam.getWorldPosition(new THREE.Vector3())).project(L.cam);
+  const out = [], v = new THREE.Vector3(), push = (dirEq, text) => { v.copy(toLocal(dirEq, f)); if (v.y < 0) return; v.multiplyScalar(1000).add(L.cam.getWorldPosition(new THREE.Vector3())).project(L.cam);
     if (v.z > 1 || Math.abs(v.x) > 1 || Math.abs(v.y) > 1) return; out.push([(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight, text]); };
   push(f.sun, '태양'); for (const o of L.bodies) if (o.dir) push(o.dir, o.ko);
   L.labels.textContent = ''; for (const [x, y, t] of out) { const s = el('span', '', t); s.style.transform = `translate(${Math.round(x + 10)}px, ${Math.round(y - 8)}px)`; L.labels.append(s); }

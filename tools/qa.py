@@ -125,7 +125,7 @@ def run(names):
                     d = p['exceptionDetails']; problems.append('exception: ' + (d.get('exception', {}).get('description') or d.get('text', '')).split('\n')[0])
                 elif m == 'Runtime.consoleAPICalled' and p.get('type') == 'error':
                     txt = ' '.join(str(a.get('value', a.get('description', ''))) for a in p.get('args', []))
-                    if not any(s in txt for s in IGNORE): problems.append('console.error: ' + txt[:200])
+                    if not any(s in txt for s in IGNORE): problems.append('console.error: ' + txt[:200 if 'Shader' not in txt else 6000])
                 elif m == 'Runtime.consoleAPICalled' and str(p.get('args', [{}])[0].get('value', '')).startswith(('[HANGUL]', '[LAND]')): print('        ' + p['args'][0]['value'])
                 elif m == 'Network.requestWillBeSent': reqs[p['requestId']] = p['request']['url']
                 elif m == 'Network.responseReceived':
