@@ -761,7 +761,8 @@ const planetMat = (tex, emissive) => new THREE.ShaderMaterial({
         col += vec3(1.0, 0.95, 0.85) * sea * (pow(nh, 18.0) * 0.55 + pow(nh, 160.0) * 1.4) * smoothstep(0.0, 0.15, ndl); }
       if (hasNight > 0.5) col += texture2D(night, vUv).rgb * (1.0 - smoothstep(-0.12, 0.08, ndl)) * 1.3; // city lights on the night side
       // in a daytime sky the unlit part of a body is not black but sky-coloured: let it fade out (bright parts stay opaque)
-      gl_FragColor = vec4(col, mix(1.0, clamp(dot(col, vec3(0.3, 0.59, 0.11)) * 5.0, 0.0, 1.0), skyK)); }`,
+      col = mix(col, col * 1.7 + vec3(0.16, 0.18, 0.22) * smoothstep(0.0, 0.2, ndl), skyK); // by day the lit side adds to the bright sky behind it
+      gl_FragColor = vec4(col, mix(1.0, smoothstep(0.0, 0.12, ndl), skyK)); } // by day only the unlit side lets the blue sky through; dark maria on the lit side stay solid`,
   depthTest: true, depthWrite: true, transparent: true,
 });
 const texLoader = new THREE.TextureLoader();
@@ -1491,6 +1492,9 @@ function pick(x, y) {
   let best = null, bd = 18;
   const test = (w, mk, bonus = 0) => { if (w.dot(fwd) < cosLim) return; const s = toScreen(w); if (!s) return;
     const d = Math.hypot(s[0] - x, s[1] - y) - bonus; if (d < bd) { bd = d; best = mk; } };
+  { let sb = null, sd = 16; // satellites first: low-orbit ones always sit over the Earth's disc, which would otherwise take every click
+    for (const s of sats) { if (!s.world) continue; const sc = toScreen(s.world); if (!sc) continue; const d = Math.hypot(sc[0] - x, sc[1] - y) - (s.korea || s.star ? 4 : 0); if (d < sd) { sd = d; sb = s; } }
+    if (sb) return sb; }
   for (const p of PLANETS) if (p.world && p.mesh.visible) {
     const s = toScreen(p.world);
     if (s && Math.hypot(s[0] - x, s[1] - y) < Math.max(14, p.rpx)) return planetObj(p);

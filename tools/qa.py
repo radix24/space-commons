@@ -26,9 +26,15 @@ SCENARIOS = {
     'sandbox': ('app.html', "(async () => { document.querySelector('[data-mode=sandbox]').click(); for (let i = 0; i < 40 && !document.querySelector('.sb-dock'); i++) await new Promise(r => setTimeout(r, 250)); return !!document.querySelector('.sb-dock'); })()"),
     'kr':      ('app.html#o=' + '%EC%B2%9C%EB%A6%AC%EC%95%88%202A%ED%98%B8', "(async () => { for (let i = 0; i < 60 && !document.querySelector('.krcard'); i++) await new Promise(r => setTimeout(r, 250)); return !!document.querySelector('.krcard b'); })()"),
     'venus':   ('app.html', "(async () => { const w = (ms) => new Promise(r => setTimeout(r, ms)); document.querySelector('[data-mode=sandbox]').click(); for (let i = 0; i < 40 && !document.querySelector('.sb-dock'); i++) await w(250); [...document.querySelectorAll('button')].find(b => /금성 테라포밍/.test(b.textContent)).click(); await w(800); for (let k = 0; k < 5; k++) { document.querySelector('.sb-terra .sb-tgo')?.click(); await w(500); } const sea = document.querySelector('.sb-seam')?.value; document.querySelector('.sb-terra .sb-tx').click(); await w(3000); return sea === '400'; })()"),
+    'sblib':   ('app.html', "(async () => { const w = (ms) => new Promise(r => setTimeout(r, ms)); document.querySelector('[data-mode=sandbox]').click(); for (let i = 0; i < 40 && !document.querySelector('.sb-dock'); i++) await w(250); document.querySelector('.sb-tabs [data-tab=make]').click(); const f = document.querySelector('.sb-find'); f.value = '궤도'; f.dispatchEvent(new Event('input')); await w(600); return !document.querySelector('.sb-drawer').hidden && document.querySelectorAll('.sb-miss').length > 0; })()"),
+    'sbphone': ('app.html', "(async () => { const w = (ms) => new Promise(r => setTimeout(r, ms)); document.querySelector('[data-mode=sandbox]').click(); for (let i = 0; i < 40 && !document.querySelector('.sb-dock'); i++) await w(250); [...document.querySelectorAll('button')].find(b => /화성 테라포밍/.test(b.textContent)).click(); await w(800); document.querySelector('.sb-terra .sb-tgo')?.click(); await w(1500); return !document.querySelector('.sb-terra').hidden && document.documentElement.scrollWidth <= innerWidth; })()"),
+    'sbsys':   ('app.html', "(async () => { const w = (ms) => new Promise(r => setTimeout(r, ms)); document.querySelector('[data-mode=sandbox]').click(); for (let i = 0; i < 40 && !document.querySelector('.sb-dock'); i++) await w(250); await w(800); const c = document.querySelector('.sb-root canvas'); for (let k = 0; k < 14; k++) { c.dispatchEvent(new WheelEvent('wheel', { deltaY: 300, clientX: 640, clientY: 430, bubbles: true, cancelable: true })); await w(60); } await w(1500); return [...document.querySelectorAll('.sb-label')].filter(l => /해왕성|Neptune/.test(l.textContent) && l.style.display !== 'none').length > 0; })()"),
     'models':  ('tools/model-sheet.html?only=kr', "(() => { const bad = window.__report.filter(r => r.issues.length); for (const r of bad) console.error('model ' + r.name + ': ' + r.issues.join(', ')); return !bad.length; })()"),
-    'nuri':    ('tools/model-sheet.html?only=Nuri', "window.__report.every(r => !r.issues.length)"),
+    'nuri':    ('tools/model-sheet.html?only=Nuri', "(async () => { for (let i = 0; i < 80 && !window.__report; i++) await new Promise(r => setTimeout(r, 250)); return window.__report.every(r => !r.issues.length); })()"),
     'nurireplay': ('app.html#o=' + '%EC%B2%9C%EB%A6%AC%EC%95%88%202A%ED%98%B8', "(async () => { const w = (ms) => new Promise(r => setTimeout(r, ms)); for (let i = 0; i < 60 && !document.querySelector('.kracts'); i++) await w(250); [...document.querySelectorAll('.kracts button')].find(b => /누리호/.test(b.textContent)).click(); await w(12000); return /누리호/.test(document.getElementById('status').textContent); })()"),
+    'daymoon': ('app.html#m=g&t=2026-10-31T00:30&lat=37.57&lon=126.98&az=280.3&alt=31&fov=4&o=Moon', READY),
+    'nuribase': ('tools/model-sheet.html?only=Nuri&focus=-3,6', "(async () => { for (let i = 0; i < 80 && !window.__report; i++) await new Promise(r => setTimeout(r, 250)); return window.__report.every(r => !r.issues.length); })()"),
+    'nurimid': ('tools/model-sheet.html?only=Nuri&focus=8,24', "(async () => { for (let i = 0; i < 80 && !window.__report; i++) await new Promise(r => setTimeout(r, 250)); return window.__report.every(r => !r.issues.length); })()"),
     'english': ('app.html?lang=en', READY),
     'embed':   ('app.html?embed=1', READY + " && document.body.classList.contains('embed')"),
     'phone':   ('app.html', READY + " && document.documentElement.scrollWidth <= innerWidth"),
@@ -88,7 +94,7 @@ def run(names):
         c.call('Network.setCacheDisabled', cacheDisabled=True)
         for name in names:
             path, check = SCENARIOS[name]
-            phone = name == 'phone'
+            phone = name in ('phone', 'sbphone')
             c.call('Emulation.setDeviceMetricsOverride', width=375 if phone else 1280, height=812 if phone else 860, deviceScaleFactor=1, mobile=phone)
             c.events.clear(); t0 = time.time()
             c.call('Page.navigate', url=f'http://127.0.0.1:{port}/{path}')

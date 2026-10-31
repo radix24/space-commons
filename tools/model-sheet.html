@@ -10,7 +10,7 @@
   body { margin: 0; background: #0b0c10; color: #d8dbe6; font: 13px/1.4 system-ui, sans-serif; }
   #grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #22252e; }
   .cell { background: #0b0c10; position: relative; }
-  .cell canvas { display: block; width: 100%; aspect-ratio: 4 / 3; }
+  .cell canvas { display: block; width: 100%; height: auto; }
   .cell b { position: absolute; left: 8px; top: 6px; font-weight: 600; }
   .cell span { position: absolute; left: 8px; bottom: 6px; color: #8a8fa0; font-size: 11px; }
   .cell.bad span { color: #ff8a7a; }
@@ -28,7 +28,7 @@ const KR = ['KOMPSAT', 'KOMPSAT-5', 'GEO-KOMPSAT', 'GEO-KOMPSAT-B', 'Koreasat', 
 const ALL = [...KR, 'Cassini', 'Rosetta', 'Dawn', 'MESSENGER', 'OSIRIS-REx', 'Hayabusa2', 'DART', 'Ulysses', 'Solar Orbiter', 'BepiColombo', 'Juice', 'Europa Clipper', 'Lucy', 'Psyche', 'Tiangong'];
 const only = new URLSearchParams(location.search).get('only'), names = only === 'kr' ? KR : only ? only.split(',') : ALL;
 if (only && only !== 'kr') document.getElementById('grid').style.gridTemplateColumns = `repeat(${names.length}, 1fr)`; // ?only=Nuri for a close look
-const W = 480, H = 360, renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); renderer.setSize(W, H); renderer.toneMapping = THREE.ACESFilmicToneMapping;
+const one = names.length === 1, W = one ? 640 : 480, H = one ? 960 : 360, renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); renderer.setSize(W, H); renderer.toneMapping = THREE.ACESFilmicToneMapping;
 const pm = new THREE.PMREMGenerator(renderer), env = pm.fromScene(new RoomEnvironment(), 0.04).texture;
 const report = [];
 function check(name, root) {
@@ -56,6 +56,7 @@ function check(name, root) {
 }
 for (const name of names) {
   const cell = document.createElement('div'); cell.className = 'cell'; const cv = document.createElement('canvas'); cv.width = W; cv.height = H; cell.append(cv);
+  if (one) Object.assign(cv.style, { height: '100vh', width: 'auto', margin: '0 auto' });
   const lab = document.createElement('b'), info = document.createElement('span'); lab.textContent = name; cell.append(lab, info); document.getElementById('grid').append(cell);
   let root; try { root = buildCraft(name); } catch (e) { report.push({ name, issues: ['빌드 오류: ' + e.message] }); info.textContent = '빌드 오류: ' + e.message; cell.classList.add('bad'); continue; }
   if (!root) { report.push({ name, issues: ['빌더 없음'] }); info.textContent = '빌더 없음'; cell.classList.add('bad'); continue; }
@@ -64,7 +65,9 @@ for (const name of names) {
   if (r.issues.length) cell.classList.add('bad');
   const scene = new THREE.Scene(); scene.environment = env; scene.background = new THREE.Color(0x0b0c10);
   const sun = new THREE.DirectionalLight(0xffffff, 2.6); sun.position.set(4, 6, 5); scene.add(sun, new THREE.AmbientLight(0x404858, 0.6), root);
-  const box = new THREE.Box3().setFromObject(root), c = box.getCenter(new THREE.Vector3()), rad = box.getSize(new THREE.Vector3()).length() / 2;
+  const focus = new URLSearchParams(location.search).get('focus'); // ?focus=0,8 frames the part between y = 0 and 8 m (a close look at engines, markings)
+  const box = new THREE.Box3().setFromObject(root); if (focus) { const [a, b] = focus.split(',').map(Number); box.min.y = a; box.max.y = b; }
+  const c = box.getCenter(new THREE.Vector3()), rad = box.getSize(new THREE.Vector3()).length() / 2;
   const cam = new THREE.PerspectiveCamera(30, W / H, rad / 100, rad * 100); cam.position.copy(c).add(new THREE.Vector3(1, 0.7, 1.2).normalize().multiplyScalar(rad / Math.sin(15 * Math.PI / 180) * 1.05)); cam.lookAt(c);
   renderer.render(scene, cam); cv.getContext('2d').drawImage(renderer.domElement, 0, 0);
 }
