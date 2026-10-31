@@ -102,12 +102,12 @@ section.f + section.f { border-top: 1px solid var(--rule); }
 
 <header>
   <div class="wrap">
-    <a class="logo" href="./"><img src="../assets/sc-mark.svg?v=3" width="32" height="32" alt="">Space <b>Commons</b></a>
+    <a class="logo" href="../"><img src="../assets/sc-mark.svg?v=3" width="32" height="32" alt="">Space <b>Commons</b></a>
     <nav>
-      <a href="./" class="keep">소개</a>
+      <a href="../" class="keep">소개</a>
       <a href="features.html" aria-current="page">기능</a>
-      <a href="./#local">지역 연계</a>
-      <a class="btn" href="../">하늘 열기</a>
+      <a href="../#local">지역 연계</a>
+      <a class="btn" href="../app.html">하늘 열기</a>
     </nav>
   </div>
 </header>
@@ -115,7 +115,7 @@ section.f + section.f { border-top: 1px solid var(--rule); }
 <section class="hero">
   <div class="moon" aria-hidden="true"></div>
   <div class="wrap txt">
-    <div class="kicker"><span class="mono">기능</span><span>Alpha 0.0.9</span></div>
+    <div class="kicker"><span class="mono">기능</span><span>Alpha 0.0.12k</span></div>
     <h1>하나의 하늘을<br><span>세 가지 방법으로</span></h1>
     <p class="lead">지상에서 올려다보고, 우주로 날아가고, 중력을 직접 다룹니다. 세 모드는 같은 시각과 같은 데이터를 쓰므로 어디서든 이어집니다. 여기에 배움의 자료와 실제 관측 데이터, 누구나 쓸 수 있게 하는 설정이 더해집니다.</p>
     <nav class="toc"><a href="#ground">지상</a><a href="#space">우주</a><a href="#sandbox">샌드박스</a><a href="#learn">배움</a><a href="#data">데이터</a><a href="#access">누구나</a></nav>
@@ -132,7 +132,7 @@ section.f + section.f { border-top: 1px solid var(--rule); }
       <dl class="facts big">
         <div><dt>시간</dt><dd>−1시간부터 +1일까지 속도 7단계, 날짜·시각 입력, 시간을 끌어 보는 슬라이더. 1582년 이전은 율리우스력으로 표시하고 JD와 ΔT를 함께 보여 줍니다</dd></div>
         <div><dt>장소</dt><dd>미리 정한 관측지 10곳, 위도·경도 입력, 내 위치. 현재 날씨도 함께 가져옵니다</dd></div>
-        <div><dt>별자리 문화</dt><dd>서양, 한국, 중국, 이집트 네 가지. 별자리 그림 85장, 천상열차분야지도 목판본과 채색 천문도 겹쳐 보기</dd></div>
+        <div><dt>별자리 문화</dt><dd>서양, 한국, 중국, 이집트, 인도, 일본, 몽골, 마오리 등 14가지. 별자리 그림 85장, 천상열차분야지도 목판본과 채색 천문도 겹쳐 보기</dd></div>
         <div><dt>대기</dt><dd>굴절과 소광, 별의 반짝임, 낮 하늘. 광공해는 보틀 1~9단계로 고르거나 위성 야간 영상으로 판정합니다</dd></div>
       </dl>
       <dl class="facts big">
@@ -195,12 +195,12 @@ section.f + section.f { border-top: 1px solid var(--rule); }
     <div class="cols">
       <dl class="facts big">
         <div><dt>행성과 위성</dt><dd>여덟 행성과 달, 명왕성과 왜소행성, 위성 24개. 달과 화성은 8K 표면 질감으로 가까이 볼 수 있습니다</dd></div>
-        <div><dt>탐사선</dt><dd>보이저와 뉴호라이즌스 등 탐사선 14기의 실제 궤적, 궤도선 10기(다누리 포함), 착륙 지점 32곳</dd></div>
+        <div><dt>탐사선</dt><dd>보이저, 뉴호라이즌스, 카시니, 로제타 등 탐사선 22기의 실제 궤적, 궤도선 10기(다누리 포함), 착륙 지점 32곳. 1950년부터 2050년까지의 임무 연표를 끌어 그 시각으로 갑니다</dd></div>
         <div><dt>명장면</dt><dd>탐사선이 행성을 스쳐 지나간 순간 12개를 그 시각, 그 각도에서 다시 봅니다</dd></div>
       </dl>
       <dl class="facts big">
         <div><dt>소천체</dt><dd>소행성대와 카이퍼대 16,325개가 한 번에 움직이고, 궤도를 따로 그리는 소행성 1,391개와 혜성 30개, 지구 근접 소행성 40건</dd></div>
-        <div><dt>국부은하군</dt><dd>우리은하 밖으로 나가면 안드로메다를 비롯한 이웃 은하 10개가 실제 거리와 방향에 놓입니다</dd></div>
+        <div><dt>은하 사이로</dt><dd>별 119,000개 사이를 날아 우리은하 밖으로 나가면, 이웃 은하 10개와 2MRS 은하 43,500개가 실제 거리와 방향에 놓입니다. 처녀자리 은하단에서 라니아케아까지 이름을 붙여 둡니다</dd></div>
         <div><dt>궤도 계산</dt><dd>행성과 탐사선의 위치는 JPL Horizons의 궤도 자료를 씁니다. 세차·장동·ΔT를 지상 모드와 같은 방식으로 반영합니다</dd></div>
       </dl>
     </div>
@@ -229,12 +229,12 @@ section.f + section.f { border-top: 1px solid var(--rule); }
     <div class="cols">
       <dl class="facts big">
         <div><dt>천체</dt><dd>태양계 천체 7개를 더하거나, 새 천체 6종(항성, 행성, 블랙홀 등)을 놓습니다. 어떤 행성이든 버튼 하나로 블랙홀로 바꿉니다</dd></div>
-        <div><dt>숫자 입력</dt><dd>질량은 단위를 골라 ×0.1부터 ×10까지, 거리는 AU로 직접 적습니다. 재생 속도는 8단계</dd></div>
+        <div><dt>숫자 입력</dt><dd>질량은 단위를 골라 ×0.1부터 ×10까지, 반지름·속도·자전 주기·자전축 기울기·거리(AU)는 직접 적습니다. 점화를 계획하면 바뀔 궤도를 미리 보여 주고, 별은 나이에 따라 적색거성과 백색왜성으로 변합니다</dd></div>
         <div><dt>바로 해 보기</dt><dd>빠른 실험 6개(태양을 블랙홀로, 달 없애기, 화성에 1기압 공기 등)와 시나리오 11개(목성 질량 10배, 목성이 별이었다면 등)</dd></div>
       </dl>
       <dl class="facts big">
         <div><dt>대기</dt><dd>기압(0.001~160기압), 구름 반사율, 기체 8종의 비율을 바꾸면 온실 효과로 표면 온도가 어떻게 달라지는지 계산합니다. 금성·지구·화성에 맞춘 모형이고, 본보기 5개가 있습니다</dd></div>
-        <div><dt>기체 붙잡기</dt><dd>행성의 질량과 온도에 따라 어떤 기체를 붙잡을 수 있는지 보여 줍니다</dd></div>
+        <div><dt>기체 붙잡기와 테라포밍</dt><dd>행성의 질량과 온도에 따라 어떤 기체를 붙잡을 수 있는지 보여 줍니다. 화성과 금성은 다섯 단계로 바꿔 가며 실제 저지대에 바다가 차오르는 모습을 봅니다</dd></div>
         <div><dt>저장과 공유</dt><dd>장면을 저장하고 링크로 보냅니다. 받은 사람은 같은 장면에서 이어서 실험합니다</dd></div>
       </dl>
     </div>
@@ -316,13 +316,13 @@ section.f + section.f { border-top: 1px solid var(--rule); }
         <div><dt>비용</dt><dd>무료입니다. 광고도 없습니다</dd></div>
       </dl>
     </div>
-    <div class="next"><a href="./#local">서대문에서는 이렇게 씁니다</a><span>지역 연계와 프로그램 소개로</span></div>
+    <div class="next"><a href="../#local">서대문에서는 이렇게 씁니다</a><span>지역 연계와 프로그램 소개로</span></div>
   </div>
   <footer>
     <div class="wrap">
       <a class="logo" href="../"><img src="../assets/sc-mark.svg?v=3" width="28" height="28" alt="">Space <b>Commons</b></a>
       <span>모두의 창업 2기 선정사업</span>
-      <nav><a href="./">소개</a><a href="../">앱 열기</a><a href="https://github.com/radix24/space-commons">GitHub</a></nav>
+      <nav><a href="../">소개</a><a href="../app.html">앱 열기</a><a href="https://github.com/radix24/space-commons">GitHub</a></nav>
     </div>
     <p class="credit">이미지: 은하수 파노라마 ESO/S. Brunier (CC BY 4.0) · 행성 텍스처 Solar System Scope (CC BY 4.0) · 다파장 전천 지도와 지형 자료의 출처는 <a href="https://github.com/radix24/space-commons#readme">README</a>에 있습니다.</p>
   </footer>

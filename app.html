@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<script src="version.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Space Commons</title>
+<meta name="description" content="Space Commons: 땅에서 올려다보고, 우주로 나아가는 모두의 하늘. 브라우저 플라네타리움과 태양계 비행.">
+<link rel="icon" href="assets/favicon.svg?v=3" type="image/svg+xml">
+<meta name="theme-color" content="#0A0D1C">
+<link rel="stylesheet" href="vendor/pretendard/pretendardvariable.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&display=swap">
+<link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<script src="vendor/satellite.min.js"></script>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three/build/three.module.js", "three/addons/": "./vendor/three/examples/jsm/" } }
+</script>
+</head>
+<body>
+<div id="loader">
+  <img src="assets/sc-mark.svg?v=3" alt="" class="loader-mark">
+  <div class="wordmark">Space <span>Commons</span></div>
+  <div class="tagline">땅에서 올려다보고, 우주로 나아가는 모두의 하늘</div>
+  <div class="loader-bar"><i></i></div>
+  <div class="version" data-version="{v}"></div><script>scFill()</script>
+  <div id="loader-step">맨눈 별 4만 1천 개(확대하면 가이아 별 300만 개)와 NGC/IC 천체 1만 2천 개를 불러오는 중</div>
+</div>
+<video id="ar-video" playsinline muted hidden></video>
+<canvas id="c" role="img" aria-label="별하늘 화면: 끌어서 둘러보고, 휠이나 두 손가락으로 확대합니다"></canvas>
+<div id="labels"></div>
+<div id="sel-ring" hidden></div>
+<div id="eye-ring" hidden><span id="eye-label"></span></div>
+<div id="frame-rect" hidden><span id="frame-label"></span></div>
+
+<div id="topbar">
+  <a id="brand" href="./"><img src="assets/sc-mark.svg?v=3" alt=""><span>Space <em>Commons</em></span></a>
+  <input id="search" list="search-list" placeholder="검색: M31, NGC 7000, Jupiter, Sirius…" autocomplete="off">
+  <datalist id="search-list"></datalist>
+  <div id="modes" role="tablist">
+    <button data-mode="ground" class="on">지상</button>
+    <button data-mode="space">우주</button>
+    <button data-mode="sandbox">샌드박스</button>
+  </div>
+  <div id="tools">
+    <button id="tonight-btn" class="ground-only" title="지금 볼 수 있는 천체 (T)">지금 하늘</button>
+    <button id="ls-btn" title="지금 보고 있는 장면에 수업 목표와 질문을 담아 링크로 나눠 줍니다">수업 링크</button><button id="hist-btn" title="첨성대부터 조선왕조실록의 초신성 기록까지, 그날의 하늘과 함께">한국 천문학</button><button id="sizes-btn" title="행성, 위성, 별의 실제 크기를 나란히 비교">크기 비교</button>
+    <button id="cards-btn" title="우주 알아보기: 하늘의 좌표부터 은하 진화까지 46개 개념을 직접 조작하고 확인 문제로 점검하기">우주 알아보기</button>
+    <button id="today-btn" class="ground-only" title="일출·일몰, 박명, 달, 관측하기 좋은 시간 (Y)">오늘 천문</button>
+    <button id="cal-btn" title="앞으로 90일의 천문 현상">천문 달력</button>
+    <button id="flyby-btn" class="space-only" title="탐사선이 행성을 지나간 순간을 실제 궤도로 재생">명장면</button>
+    <button id="obs-btn" title="관측 목록 (O)">관측 목록</button>
+    <button id="gyro" title="휴대폰을 하늘에 비추면 그 방향을 보여 줍니다">하늘 비추기</button><button id="ar" hidden title="휴대폰 카메라 화면 위에 별자리와 행성 이름을 겹칩니다">카메라 겹치기</button>
+    <button id="tour-btn" title="주요 천체를 차례로 둘러봅니다">투어</button>
+    <button id="share" title="지금 보는 화면의 링크 복사">링크</button>
+    <button id="night" title="눈의 암순응을 지키는 붉은 화면 (N)">야간 시야</button>
+    <button id="shot" title="화면 저장 (P)">캡처</button><button id="exp-btn" class="ground-only" title="카메라 노출 시간과 감도를 정해 장노출 사진(별 궤적)을 찍어 봅니다">장노출</button><button id="rec-btn" title="화면을 영상으로 녹화해 저장합니다">녹화</button><button id="cine-btn" class="space-only" title="지구에서 명왕성까지 행성을 차례로 부드럽게 날아갑니다">자동 비행</button>
+    <button id="offline-btn" title="인터넷 없이도 쓸 수 있게 기본 자료를 이 기기에 저장합니다">오프라인용으로 받아 두기</button>
+    <button id="addon-btn" title="천체 목록과 발표 순서를 담은 JSON 파일을 불러옵니다">애드온·발표 불러오기</button>
+    <button id="full" title="전체 화면 (F)">전체 화면</button>
+    <button id="lang" title="한국어 / English">EN</button>
+  </div>
+  <span id="status" aria-live="polite">카탈로그 불러오는 중…</span>
+</div>
+
+<div id="panel">
+  <div class="row"><b id="clock">—</b><button id="panel-toggle" class="mobile-only">더 보기</button></div>
+  <div class="row">
+    <button data-speed="-3600" title="1초에 1시간씩 거꾸로">−1시간</button>
+    <button data-speed="-60" title="1초에 1분씩 거꾸로">−1분</button>
+    <button data-speed="1">실시간</button>
+    <button data-speed="60" title="1초에 1분씩">+1분</button>
+    <button data-speed="3600" title="1초에 1시간씩">+1시간</button>
+    <button data-speed="86400" title="1초에 하루씩">+1일</button>
+    <button data-speed="0">정지</button>
+    <button id="now">지금</button>
+  </div>
+  <div class="row">
+    <label>날짜·시각 <input id="dt" type="datetime-local"></label>
+  </div>
+  <div class="row">
+    <label class="scrub">시간 끌기 <input id="scrub" type="range" min="-1000" max="1000" value="0"></label><span id="scrub-label" class="small"></span>
+  </div>
+  <div class="row space-only"><b id="sp-target">지구 주위 공전</b><button id="sp-free">자유 비행</button><button id="galaxy-btn" title="우리 은하 밖으로 나가 나선팔과 태양의 위치를 내려다보기">우리 은하 밖으로</button><button id="light-btn" title="지금 보고 있는 천체(없으면 태양)에서 빛이 퍼져 나가는 모습">빛 출발</button></div>
+  <div class="row ground-only">
+    <select id="place" aria-label="관측 장소">
+      <option value="">장소 선택</option><option value="seoul">서울</option><option value="busan">부산</option><option value="jeju">제주</option>
+      <option value="tokyo">도쿄</option><option value="newyork">뉴욕</option><option value="london">런던</option><option value="sydney">시드니</option>
+      <option value="atacama">아타카마 (칠레)</option><option value="maunakea">마우나케아 (하와이)</option><option value="northpole">북극</option>
+    </select>
+    <select id="eyepiece" aria-label="관측 장비 시야">
+      <option value="0">장비 시야 없음</option><option value="7">쌍안경 7×50 (7°)</option><option value="2.6">쌍안경 15×70 (2.6°)</option>
+      <option value="1.6">80mm 굴절 · 25mm 접안 (1.6°)</option><option value="0.82">200mm 돕소니안 · 25mm (0.82°)</option>
+      <option value="0.33">200mm 돕소니안 · 10mm (0.33°)</option><option value="0.12">200mm · 4mm 고배율 (0.12°)</option><option value="custom">내 장비 직접 입력…</option>
+    </select>
+    <select id="bortle" aria-label="광공해" title="보틀 척도: 1 아주 어두운 하늘 ~ 9 도심">
+      <option value="1">광공해 1 · 최상의 암흑</option><option value="2">2 · 아주 어두운 산골</option><option value="3">3 · 시골</option>
+      <option value="4" selected>4 · 시골과 교외 사이</option><option value="5">5 · 교외</option><option value="6">6 · 밝은 교외</option>
+      <option value="7">7 · 도시 외곽</option><option value="8">8 · 도시</option><option value="9">9 · 도심</option>
+    </select><button id="lp-auto" title="NASA 위성 야간 사진(Black Marble)으로 이곳의 광공해 단계를 자동으로 정하고, 가까운 더 어두운 곳을 찾습니다">위성으로 판정</button>
+    <label>위도 <input id="lat" type="number" step="0.01" value="37.57"></label>
+    <label>경도 <input id="lon" type="number" step="0.01" value="126.98"></label>
+    <button id="geo-btn" title="이 기기의 위치로 관측지를 정합니다. 위치는 기기 안에서만 씁니다.">내 위치</button>
+    <button id="wx-btn" title="관측지의 오늘 밤 구름·습도·시정 예보 (Open-Meteo)">날씨</button>
+  </div>
+  <div class="row toggles">
+    <label class="ground-only"><input type="checkbox" id="t-ground" checked> 지면</label>
+    <label class="ground-only" title="관측지 주변 약 50 km의 실제 산 능선 (AWS Terrain Tiles: SRTM 등 공개 고도 자료)"><input type="checkbox" id="t-terrain" checked> 실제 지형</label>
+    <select id="daysky" class="ground-only" aria-label="낮 하늘" title="해가 떠 있을 때 하늘을 어떻게 보여 줄지">
+      <option value="stars">낮에도 별 보기</option><option value="both" selected>파란 하늘 + 별</option><option value="real">실제 낮 하늘 (별 안 보임)</option>
+    </select>
+    <label class="ground-only" title="지평선 근처의 굴절과 소광"><input type="checkbox" id="t-refr" checked> 대기 효과</label>
+    <label class="ground-only" title="대기 때문에 별이 반짝이는 모습"><input type="checkbox" id="t-twinkle" checked> 반짝임</label>
+    <label class="ground-only"><input type="checkbox" id="t-showers" checked> 유성우</label>
+    <label class="ground-only" title="지금 시계 시각에 1년 동안 태양이 있을 자리 (8자 모양)"><input type="checkbox" id="t-analemma"> 아날렘마</label>
+    <label class="ground-only"><input type="checkbox" id="t-sats" checked> 인공위성</label>
+    <label class="space-only"><input type="checkbox" id="t-orbits" checked> 궤도</label>
+    <label><input type="checkbox" id="t-mw" checked> 은하수</label>
+    <select id="wavelen" aria-label="파장" title="같은 하늘을 다른 빛(파장)으로 보기"><option value="visible">가시광</option><option value="radio">전파 21 cm</option><option value="micro">마이크로파</option><option value="ir">적외선</option><option value="halpha">H-알파</option><option value="xray">X선</option><option value="gamma">감마선</option></select>
+    <select id="mwstyle" aria-label="은하수 표현" title="은하수를 실제 사진(ESO 전천 파노라마)으로 볼지, 그림으로 볼지"><option value="photo" selected>은하수: 실제 사진 (ESO)</option><option value="art">은하수: 그림</option></select>
+    <label><input type="checkbox" id="t-lines" checked> 별자리선</label>
+    <label><input type="checkbox" id="t-bounds"> 별자리 경계</label>
+    <label title="별자리 그림 (Johan Meuris, Free Art License)"><input type="checkbox" id="t-art"> 별자리 그림</label>
+    <select id="csver" aria-label="한국 별자리 그림" title="한국 전통 별자리를 고르고 별자리 그림을 켰을 때 겹칠 옛 천문도" hidden><option value="cheonsang">천상열차분야지도 (목판본)</option><option value="cheonmundo">채색 천문도 (조선 필사본)</option></select>
+    <select id="landsel" aria-label="지평선" title="지평선을 실제 360° 사진으로 바꿉니다 (그 장소로 이동)"><option value="">지평선: 지형</option></select>
+    <select id="skyculture" aria-label="별자리 문화"><option value="western">서양 별자리</option><option value="korean">한국 전통 별자리</option><option value="chinese">중국 전통 별자리</option><option value="egyptian">고대 이집트 별자리</option><option value="japanese">일본 별자리</option><option value="indian">인도 별자리 (나크샤트라)</option><option value="hawaiian_starlines">하와이 항해 별길</option><option value="maori">마오리 별자리</option><option value="norse">북유럽 별자리</option><option value="mongolian">몽골 별자리</option><option value="tibetan">티베트 별자리</option><option value="inuit">이누이트 별자리</option><option value="navajo">나바호 별자리</option><option value="aztec">아즈텍 별자리</option></select>
+    <label title="12° 이하로 확대하면 실제 망원경 사진이 하늘에 겹칩니다 (DSS2)"><input type="checkbox" id="t-photo" checked> 실사 하늘</label>
+    <select id="survey" aria-label="확대 사진 자료" title="확대했을 때 붙는 망원경 사진의 종류"><option value="DSSColor">확대 사진: DSS2 가시광</option><option value="2MASSColor">2MASS 근적외선</option><option value="SDSS9Color">SDSS 9 (선명, 일부 하늘)</option><option value="AllWISEColor">AllWISE 중적외선</option></select>
+    <label class="space-only"><input type="checkbox" id="t-asteroids" checked> 소행성대</label>
+    <label class="space-only" title="어제 하루 동안 위성이 찍은 실제 지구 사진 (NASA GIBS)"><input type="checkbox" id="t-live"> 오늘의 지구</label>
+    <label class="space-only" title="선택하지 않은 탐사선의 지나온 길도 모두 표시"><input type="checkbox" id="t-trails"> 탐사선 경로</label>
+    <label><input type="checkbox" id="t-grid"> 적도 격자</label>
+    <label title="글자와 버튼을 크게"><input type="checkbox" id="a-large"> 큰 글씨</label>
+    <label title="빨강·초록을 구별하기 어려운 분을 위한 파랑·주황 색 구성"><input type="checkbox" id="a-cvd"> 색각 배려</label>
+    <label title="별의 반짝임과 화면 이동 애니메이션을 줄입니다"><input type="checkbox" id="a-calm"> 움직임 줄이기</label>
+    <label title="미국 NOAA 오로라 예보 (30~90분 뒤): 우주에서는 지구 밤 쪽에, 지상에서는 가까우면 지평선에"><input type="checkbox" id="t-aurora"> 오로라 예보</label>
+    <label><input type="checkbox" id="t-dso" checked> NGC/IC</label>
+    <label><input type="checkbox" id="t-exo" checked> 외계행성</label>
+    <label class="ground-only" title="탐사선은 너무 어두워 실제로는 보이지 않습니다. 위치만 표시합니다."><input type="checkbox" id="t-probes"> 탐사선 위치</label>
+    <label><input type="checkbox" id="t-labels" checked> 이름</label>
+  </div>
+  <div class="row small" id="fovinfo"></div>
+</div>
+
+<div id="info" hidden>
+  <button id="info-close">×</button>
+  <h2 id="info-title"></h2>
+  <div id="info-sub"></div>
+  <div id="info-about" hidden></div>
+  <table id="info-table"></table>
+  <div id="info-alt" hidden></div>
+  <div id="info-exo" hidden></div>
+  <img id="info-img" alt="" hidden>
+  <div id="info-wiki" hidden>
+    <img id="wiki-img" alt="" hidden>
+    <p id="wiki-text"></p>
+    <a id="wiki-link" target="_blank" rel="noopener"></a>
+  </div>
+  <div class="row"><button id="info-goto">이동 · 확대</button><button id="obs-add">관측 목록에 담기</button><button id="log-add">관측 기록 남기기</button></div>
+</div>
+
+<div id="tonight" hidden>
+  <button id="tonight-close">×</button>
+  <h2>지금 하늘에 보이는 천체</h2>
+  <div id="tonight-sub" class="small"></div>
+  <ul id="tonight-list"></ul>
+</div>
+
+<div id="tour" hidden>
+  <div class="tour-head"><span id="tour-step" class="small"></span><button id="tour-close">×</button></div>
+  <div id="tour-pick" class="tour-pick"></div>
+  <div id="tour-body" hidden>
+    <p id="tour-text"></p>
+    <div class="row"><button id="tour-prev">이전</button><button id="tour-next">다음</button></div>
+  </div>
+</div>
+
+<div id="version-tag" data-version="Space Commons {v}"></div><script>scFill()</script>
+<div id="today" class="side" hidden>
+  <button class="x" id="today-close">×</button>
+  <h2>오늘의 천문 정보</h2>
+  <div id="today-sub" class="small"></div>
+  <ul id="today-list"></ul>
+</div>
+
+<div id="cal" class="side" hidden>
+  <button class="x" id="cal-close">×</button>
+  <h2>천문 달력</h2>
+  <div class="small">앞으로 90일 · 누르면 그 순간으로 이동합니다</div>
+  <ul id="cal-list"></ul>
+</div>
+
+<div id="wx" class="side" hidden>
+  <button class="x" id="wx-close">×</button>
+  <h2>관측지 날씨</h2>
+  <div id="wx-sub" class="small"></div>
+  <div id="wx-sum" class="wx-sum"></div>
+  <table id="wx-table" class="pltable"></table>
+  <div class="small">예보: Open-Meteo. 관측지의 위도·경도(소수 둘째 자리)만 보냅니다. 시상(대기 흔들림)은 브라우저에서 받을 수 있는 공개 예보가 없어 넣지 않았습니다.</div>
+</div>
+
+<div id="gear" class="side" hidden>
+  <button class="x" id="gear-close">×</button>
+  <h2>내 장비</h2>
+  <div class="small">입력값은 이 브라우저에만 저장됩니다</div>
+  <label class="small">자주 쓰는 망원경 <select id="g-preset"><option value="">직접 입력</option><option value="70,700">70mm 굴절 f/10</option><option value="80,480">80mm 굴절 f/6</option><option value="102,1300">102mm 막스토프 f/12.7</option><option value="127,1500">127mm 막스토프 f/11.8</option><option value="150,750">150mm 반사 f/5</option><option value="200,1200">200mm 돕소니안 f/6</option><option value="203,2032">203mm 슈미트-카세그레인 f/10</option><option value="254,1270">254mm 돕소니안 f/5</option><option value="305,1500">305mm 돕소니안 f/4.9</option></select></label>
+  <div class="gear-grid">
+    <label>망원경 구경 (mm) <input id="g-ap" type="number" min="10" value="200"></label>
+    <label>망원경 초점거리 (mm) <input id="g-fl" type="number" min="50" value="1200"></label>
+    <label>접안렌즈 초점거리 (mm) <input id="g-ep" type="number" min="1" value="25"></label>
+    <label>접안렌즈 겉보기 시야 (°) <input id="g-af" type="number" min="20" max="120" value="52"></label>
+    <label>바로우 렌즈 <select id="g-barlow"><option value="1">없음</option><option value="2">2배</option><option value="2.5">2.5배</option><option value="3">3배</option><option value="0.63">0.63배 리듀서</option></select></label>
+    <label>카메라 센서 가로 (mm) <input id="g-sw" type="number" min="1" step="0.1" value="23.5"></label>
+    <label>카메라 센서 세로 (mm) <input id="g-sh" type="number" min="1" step="0.1" value="15.6"></label>
+  </div>
+  <div class="row"><label><input type="checkbox" id="g-eye" checked> 접안렌즈 시야 원</label><label><input type="checkbox" id="g-cam" checked> 사진 구도 사각형</label></div>
+  <table id="gear-out" class="pltable"></table>
+  <h3 class="small">망원경 연결 (고투 가대)</h3>
+  <div class="small">USB·직렬 케이블: LX200 명령을 쓰는 가대(미드, 셀레스트론 일부, SynScan 등). 네트워크: ASCOM Alpaca 서버 주소. 위험한 동작을 막기 위해 해가 떠 있을 때는 태양 쪽으로 보내지 마세요.</div>
+  <div class="row"><select id="scope-baud"><option>9600</option><option>115200</option></select><button id="scope-serial">직렬 포트 연결</button></div>
+  <div class="row"><input id="scope-url" placeholder="http://192.168.0.10:11111"><button id="scope-alpaca">Alpaca 연결</button></div>
+  <div class="row"><button id="scope-goto">고른 천체로 망원경 보내기</button></div>
+  <div id="scope-st" class="small"></div>
+  <h3 class="small">접안렌즈별 비교 (같은 망원경)</h3>
+  <table id="gear-eps" class="pltable"></table>
+</div>
+
+<div id="flyby" class="side" hidden>
+  <button class="x" id="flyby-close">×</button>
+  <h2>탐사선 명장면</h2>
+  <div class="small">JPL 궤도 자료로 최근접 2시간 전부터 120배속으로 재생합니다</div>
+  <ul id="flyby-list"></ul>
+</div>
+
+<div id="obs" class="side" hidden>
+  <button class="x" id="obs-close">×</button>
+  <h2>관측 목록</h2>
+  <div id="obs-sub" class="small"></div>
+  <ul id="obs-list"></ul>
+  <div class="row"><button id="plan-btn">오늘 밤 관측 계획 짜기</button><button id="plan-print" hidden>인쇄</button></div>
+  <div id="plan" hidden></div>
+  <div class="row"><button id="log-btn">관측 일지 열기</button></div>
+</div>
+<div id="ecl" class="side wide" hidden>
+  <button class="x" id="ecl-close">×</button>
+  <h2 id="ecl-title">일식</h2>
+  <canvas id="ecl-map" style="width:100%;display:block"></canvas>
+  <div class="small">어두울수록 태양이 많이 가려지는 곳 · 붉은 띠: 개기식(또는 금환식)이 보이는 길 · 흰 원: 지금 관측지</div>
+  <p id="ecl-sub" class="small"></p>
+  <button id="ecl-go">여기서 최대일 때 하늘 보기</button>
+</div>
+<div id="exp" class="side" hidden>
+  <button class="x" id="exp-close">×</button>
+  <h2>장노출 사진</h2>
+  <div class="small">삼각대에 고정한 카메라로 오래 찍으면 지구가 도는 동안 별이 원을 그립니다. 노출이 길고 감도가 높을수록 더 어두운 별까지 찍힙니다.</div>
+  <div class="row"><label>노출 <select id="exp-sec"><option value="10">10초</option><option value="30">30초</option><option value="300">5분</option><option value="1800" selected>30분</option><option value="3600">1시간</option><option value="10800">3시간</option></select></label>
+  <label>감도 <select id="exp-iso"><option>400</option><option selected>1600</option><option>6400</option></select></label><button id="exp-go">찍기</button></div>
+  <div id="exp-out" hidden><img id="exp-img" alt="장노출 사진" style="width:100%;display:block;margin-top:8px"><button id="exp-save">이미지 저장</button></div>
+</div>
+<div id="ls" class="side" hidden>
+  <button class="x" id="ls-close">×</button>
+  <h2>수업 링크 만들기</h2>
+  <div class="small">지금 화면(시각, 장소, 방향, 고른 천체)이 그대로 링크에 담깁니다. 학생은 링크를 열어 질문에 답하고 파일로 저장해 제출합니다.</div>
+  <label>수업 제목 <input id="ls-title" placeholder="예: 겨울 대삼각형 찾기"></label>
+  <label>목표 <input id="ls-goal" placeholder="예: 별의 색과 온도의 관계를 설명할 수 있다"></label>
+  <label>질문 (한 줄에 하나) <textarea id="ls-qs" rows="4" placeholder="세 별 가운데 가장 붉은 별은?&#10;그 별의 표면 온도는 태양보다 높을까요?"></textarea></label>
+  <button id="ls-make">링크 만들기 (복사)</button>
+  <input id="ls-url" readonly placeholder="여기에 링크가 나옵니다">
+</div>
+<div id="lesson" class="side" hidden>
+  <button class="x" id="lesson-close">×</button>
+  <h2 id="lesson-title"></h2>
+  <p id="lesson-goal" class="small"></p>
+  <label>이름 <input id="lesson-name"></label>
+  <ol id="lesson-qs"></ol>
+  <button id="lesson-save">답안 파일 저장</button>
+</div>
+<div id="log" class="side" hidden>
+  <button class="x" id="log-close">×</button>
+  <h2>관측 일지</h2>
+  <div id="log-sub" class="small"></div>
+  <div class="row"><button id="log-json">JSON 내보내기</button><button id="log-csv">CSV 내보내기</button></div>
+  <ul id="log-list"></ul>
+</div>
+
+<div id="help" title="두 번 누르면 처음 사용 안내를 다시 봅니다"><span class="ground-only">드래그: 회전 · 휠/핀치: 확대 · 클릭: 선택 · 더블클릭: 이동·확대</span><span class="space-only">드래그: 공전/시점 · 휠: 거리 · W A S D / Q E: 이동 · Shift: 가속 · 더블클릭: 천체로 비행</span><br>행성 텍스처 © <a href="https://www.solarsystemscope.com/textures/" target="_blank" style="color:inherit">Solar System Scope</a> (CC BY 4.0) · 은하수 사진 <a href="https://www.eso.org/public/images/eso0932a/" target="_blank" rel="noopener">ESO/S. Brunier</a> (CC BY 4.0) · 탐사선 모델 NASA, ESA</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

@@ -3,7 +3,7 @@
   "short_name": "Space Commons",
   "description": "땅에서 올려다보고, 우주로 나아가는 모두의 하늘",
   "lang": "ko",
-  "start_url": "./",
+  "start_url": "app.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
