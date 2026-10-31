@@ -74,6 +74,7 @@
 | 탐사선·위성·소천체 궤도 | NASA JPL Horizons, JPL SBDB, 지구 근접 소행성: NASA CNEOS |
 | 별의 3차원 위치 | HYG 데이터베이스 v4.1 (CC BY-SA 4.0, 별도 데이터 파일과 라이선스 안내) |
 | 수식 표시 | KaTeX (MIT) |
+| 수업 동기화 연결 | PeerJS (MIT, cdnjs에서 필요할 때만 불러옴, PeerJS 공개 시그널링 서버) |
 | 궤도역학 알고리즘 | Curtis, Orbital Mechanics for Engineering Students; Vallado, Fundamentals of Astrodynamics and Applications (램버트 문제, 범용 변수 케플러 전파) |
 | 달 위치 | Meeus, Astronomical Algorithms 47장 (astronomia 라이브러리에서 이식, MIT) |
 | 날씨 예보 | Open-Meteo (실시간) |
