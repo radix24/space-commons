@@ -59,8 +59,11 @@
 .two h3 { font-size: 20px; }
 .two p { margin-top: 10px; color: var(--soft); font-size: 16px; }
 .two .who { color: var(--accent); }
-.town { margin-top: 80px; display: grid; grid-template-columns: 1fr 1.1fr; gap: 56px; align-items: start; }
-.town-img { aspect-ratio: 4 / 5; border-radius: 0; background: url(textures/land_namsan.webp) 0 46.2% / 2200px 1200% repeat-x, url(textures/eso_milkyway_2k.jpg) 55% 35% / 300%; }
+/* same two columns as .two above, so the left and right edges line up */
+.town { margin-top: 80px; display: grid; grid-template-columns: 1fr 1fr; gap: 0 56px; align-items: start; }
+.town-img { position: relative; overflow: hidden; aspect-ratio: 4 / 3; border-radius: 0; background: #05070f url(textures/eso_milkyway_2k.jpg) 55% 40% / 300%; }
+/* Namsan ridge traced from the app's terrain horizon (about/img/ridge-namsan.svg) */
+.town-img::after { content: ''; position: absolute; bottom: -1px; left: -135%; width: 400%; height: 26%; background: url(about/img/ridge-namsan.svg) 0 0 / 100% 100%; }
 .town-pic .mono { display: block; margin-top: 10px; color: var(--mute); }
 .town-lead { font-size: 21px; line-height: 1.6; font-weight: 600; letter-spacing: -.02em; }
 .evening { list-style: none; margin: 30px 0 0; padding: 0; }
@@ -93,8 +96,7 @@
   .stop .mono { margin-top: 0; }
   .plate { grid-template-columns: 1fr; gap: 32px; }
   .two { grid-template-columns: 1fr; }
-  .town { grid-template-columns: 1fr; gap: 28px; margin-top: 56px; }
-  .town-img { aspect-ratio: 4 / 3; }
+  .town { grid-template-columns: 1fr; gap: 28px 0; margin-top: 56px; }
   .town-lead { font-size: 18px; }
   .evening li { grid-template-columns: 1fr; gap: 4px; }
   .commons { padding-top: 80px; }
