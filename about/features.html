@@ -21,7 +21,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../vendor/pretendard/pretendardvariable.min.css">
-<link rel="stylesheet" href="about.css?v=9">
+<link rel="stylesheet" href="about.css?v=10">
 <style>
 /* hero with the Moon */
 .hero { position: relative; min-height: min(78vh, 760px); display: flex; align-items: center; overflow: hidden; padding: 140px 0 80px; }
@@ -57,17 +57,18 @@ section.f + section.f { border-top: 1px solid var(--rule); }
 
 /* space: planet row */
 .planets { margin-top: 64px; display: flex; align-items: flex-end; gap: 3.2%; }
-.planets div { border-radius: 50%; background-size: 220% auto; background-position: 40% 50%; box-shadow: inset -22px -12px 40px rgb(7 10 22 / .85), inset 4px 4px 14px rgb(233 236 246 / .08); position: relative; }
+.planets div { border-radius: 50%; flex: none; background-size: 220% auto; background-position: 40% 50%; box-shadow: inset -22px -12px 40px rgb(7 10 22 / .85), inset 4px 4px 14px rgb(233 236 246 / .08); position: relative; }
 .planets div::after { content: attr(data-n); position: absolute; left: 50%; top: 100%; transform: translateX(-50%); margin-top: 10px; font: 500 12px var(--f-mono); color: var(--mute); white-space: nowrap; }
 /* Saturn: banded ring, C ring to A ring with the Cassini division; the far half passes behind the globe, the near half in front */
 .planets .ring { position: relative; overflow: visible; }
 .planets .ring i { position: absolute; left: -62%; right: -62%; top: 50%; aspect-ratio: 1 / .24; transform: translateY(-50%) rotate(-14deg); border-radius: 50%; pointer-events: none;
   background: radial-gradient(closest-side, transparent 52%, rgba(150,135,110,.35) 53%, rgba(150,135,110,.45) 62%, rgba(226,210,172,.95) 63%, rgba(240,226,190,.95) 78%, rgb(7 10 22 / .6) 79%, rgb(7 10 22 / .6) 81%, rgba(205,190,155,.85) 82%, rgba(190,175,140,.8) 95%, transparent 96%); }
-.planets div.ring { background: none !important; box-shadow: none; margin: 0 4.5%; }
+.planets div.ring { background: none !important; box-shadow: none; margin: 0 9%; } /* room for the ring (about 2.3 times the globe) between Jupiter and Uranus */
 .planets .ring b { position: absolute; inset: 0; border-radius: 50%; background: inherit; background: var(--g) 40% 50% / 220% auto; box-shadow: inset -22px -12px 40px rgb(7 10 22 / .85), inset 4px 4px 14px rgb(233 236 246 / .08); }
 .planets .ring i.back { clip-path: polygon(0 0, 100% 0, 100% 50%, 0 50%); }
 .planets .ring i.front { clip-path: polygon(0 50%, 100% 50%, 100% 100%, 0 100%); }
 .planets { padding-bottom: 36px; }
+.planets .sm { box-shadow: inset -2px -1px 3px rgb(7 10 22 / .7); } /* small discs: the big shading would black them out */
 
 /* open-in-app scene links */
 .scenes { margin-top: 36px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 0; padding: 18px 0; border-top: 1px solid var(--line2); border-bottom: 1px solid var(--line2); }
@@ -111,7 +112,8 @@ section.f + section.f { border-top: 1px solid var(--rule); }
   .cols { grid-template-columns: 1fr; gap: 0; }
   .facts.big div { grid-template-columns: 1fr; gap: 2px; }
   .sky6 .grid { grid-template-columns: 1fr 1fr; }
-  .planets { flex-wrap: wrap; gap: 28px 6%; justify-content: center; }
+  .planets { gap: 2.6%; }
+  .planets .sm::after { content: none; } /* labels would overlap on the small dots; the caption names them */
   .stages { grid-template-columns: 1fr 1fr 1fr; gap: 28px 0; }
   .stages::before { display: none; }
   .nums { grid-template-columns: 1fr 1fr; }
@@ -127,7 +129,7 @@ section.f + section.f { border-top: 1px solid var(--rule); }
 
 <header>
   <div class="wrap">
-    <a class="logo" href="../"><img src="../assets/sc-mark.svg?v=3" width="22" height="22" alt=""><span class="wordmark">Space <b>Commons</b></span></a>
+    <a class="logo" href="../"><img src="../assets/sc-mark.svg?v=3" width="26" height="26" alt=""><span class="wordmark">Space <b>Commons</b></span></a>
     <nav>
       <a href="../">소개</a>
       <a href="features.html" aria-current="page">기능</a>
@@ -209,16 +211,16 @@ section.f + section.f { border-top: 1px solid var(--rule); }
     <p class="intro">지상에서 보던 행성을 누르면 화면이 그대로 이어져 우주로 나갑니다. 행성의 표면과 위성, 탐사선의 길, 소행성대, 그리고 태양계 바깥의 이웃 은하까지 한 공간에 있습니다.</p>
 
     <div class="planets" aria-label="태양계 행성 여덟 개">
-      <div data-n="수성" style="width:5%;aspect-ratio:1;background-image:url(img/mercury.webp)"></div>
-      <div data-n="금성" style="width:7%;aspect-ratio:1;background-image:url(img/venus.webp)"></div>
-      <div data-n="지구" style="width:7.4%;aspect-ratio:1;background-image:url(img/earth.webp)"></div>
-      <div data-n="화성" style="width:5.6%;aspect-ratio:1;background-image:url(img/mars.webp)"></div>
-      <div data-n="목성" style="width:20%;aspect-ratio:1;background-image:url(img/jupiter.webp)"></div>
-      <div data-n="토성" class="ring" style="width:17%;aspect-ratio:1;--g:url(img/saturn.webp)"><i class="back"></i><b></b><i class="front"></i></div>
-      <div data-n="천왕성" style="width:10%;aspect-ratio:1;background-image:url(img/uranus.webp)"></div>
-      <div data-n="해왕성" style="width:9.6%;aspect-ratio:1;background-image:url(img/neptune.webp)"></div>
+      <div data-n="수성" class="sm" style="width:0.73%;aspect-ratio:1;background-image:url(img/mercury.webp)"></div>
+      <div data-n="금성" class="sm" style="width:1.82%;aspect-ratio:1;background-image:url(img/venus.webp)"></div>
+      <div data-n="지구" class="sm" style="width:1.91%;aspect-ratio:1;background-image:url(img/earth.webp)"></div>
+      <div data-n="화성" class="sm" style="width:1.02%;aspect-ratio:1;background-image:url(img/mars.webp)"></div>
+      <div data-n="목성" style="width:21.00%;aspect-ratio:1;background-image:url(img/jupiter.webp)"></div>
+      <div data-n="토성" class="ring" style="width:17.49%;aspect-ratio:1;--g:url(img/saturn.webp)"><i class="back"></i><b></b><i class="front"></i></div>
+      <div data-n="천왕성" style="width:7.62%;aspect-ratio:1;background-image:url(img/uranus.webp)"></div>
+      <div data-n="해왕성" style="width:7.40%;aspect-ratio:1;background-image:url(img/neptune.webp)"></div>
     </div>
-    <p class="caption">행성의 크기 비율은 실제에 가깝게 두었습니다. 거리는 아닙니다.</p>
+    <p class="caption">행성의 지름 비율은 실제와 같습니다. 목성 지름(약 14만 km)은 지구의 약 11배입니다. 왼쪽의 작은 점 넷이 수성, 금성, 지구, 화성입니다. 거리는 줄였습니다.</p>
 
     <div class="cols">
       <dl class="facts big">
