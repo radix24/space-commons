@@ -4,27 +4,37 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
-<meta name="theme-color" content="#070A16">
+<meta name="theme-color" content="var(--night)">
 <title>Space Commons 기능</title>
 <meta name="description" content="지상 관측, 우주 비행, 중력 샌드박스, 개념 카드와 실습, 실제 데이터, 접근성까지. Space Commons의 기능을 한 페이지에 정리했습니다.">
-<link rel="icon" href="../assets/favicon.svg">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Space Commons">
+<meta property="og:title" content="Space Commons 기능">
+<meta property="og:description" content="지상 관측, 우주 비행, 중력 샌드박스, 개념 카드와 실습, 실제 데이터, 접근성까지. Space Commons의 기능을 한 페이지에 정리했습니다.">
+<meta property="og:url" content="https://radix24.github.io/space-commons/about/features.html">
+<meta property="og:image" content="https://radix24.github.io/space-commons/about/img/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Space Commons: 땅에서 올려다보고, 우주로 나아가는 모두의 하늘">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../assets/sc-mark.svg?v=3" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../vendor/pretendard/pretendardvariable.min.css">
-<link rel="stylesheet" href="about.css?v=7">
+<link rel="stylesheet" href="about.css?v=8">
 <style>
 /* hero with the Moon */
 .hero { position: relative; min-height: min(78vh, 760px); display: flex; align-items: center; overflow: hidden; padding: 140px 0 80px; }
-.hero .moon { position: absolute; right: -9vw; top: 50%; width: min(62vh, 42vw, 600px); height: min(62vh, 42vw, 600px); max-width: 640px; max-height: 640px; transform: translateY(-50%); border-radius: 50%; background: url(img/moon.webp) 38% 50% / 230% auto; box-shadow: inset -70px -40px 120px rgba(0,0,0,.92), inset 10px 10px 40px rgba(255,255,255,.08); opacity: .8; }
+.hero .moon { position: absolute; right: -9vw; top: 50%; width: min(62vh, 42vw, 600px); height: min(62vh, 42vw, 600px); max-width: 640px; max-height: 640px; transform: translateY(-50%); border-radius: 50%; background: url(img/moon.webp) 38% 50% / 230% auto; box-shadow: inset -70px -40px 120px rgb(10 13 28 / .92), inset 10px 10px 40px rgb(238 240 250 / .08); opacity: .8; }
 .hero .txt { position: relative; width: 100%; } /* starts on the logo's edge; the lines themselves stay narrow */
 .hero .txt > * { max-width: 620px; }
 .hero h1 { font-size: clamp(38px, 5.6vw, 72px); line-height: 1.1; }
-.hero h1 span { color: #9FC2FF; }
-.hero .lead { margin-top: 22px; font-size: 18px; color: #D3D8EA; }
+.hero h1 span { color: var(--accent); }
+.hero .lead { margin-top: 22px; font-size: 18px; color: var(--soft); }
 .toc { margin-top: 36px; display: flex; flex-wrap: wrap; gap: 10px 0; }
 .toc a { text-decoration: none; color: var(--soft); font-size: 15px; }
-.toc a + a::before { content: '·'; margin: 0 12px; color: #4A5274; }
-.toc a:hover { color: #fff; }
+.toc a + a::before { content: '·'; margin: 0 12px; color: var(--line2); }
+.toc a:hover { color: var(--ink); }
 
 section.f { padding: 110px 0; }
 section.f + section.f { border-top: 1px solid var(--rule); }
@@ -41,20 +51,20 @@ section.f + section.f { border-top: 1px solid var(--rule); }
 .sky6 h3 { font-size: 22px; }
 .sky6 .grid { margin-top: 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .sky6 figure { margin: 0; }
-.sky6 img { width: 100%; aspect-ratio: 2 / 1; object-fit: cover; border-radius: 0; background: #000; }
+.sky6 img { width: 100%; aspect-ratio: 2 / 1; object-fit: cover; border-radius: 0; background: var(--night); }
 .sky6 figcaption { margin-top: 8px; color: var(--mute); }
 .sky6 figcaption b { color: var(--text); font-weight: 600; margin-right: 8px; }
 
 /* space: planet row */
 .planets { margin-top: 64px; display: flex; align-items: flex-end; gap: 3.2%; }
-.planets div { border-radius: 50%; background-size: 220% auto; background-position: 40% 50%; box-shadow: inset -22px -12px 40px rgba(0,0,0,.85), inset 4px 4px 14px rgba(255,255,255,.08); position: relative; }
-.planets div::after { content: attr(data-n); position: absolute; left: 50%; top: 100%; transform: translateX(-50%); margin-top: 10px; font: 500 12px 'IBM Plex Mono', 'Pretendard Variable', Pretendard, sans-serif; color: var(--mute); white-space: nowrap; }
+.planets div { border-radius: 50%; background-size: 220% auto; background-position: 40% 50%; box-shadow: inset -22px -12px 40px rgb(10 13 28 / .85), inset 4px 4px 14px rgb(238 240 250 / .08); position: relative; }
+.planets div::after { content: attr(data-n); position: absolute; left: 50%; top: 100%; transform: translateX(-50%); margin-top: 10px; font: 500 12px var(--f-mono); color: var(--mute); white-space: nowrap; }
 /* Saturn: banded ring, C ring to A ring with the Cassini division; the far half passes behind the globe, the near half in front */
 .planets .ring { position: relative; overflow: visible; }
 .planets .ring i { position: absolute; left: -62%; right: -62%; top: 50%; aspect-ratio: 1 / .24; transform: translateY(-50%) rotate(-14deg); border-radius: 50%; pointer-events: none;
-  background: radial-gradient(closest-side, transparent 52%, rgba(150,135,110,.35) 53%, rgba(150,135,110,.45) 62%, rgba(226,210,172,.95) 63%, rgba(240,226,190,.95) 78%, rgba(20,20,30,.6) 79%, rgba(20,20,30,.6) 81%, rgba(205,190,155,.85) 82%, rgba(190,175,140,.8) 95%, transparent 96%); }
+  background: radial-gradient(closest-side, transparent 52%, rgba(150,135,110,.35) 53%, rgba(150,135,110,.45) 62%, rgba(226,210,172,.95) 63%, rgba(240,226,190,.95) 78%, rgb(10 13 28 / .6) 79%, rgb(10 13 28 / .6) 81%, rgba(205,190,155,.85) 82%, rgba(190,175,140,.8) 95%, transparent 96%); }
 .planets div.ring { background: none !important; box-shadow: none; margin: 0 4.5%; }
-.planets .ring b { position: absolute; inset: 0; border-radius: 50%; background: inherit; background: var(--g) 40% 50% / 220% auto; box-shadow: inset -22px -12px 40px rgba(0,0,0,.85), inset 4px 4px 14px rgba(255,255,255,.08); }
+.planets .ring b { position: absolute; inset: 0; border-radius: 50%; background: inherit; background: var(--g) 40% 50% / 220% auto; box-shadow: inset -22px -12px 40px rgb(10 13 28 / .85), inset 4px 4px 14px rgb(238 240 250 / .08); }
 .planets .ring i.back { clip-path: polygon(0 0, 100% 0, 100% 50%, 0 50%); }
 .planets .ring i.front { clip-path: polygon(0 50%, 100% 50%, 100% 100%, 0 100%); }
 .planets { padding-bottom: 36px; }
@@ -65,10 +75,10 @@ section.f + section.f { border-top: 1px solid var(--rule); }
 .scenes a { text-decoration: none; font-weight: 600; font-size: 16px; }
 .scenes a::after { content: ' →'; color: var(--accent); }
 .scenes a + a { margin-left: 26px; }
-.scenes a:hover { color: #9FC2FF; }
+.scenes a:hover { color: var(--accent); }
 
 /* sandbox: orbit sketch */
-.orbits { margin-top: 56px; aspect-ratio: 16 / 7; border-radius: 0; background: radial-gradient(circle at 50% 50%, #151A38 0%, var(--paper) 60%); position: relative; overflow: hidden; }
+.orbits { margin-top: 56px; aspect-ratio: 16 / 7; border-radius: 0; background: radial-gradient(circle at 50% 50%, var(--paper) 0%, var(--paper) 60%); position: relative; overflow: hidden; }
 .orbits svg { width: 100%; height: 100%; display: block; }
 
 /* learn */
@@ -82,15 +92,15 @@ section.f + section.f { border-top: 1px solid var(--rule); }
 .nums { margin-top: 64px; display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--rule); }
 .nums > div { padding: 26px 24px 0 0; }
 .nums > div + div { padding-left: 24px; border-left: 1px solid var(--rule); }
-.nums .n { font-family: Manrope, sans-serif; font-weight: 800; font-size: clamp(44px, 6vw, 76px); letter-spacing: -.05em; line-height: 1; color: #fff; }
+.nums .n { font-family: var(--f-head); font-weight: 800; font-size: clamp(44px, 6vw, 76px); letter-spacing: -.05em; line-height: 1; color: var(--ink); }
 .nums p { margin-top: 14px; color: var(--soft); font-size: 15.5px; }
 
 /* data ledger */
 .ledger { margin-top: 48px; width: 100%; border-collapse: collapse; }
-.ledger th { text-align: left; font: 500 13px 'IBM Plex Mono', 'Pretendard Variable', Pretendard, sans-serif; color: var(--mute); padding: 0 16px 12px 0; border-bottom: 1px solid var(--line2); }
+.ledger th { text-align: left; font: 500 13px var(--f-mono); color: var(--mute); padding: 0 16px 12px 0; border-bottom: 1px solid var(--line2); }
 .ledger td { padding: 18px 16px 18px 0; border-bottom: 1px solid var(--rule); vertical-align: top; font-size: 16px; }
 .ledger td:first-child { font-weight: 600; width: 26%; }
-.ledger td.q { font-family: 'IBM Plex Mono', 'Pretendard Variable', Pretendard, sans-serif; font-size: 15px; color: #9FC2FF; width: 22%; white-space: nowrap; }
+.ledger td.q { font-family: var(--f-mono); font-size: 15px; color: var(--accent); width: 22%; white-space: nowrap; }
 .ledger td.s { color: var(--soft); }
 
 @media (max-width: 860px) {
@@ -117,7 +127,7 @@ section.f + section.f { border-top: 1px solid var(--rule); }
 
 <header>
   <div class="wrap">
-    <a class="logo" href="../"><img src="../assets/sc-mark.svg?v=3" width="22" height="22" alt=""><span>Space <b>Commons</b></span></a>
+    <a class="logo" href="../"><img src="../assets/sc-mark.svg?v=3" width="22" height="22" alt=""><span class="wordmark">Space <b>Commons</b></span></a>
     <nav>
       <a href="../">소개</a>
       <a href="features.html" aria-current="page">기능</a>
@@ -133,7 +143,7 @@ section.f + section.f { border-top: 1px solid var(--rule); }
   <div class="wrap txt">
     <div class="kicker"><span class="mono">기능</span><span>Alpha 0.0.12s</span></div>
     <h1>하나의 하늘을<br><span>세 가지 방법으로</span></h1>
-    <p class="lead">지상에서 올려다보고, 우주로 날아가고, 중력을 직접 다룹니다. 세 모드는 같은 시각과 같은 데이터를 쓰므로 어디서든 이어집니다. 여기에 배움의 자료와 실제 관측 데이터, 누구나 쓸 수 있게 하는 설정이 더해집니다.</p>
+    <p class="lead">지상 모드로 지금 이 자리의 하늘을 보고, 우주 모드로 그 천체까지 날아가고, 샌드박스에서 중력을 직접 다룹니다. 세 모드는 같은 시각과 같은 데이터를 쓰므로 어디서든 이어집니다. 여기에 배움의 자료와 실제 관측 데이터, 누구나 쓸 수 있게 하는 설정이 더해집니다.</p>
     <nav class="toc"><a href="#ground">지상</a><a href="#space">우주</a><a href="#sandbox">샌드박스</a><a href="#learn">배움</a><a href="#data">데이터</a><a href="#access">누구나</a></nav>
   </div>
 </section>
@@ -238,10 +248,10 @@ section.f + section.f { border-top: 1px solid var(--rule); }
           <ellipse cx="800" cy="350" rx="150" ry="60"/><ellipse cx="800" cy="350" rx="260" ry="104"/><ellipse cx="800" cy="350" rx="400" ry="160"/><ellipse cx="800" cy="350" rx="560" ry="224"/>
           <ellipse cx="900" cy="350" rx="700" ry="200" stroke="#4C8DF6" stroke-dasharray="6 8"/>
         </g>
-        <circle cx="800" cy="350" r="26" fill="#F3E2A6"/>
-        <circle cx="950" cy="350" r="6" fill="#C9CEE3"/><circle cx="560" cy="330" r="9" fill="#9FC2FF"/><circle cx="1180" cy="420" r="11" fill="#E8B07A"/><circle cx="330" cy="290" r="8" fill="#B9C6E8"/>
+        <circle cx="800" cy="350" r="26" fill="#EEF0FA"/>
+        <circle cx="950" cy="350" r="6" fill="#B6BBD2"/><circle cx="560" cy="330" r="9" fill="#4C8DF6"/><circle cx="1180" cy="420" r="11" fill="#8D93B3"/><circle cx="330" cy="290" r="8" fill="#B6BBD2"/>
         <circle cx="1580" cy="300" r="7" fill="#4C8DF6"/>
-        <g transform="translate(260 520)"><circle r="22" fill="#000" stroke="#4C8DF6" stroke-width="2"/><circle r="36" stroke="#4C8DF6" stroke-opacity=".35"/></g>
+        <g transform="translate(260 520)"><circle r="22" fill="#0A0D1C" stroke="#4C8DF6" stroke-width="2"/><circle r="36" stroke="#4C8DF6" stroke-opacity=".35"/></g>
       </svg>
     </div>
 
@@ -346,7 +356,7 @@ section.f + section.f { border-top: 1px solid var(--rule); }
   </div>
   <footer>
     <div class="wrap">
-      <a class="logo" href="../"><img src="../assets/sc-mark.svg?v=3" width="28" height="28" alt=""><span>Space <b>Commons</b></span></a>
+      <a class="logo" href="../"><img src="../assets/sc-mark.svg?v=3" width="22" height="22" alt=""><span class="wordmark">Space <b>Commons</b></span></a>
       <span>모두의 창업 2기 선정사업</span>
       <nav><a href="learn.html">수업·활용</a><a href="local.html">지역사회</a><a href="../app.html">앱 열기</a><a href="https://github.com/radix24/space-commons">GitHub</a></nav>
     </div>

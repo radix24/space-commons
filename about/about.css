@@ -1,12 +1,34 @@
-:root { --night: #070A16; --deep: #0D1124; --rule: #222842; --text: #E9ECF6; --mute: #8D93B3; --accent: #4C8DF6; --paper: #0C1022; --soft: #B6BBD2; --line2: #3A4266; }
+/* Space Commons BI, shared by every page of the intro site (same spec as the app):
+   mark assets/sc-mark.svg only, 22px in bars; wordmark Manrope 800, -0.03em, word gap .22em, Space in ink, Commons in accent;
+   Manrope for headings and heading numbers, Pretendard for Korean body text, IBM Plex Mono for data; square corners. */
+:root {
+  /* palette: night background, ink and mute text, accent; the rest are steps between night and ink */
+  --night: #0A0D1C;
+  --paper: #0F1328;   /* alternate section background, one step above night */
+  --deep: #0D1124;
+  --rule: #222842;    /* thin dividers */
+  --line2: #3A4266;   /* stronger dividers, outlines */
+  --mute: #8D93B3;
+  --soft: #B6BBD2;    /* secondary text */
+  --ink: #EEF0FA;
+  --text: var(--ink);
+  --accent: #4C8DF6;
+  --veil: rgb(10 13 28 / .55);   /* night over photographs */
+  /* type */
+  --f-head: Manrope, 'Pretendard Variable', Pretendard, sans-serif;  /* Manrope for Latin and numbers, Pretendard for Hangul */
+  --f-body: 'Pretendard Variable', Pretendard, system-ui, sans-serif;
+  --f-mono: 'IBM Plex Mono', 'Pretendard Variable', Pretendard, monospace;
+  --f-mark: Manrope, sans-serif;  /* the wordmark never falls back to Pretendard */
+}
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body { margin: 0; background: var(--night); color: var(--text); font: 17px/1.75 'Pretendard Variable', Pretendard, system-ui, sans-serif; word-break: keep-all; overflow-x: hidden; }
+body { margin: 0; background: var(--night); color: var(--ink); font: 17px/1.75 var(--f-body); word-break: keep-all; overflow-x: hidden; }
 a { color: inherit; }
 img { display: block; max-width: 100%; }
 .wrap { max-width: 1200px; margin: 0 auto; padding: 0 40px; }
-.mono { font-family: 'IBM Plex Mono', 'Pretendard Variable', Pretendard, sans-serif; font-size: 13px; letter-spacing: 0; }
-h1, h2, h3 { font-family: Manrope, 'Pretendard Variable', Pretendard, sans-serif; font-weight: 800; letter-spacing: -.035em; margin: 0; }
+.mono { font-family: var(--f-mono); font-size: 13px; letter-spacing: 0; }
+h1, h2, h3 { font-family: var(--f-head); font-weight: 800; letter-spacing: -.035em; margin: 0; }
+h1 span, h2 span.hl { color: var(--accent); }  /* the one highlighted line in a big title */
 p { margin: 0; }
 h2.sec { font-size: clamp(30px, 4.2vw, 52px); line-height: 1.2; max-width: 16em; }
 .intro { margin-top: 18px; color: var(--soft); max-width: 38em; }
@@ -14,28 +36,33 @@ h2.sec { font-size: clamp(30px, 4.2vw, 52px); line-height: 1.2; max-width: 16em;
 .kicker .mono { color: var(--accent); }
 .paper { background: var(--paper); }
 
+/* wordmark: "Space Commons" */
+.wordmark { font-family: var(--f-mark); font-weight: 800; letter-spacing: -.03em; word-spacing: .22em; color: var(--ink); white-space: nowrap; }
+.wordmark b { font-weight: 800; color: var(--accent); }
+
 /* header */
 header { position: absolute; inset: 0 0 auto; z-index: 5; }
 header .wrap { display: flex; align-items: center; height: 72px; gap: 10px; }
-.logo { display: flex; align-items: center; gap: 10px; text-decoration: none; font-family: Manrope, sans-serif; font-weight: 800; font-size: 19px; letter-spacing: -.03em; line-height: 1; }
-/* the mark is about 60% of the button beside it (as in the app bar), with even air above and below; its left edge stays on the page's text edge */
+.logo { display: flex; align-items: center; gap: 10px; text-decoration: none; font-size: 19px; line-height: 1; }
+/* the mark is 22px in bars, with even air above and below; its left edge stays on the page's text edge */
 .logo img { width: 22px; height: 22px; margin: 0 2px 0 0; flex: none; }
-.logo span { display: block; padding-top: 1px; } /* Manrope sits a hair high in its box; this centres the words on the mark */
+.logo .wordmark { display: block; padding-top: 1px; } /* Manrope sits a hair high in its box; this centres the words on the mark */
+footer .logo { font-size: 17px; }
 footer .logo img { width: 20px; height: 20px; }
-.logo b { color: var(--accent); } /* Space in ink, Commons in blue */
-.logo span { word-spacing: .22em; } /* the negative letter-spacing eats the space between the two words; same as the app bar */
 header nav { margin-left: auto; display: flex; gap: 26px; font-size: 15px; align-items: center; }
 /* every link keeps the same underline space, so the current page's text sits on the same line as the others */
-header nav a:not(.btn) { text-decoration: none; color: #C9CEE3; padding: 4px 0 2px; border-bottom: 2px solid transparent; line-height: 1.4; }
-header nav a:not(.btn):hover { color: #fff; }
-header nav a[aria-current] { color: #fff; border-bottom-color: var(--accent); }
-.btn { display: inline-block; white-space: nowrap; background: var(--accent); color: #fff !important; text-decoration: none; padding: 11px 20px; font-weight: 600; font-size: 15px; border: 0; cursor: pointer; font-family: inherit; }
-.btn:hover { background: #3A7AE6; }
-.btn.ghost { background: transparent; border: 1px solid #4A5274; }
-.btn.ghost:hover { border-color: #fff; }
+header nav a:not(.btn) { text-decoration: none; color: var(--soft); padding: 4px 0 2px; border-bottom: 2px solid transparent; line-height: 1.4; }
+header nav a:not(.btn):hover { color: var(--ink); }
+header nav a[aria-current] { color: var(--ink); border-bottom-color: var(--accent); }
+
+/* buttons: square, accent fill or outline */
+.btn { display: inline-block; white-space: nowrap; background: var(--accent); color: var(--ink) !important; text-decoration: none; padding: 11px 20px; font-weight: 600; font-size: 15px; border: 0; cursor: pointer; font-family: inherit; }
+.btn:hover { filter: brightness(1.12); }
+.btn.ghost { background: transparent; border: 1px solid var(--line2); }
+.btn.ghost:hover { filter: none; border-color: var(--ink); }
 
 /* badge */
-.badge { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 26px; padding: 7px 14px 7px 8px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.22); text-decoration: none; font-size: 14px; font-weight: 600; color: #fff; backdrop-filter: blur(4px); }
+.badge { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 26px; padding: 7px 14px 7px 8px; background: rgb(238 240 250 / .08); border: 1px solid rgb(238 240 250 / .22); text-decoration: none; font-size: 14px; font-weight: 600; color: var(--ink); backdrop-filter: blur(4px); }
 .badge img { height: 22px; width: auto; }
 
 /* ruled definition rows */
@@ -45,33 +72,36 @@ header nav a[aria-current] { color: #fff; border-bottom-color: var(--accent); }
 
 /* horizon tabs */
 .tabs { display: flex; flex-wrap: wrap; border: 1px solid var(--line2); }
-.tabs button { background: transparent; border: 0; border-right: 1px solid var(--line2); padding: 9px 16px; font: 500 15px/1 'Pretendard Variable', Pretendard, sans-serif; color: var(--text); cursor: pointer; }
+.tabs button { background: transparent; border: 0; border-right: 1px solid var(--line2); padding: 9px 16px; font: 500 15px/1 var(--f-body); color: var(--ink); cursor: pointer; }
 .tabs button:last-child { border-right: 0; }
-.tabs button[aria-selected="true"] { background: var(--accent); color: #fff; }
-.pano { margin-top: 18px; position: relative; height: 300px; border-radius: 0; background: linear-gradient(180deg, #0B1030 0%, #2A2A6A 62%, #6C5BB8 100%); overflow: hidden; }
+.tabs button[aria-selected="true"] { background: var(--accent); color: var(--ink); }
+/* twilight over the ridge: night at the top, warming toward the accent at the horizon */
+.pano { margin-top: 18px; position: relative; height: 300px; background: linear-gradient(180deg, var(--night) 0%, var(--paper) 45%, color-mix(in srgb, var(--accent) 45%, var(--paper)) 100%); overflow: hidden; }
 .pano .land { position: absolute; inset: auto 0 0 0; height: 55%; background: 0 50.6% / 2600px 1600% repeat-x; filter: brightness(.6); transition: opacity .35s; }
-.pano .tag { position: absolute; left: 16px; top: 14px; color: #fff; }
+.pano .tag { position: absolute; left: 16px; top: 14px; color: var(--ink); }
 
 /* live dot */
 .live { display: inline-block; width: 7px; height: 7px; background: var(--accent); margin-right: 8px; vertical-align: 2px; animation: blink 2s steps(2) infinite; }
 @keyframes blink { 50% { opacity: .25; } }
 
 /* iframe try box */
-.try { margin-top: 64px; position: relative; aspect-ratio: 16 / 8; border-radius: 0; overflow: hidden; background: #000 url(../textures/eso_milkyway_2k.jpg) center / cover; }
+.try { margin-top: 64px; position: relative; aspect-ratio: 16 / 8; overflow: hidden; background: var(--night) url(../textures/eso_milkyway_2k.jpg) center / cover; }
 .try iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-.try .cover { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: rgba(5,7,15,.45); color: #fff; text-align: center; padding: 20px; }
-.try .cover p { color: #D3D8EA; font-size: 15px; }
+.try .cover { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: var(--veil); color: var(--ink); text-align: center; padding: 20px; }
+.try .cover p { color: var(--soft); font-size: 15px; }
 
 /* next-page link */
 .next { margin-top: 64px; padding-top: 28px; border-top: 1px solid var(--line2); display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
-.next a { text-decoration: none; font-family: Manrope, 'Pretendard Variable', Pretendard, sans-serif; font-weight: 800; font-size: clamp(22px, 3vw, 32px); letter-spacing: -.03em; }
+.next a { text-decoration: none; font-family: var(--f-head); font-weight: 800; font-size: clamp(22px, 3vw, 32px); letter-spacing: -.03em; }
 .next a::after { content: ' →'; color: var(--accent); }
 .next span { color: var(--mute); font-size: 15px; }
 
 footer { padding: 70px 0 60px; }
 footer .wrap { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; align-items: center; color: var(--mute); font-size: 15px; }
-footer a { text-decoration: none; } footer a:hover { color: #fff; }
+footer a { text-decoration: none; } footer a:hover { color: var(--ink); }
 footer nav { display: flex; gap: 22px; }
+footer .credit { max-width: 1200px; margin: 14px auto 0; padding: 0 40px; font-size: 12px; color: var(--mute); line-height: 1.6; } /* same grid as .wrap, so it starts on the logo's edge */
+footer .credit a { color: inherit; }
 
 @media (max-width: 860px) {
   .wrap { padding: 0 16px; }
@@ -82,8 +112,5 @@ footer nav { display: flex; gap: 22px; }
   .tabs button { flex: 1 1 33%; border-bottom: 1px solid var(--line2); padding: 10px 6px; font-size: 14px; }
   .pano { height: 200px; }
   .try { aspect-ratio: 3 / 4; }
+  footer .credit { padding: 0 16px; }
 }
-
-footer .credit { max-width: 1200px; margin: 14px auto 0; padding: 0 40px; font-size: 12px; opacity: .6; line-height: 1.6; } /* same grid as .wrap, so it starts on the logo's edge */
-@media (max-width: 860px) { footer .credit { padding: 0 16px; } }
-footer .credit a { color: inherit; }

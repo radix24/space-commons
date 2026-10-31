@@ -8,27 +8,37 @@
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
-<meta name="theme-color" content="#070A16">
+<meta name="theme-color" content="var(--night)">
 <title>Space Commons</title>
 <meta name="description" content="땅에서 올려다보고, 우주로 나아가는 모두의 하늘. 설치 없이 브라우저에서 쓰는 한국어 천체 관측·우주 비행·중력 실험실, 그리고 서대문에서 시작하는 지역 과학문화 프로그램.">
-<link rel="icon" href="assets/favicon.svg?v=3" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Space Commons">
+<meta property="og:title" content="Space Commons">
+<meta property="og:description" content="땅에서 올려다보고, 우주로 나아가는 모두의 하늘. 설치 없이 브라우저에서 쓰는 한국어 천체 관측·우주 비행·중력 실험실, 그리고 서대문에서 시작하는 지역 과학문화 프로그램.">
+<meta property="og:url" content="https://radix24.github.io/space-commons/">
+<meta property="og:image" content="https://radix24.github.io/space-commons/about/img/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Space Commons: 땅에서 올려다보고, 우주로 나아가는 모두의 하늘">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/sc-mark.svg?v=3" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="vendor/pretendard/pretendardvariable.min.css">
-<link rel="stylesheet" href="about/about.css?v=7">
+<link rel="stylesheet" href="about/about.css?v=8">
 <style>
 /* hero: a real sky over a real ridge */
-.hero { position: relative; min-height: min(100vh, 1040px); display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; background: #05070f url(textures/eso_milkyway_2k.jpg) center 30% / cover; }
-.hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5,7,15,.55) 0%, rgba(5,7,15,.15) 40%, rgba(5,7,15,0) 60%); }
+.hero { position: relative; min-height: min(100vh, 1040px); display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; background: var(--night) url(textures/eso_milkyway_2k.jpg) center 30% / cover; }
+.hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgb(10 13 28 / .55) 0%, rgb(10 13 28 / .15) 40%, rgb(10 13 28 / 0) 60%); }
 /* the app's 360° horizon silhouette, stretched 4x so the low relief reads; the band under it stays short */
 /* Sobaeksan ridge traced from the app's terrain horizon (about/img/ridge-sobaeksan.svg), heights doubled */
 .hero .ridge { position: absolute; left: 0; right: 0; bottom: -1px; height: 10vw; background: url(about/img/ridge-sobaeksan.svg) -117vw 100% / 260vw 100% repeat-x; }
 .hero .txt { position: relative; width: 100%; padding-top: 140px; padding-bottom: calc(9vw + 56px); } /* full width so the text starts on the logo's edge, not centred by the flex column */
 .hero h1 { font-size: clamp(40px, 6.6vw, 88px); line-height: 1.1; max-width: 13em; }
-.hero h1 span { color: #9FC2FF; }
-.hero .lead { margin-top: 22px; max-width: 34em; font-size: 18px; color: #D3D8EA; }
+.hero h1 span { color: var(--accent); }
+.hero .lead { margin-top: 22px; max-width: 34em; font-size: 18px; color: var(--soft); }
 .hero .cta { margin-top: 30px; display: flex; gap: 12px; flex-wrap: wrap; }
-.hero .read { position: absolute; z-index: 2; right: 40px; bottom: 22px; text-align: right; color: #fff; text-shadow: 0 1px 3px #000; line-height: 1.6; }
+.hero .read { position: absolute; z-index: 2; right: 40px; bottom: 22px; text-align: right; color: var(--ink); text-shadow: 0 1px 3px var(--night); line-height: 1.6; }
 
 /* 01 track */
 .track { padding: 120px 0 110px; }
@@ -60,10 +70,10 @@
 .sky-row { margin-top: 26px; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); border-top: 1px solid var(--line2); }
 .sky-row a { display: block; padding: 20px 20px 18px 0; text-decoration: none; border-bottom: 1px solid var(--rule); }
 .sky-row a + a { padding-left: 20px; border-left: 1px solid var(--rule); }
-.sky-row .k { font: 500 13px 'IBM Plex Mono', 'Pretendard Variable', monospace; color: var(--accent); }
-.sky-row .v { display: block; margin-top: 8px; font-family: Manrope, 'Pretendard Variable', sans-serif; font-weight: 800; font-size: 26px; letter-spacing: -.03em; color: #fff; }
+.sky-row .k { font: 500 13px var(--f-mono); color: var(--accent); }
+.sky-row .v { display: block; margin-top: 8px; font-family: var(--f-head); font-weight: 800; font-size: 26px; letter-spacing: -.03em; color: var(--ink); }
 .sky-row .d { display: block; margin-top: 4px; color: var(--soft); font-size: 14.5px; }
-.sky-row a:hover .v { color: #9FC2FF; }
+.sky-row a:hover .v { color: var(--accent); }
 .tonight .note { margin-top: 14px; color: var(--mute); font-size: 14px; }
 
 /* doors to the other pages */
@@ -71,10 +81,10 @@
 .doors { margin-top: 48px; border-top: 1px solid var(--line2); }
 .doors a { display: grid; grid-template-columns: 7em 1fr 1.2fr; gap: 24px; align-items: baseline; padding: 30px 0; border-bottom: 1px solid var(--rule); text-decoration: none; }
 .doors .mono { color: var(--accent); }
-.doors b { font-family: Manrope, 'Pretendard Variable', sans-serif; font-weight: 800; font-size: clamp(24px, 3vw, 34px); letter-spacing: -.03em; }
+.doors b { font-family: var(--f-head); font-weight: 800; font-size: clamp(24px, 3vw, 34px); letter-spacing: -.03em; }
 .doors b::after { content: ' →'; color: var(--accent); }
 .doors span:last-child { color: var(--soft); font-size: 16px; }
-.doors a:hover b { color: #9FC2FF; }
+.doors a:hover b { color: var(--accent); }
 .selected { margin-top: 40px; display: flex; align-items: center; gap: 16px; font-size: 15px; font-weight: 600; line-height: 1.45; }
 .selected img { height: 40px; width: auto; }
 .selected small { display: block; font-weight: 400; color: var(--mute); font-size: 13px; }
@@ -83,7 +93,7 @@
 .commons { padding: 110px 0 0; }
 .commons h2 { font-size: clamp(34px, 5vw, 64px); line-height: 1.12; max-width: 14em; }
 .commons .line { margin-top: 26px; display: flex; flex-wrap: wrap; gap: 6px 0; font-size: 18px; color: var(--soft); }
-.commons .line span + span::before { content: '/'; margin: 0 14px; color: #4A5274; }
+.commons .line span + span::before { content: '/'; margin: 0 14px; color: var(--line2); }
 
 @media (max-width: 860px) {
   .hero .read { right: 16px; font-size: 11px; }
@@ -109,7 +119,7 @@
 
 <header>
   <div class="wrap">
-    <a class="logo" href="./"><img src="assets/sc-mark.svg?v=3" width="22" height="22" alt=""><span>Space <b>Commons</b></span></a>
+    <a class="logo" href="./"><img src="assets/sc-mark.svg?v=3" width="22" height="22" alt=""><span class="wordmark">Space <b>Commons</b></span></a>
     <nav>
       <a href="./" aria-current="page">소개</a>
       <a href="about/features.html">기능</a>
@@ -219,7 +229,7 @@
   </div>
   <footer>
     <div class="wrap">
-      <a class="logo" href="./"><img src="assets/sc-mark.svg?v=3" width="22" height="22" alt=""><span>Space <b>Commons</b></span></a>
+      <a class="logo" href="./"><img src="assets/sc-mark.svg?v=3" width="22" height="22" alt=""><span class="wordmark">Space <b>Commons</b></span></a>
       <span>모두의 창업 2기 선정사업</span>
       <nav><a href="about/features.html">기능</a><a href="about/learn.html">수업·활용</a><a href="about/local.html">지역사회</a><a href="app.html">앱 열기</a><a href="https://github.com/radix24/space-commons">GitHub</a></nav>
     </div>

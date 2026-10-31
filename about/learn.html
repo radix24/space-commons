@@ -4,22 +4,32 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
-<meta name="theme-color" content="#070A16">
+<meta name="theme-color" content="var(--night)">
 <title>Space Commons 수업·활용</title>
 <meta name="description" content="수업 링크와 QR 코드 만들기, 수업 페이지에 넣는 코드, 개념 카드 68장, 내려받는 발표 자료. 교사와 진행자가 Space Commons를 수업에 쓰는 방법.">
-<link rel="icon" href="../assets/favicon.svg?v=3" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Space Commons">
+<meta property="og:title" content="Space Commons 수업·활용">
+<meta property="og:description" content="수업 링크와 QR 코드 만들기, 수업 페이지에 넣는 코드, 개념 카드 68장, 내려받는 발표 자료. 교사와 진행자가 Space Commons를 수업에 쓰는 방법.">
+<meta property="og:url" content="https://radix24.github.io/space-commons/about/learn.html">
+<meta property="og:image" content="https://radix24.github.io/space-commons/about/img/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Space Commons: 땅에서 올려다보고, 우주로 나아가는 모두의 하늘">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../assets/sc-mark.svg?v=3" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../vendor/pretendard/pretendardvariable.min.css">
-<link rel="stylesheet" href="about.css?v=7">
+<link rel="stylesheet" href="about.css?v=8">
 <style>
-.top { padding: 170px 0 90px; border-bottom: 1px solid var(--rule); background: radial-gradient(ellipse at 80% 0%, #17204A 0%, var(--night) 60%); }
+.top { padding: 170px 0 90px; border-bottom: 1px solid var(--rule); background: radial-gradient(ellipse at 80% 0%, color-mix(in srgb, var(--accent) 22%, var(--night)) 0%, var(--night) 60%); }
 .top h1 { font-size: clamp(36px, 5.6vw, 72px); line-height: 1.12; max-width: 14em; }
-.top h1 span { color: #9FC2FF; }
-.top .lead { margin-top: 22px; max-width: 36em; font-size: 18px; color: #D3D8EA; }
+.top h1 span { color: var(--accent); }
+.top .lead { margin-top: 22px; max-width: 36em; font-size: 18px; color: var(--soft); }
 .toc { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 6px 0; font-size: 15px; }
-.toc a { text-decoration: none; color: #C9CEE3; } .toc a:hover { color: #fff; }
-.toc a + a::before { content: '·'; margin: 0 14px; color: #4A5274; }
+.toc a { text-decoration: none; color: var(--soft); } .toc a:hover { color: var(--ink); }
+.toc a + a::before { content: '·'; margin: 0 14px; color: var(--line2); }
 section.s { padding: 110px 0; }
 
 /* lesson link maker */
@@ -27,36 +37,36 @@ section.s { padding: 110px 0; }
 .form { display: grid; gap: 18px; }
 .form label { display: grid; gap: 7px; font-size: 14px; color: var(--mute); }
 .form .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.form input, .form select, .form textarea, .out textarea { width: 100%; background: #0F142A; color: var(--text); border: 1px solid var(--line2); border-radius: 0; padding: 11px 12px; font: 16px/1.5 'Pretendard Variable', Pretendard, sans-serif; }
+.form input, .form select, .form textarea, .out textarea { width: 100%; background: var(--paper); color: var(--text); border: 1px solid var(--line2); border-radius: 0; padding: 11px 12px; font: 16px/1.5 var(--f-body); }
 .form textarea { min-height: 96px; resize: vertical; }
 .form input:focus, .form select:focus, .form textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 .form .custom { display: none; } .form .custom.on { display: grid; }
 .out { position: sticky; top: 24px; border: 1px solid var(--line2); padding: 26px; background: var(--paper); }
 .out h3 { font-size: 18px; }
 .out .where { margin-top: 10px; color: var(--soft); font-size: 15px; min-height: 2.8em; }
-.out .where.warn { color: #F2B67A; }
+.out .where.warn { color: var(--ink); }
 .out .qr { margin-top: 18px; display: flex; gap: 18px; align-items: flex-end; }
-.out .qr canvas, .out .qr img { width: 148px; height: 148px; background: #fff; padding: 8px; image-rendering: pixelated; }
+.out .qr canvas, .out .qr img { width: 148px; height: 148px; background: var(--ink); padding: 8px; image-rendering: pixelated; }
 .out .qr p { color: var(--mute); font-size: 13px; }
-.out .link { margin-top: 18px; font: 12.5px/1.5 'IBM Plex Mono', monospace; color: #9FC2FF; word-break: break-all; max-height: 6.2em; overflow: auto; }
+.out .link { margin-top: 18px; font: 12.5px/1.5 var(--f-mono); color: var(--accent); word-break: break-all; max-height: 6.2em; overflow: auto; }
 .out .acts { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 10px; }
-.out textarea { margin-top: 10px; min-height: 74px; font: 12.5px/1.5 'IBM Plex Mono', monospace; color: var(--soft); }
+.out textarea { margin-top: 10px; min-height: 74px; font: 12.5px/1.5 var(--f-mono); color: var(--soft); }
 .out .sub { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--rule); }
 .btn.small { padding: 9px 14px; font-size: 14px; }
 
 /* cards */
 .cardtools { margin-top: 40px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
-.cardtools input { flex: 1 1 260px; max-width: 420px; background: #0F142A; color: var(--text); border: 1px solid var(--line2); padding: 11px 12px; font: 16px 'Pretendard Variable', Pretendard, sans-serif; }
-.cardtools .lv button { background: transparent; border: 1px solid var(--line2); color: var(--soft); padding: 9px 14px; font: 14px 'Pretendard Variable', Pretendard, sans-serif; cursor: pointer; }
+.cardtools input { flex: 1 1 260px; max-width: 420px; background: var(--paper); color: var(--text); border: 1px solid var(--line2); padding: 11px 12px; font: 16px var(--f-body); }
+.cardtools .lv button { background: transparent; border: 1px solid var(--line2); color: var(--soft); padding: 9px 14px; font: 14px var(--f-body); cursor: pointer; }
 .cardtools .lv button + button { border-left: 0; }
-.cardtools .lv button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.cardtools .lv button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--ink); }
 .chapters { margin-top: 28px; }
 .ch { padding: 26px 0; border-top: 1px solid var(--line2); display: grid; grid-template-columns: 15em 1fr; gap: 0 40px; }
 .ch h3 { font-size: 19px; }
 .ch .intro2 { margin-top: 8px; color: var(--mute); font-size: 14px; }
 .ch ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0 32px; }
 .ch li { padding: 9px 0; border-bottom: 1px solid var(--rule); font-size: 15.5px; display: flex; gap: 10px; align-items: baseline; }
-.ch li .lvl { font: 500 11.5px 'IBM Plex Mono', 'Pretendard Variable', monospace; color: var(--accent); flex: 0 0 2.6em; }
+.ch li .lvl { font: 500 11.5px var(--f-mono); color: var(--accent); flex: 0 0 2.6em; }
 .ch li small { color: var(--mute); font-size: 13.5px; }
 .ch.hide, .ch li.hide { display: none; }
 .cardnote { margin-top: 18px; color: var(--mute); font-size: 14px; }
@@ -64,14 +74,14 @@ section.s { padding: 110px 0; }
 /* downloads */
 .files { margin-top: 40px; border-top: 1px solid var(--line2); }
 .files a { display: grid; grid-template-columns: 1fr auto; gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--rule); text-decoration: none; align-items: baseline; }
-.files a:hover b { color: #9FC2FF; }
+.files a:hover b { color: var(--accent); }
 .files b { font-weight: 600; font-size: 17px; }
 .files span { display: block; color: var(--soft); font-size: 15px; margin-top: 4px; }
-.files i { font: normal 13px 'IBM Plex Mono', monospace; color: var(--mute); }
+.files i { font: normal 13px var(--f-mono); color: var(--mute); }
 .nums { margin-top: 56px; display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--rule); }
 .nums > div { padding: 24px 24px 0 0; }
 .nums > div + div { padding-left: 24px; border-left: 1px solid var(--rule); }
-.nums .n { font-family: Manrope, sans-serif; font-weight: 800; font-size: clamp(40px, 5vw, 64px); letter-spacing: -.05em; line-height: 1; color: #fff; }
+.nums .n { font-family: var(--f-head); font-weight: 800; font-size: clamp(40px, 5vw, 64px); letter-spacing: -.05em; line-height: 1; color: var(--ink); }
 .nums p { margin-top: 12px; color: var(--soft); font-size: 15px; }
 
 @media (max-width: 860px) {
@@ -93,7 +103,7 @@ section.s { padding: 110px 0; }
 
 <header>
   <div class="wrap">
-    <a class="logo" href="../"><img src="../assets/sc-mark.svg?v=3" width="22" height="22" alt=""><span>Space <b>Commons</b></span></a>
+    <a class="logo" href="../"><img src="../assets/sc-mark.svg?v=3" width="22" height="22" alt=""><span class="wordmark">Space <b>Commons</b></span></a>
     <nav>
       <a href="../">소개</a>
       <a href="features.html">기능</a>
@@ -203,7 +213,7 @@ section.s { padding: 110px 0; }
   </div>
   <footer>
     <div class="wrap">
-      <a class="logo" href="../"><img src="../assets/sc-mark.svg?v=3" width="22" height="22" alt=""><span>Space <b>Commons</b></span></a>
+      <a class="logo" href="../"><img src="../assets/sc-mark.svg?v=3" width="22" height="22" alt=""><span class="wordmark">Space <b>Commons</b></span></a>
       <span>모두의 창업 2기 선정사업</span>
       <nav><a href="features.html">기능</a><a href="local.html">지역사회</a><a href="../app.html">앱 열기</a><a href="https://github.com/radix24/space-commons">GitHub</a></nav>
     </div>
