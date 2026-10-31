@@ -25,6 +25,7 @@ SCENARIOS = {
     'space':   ('app.html#m=s', READY + " && document.body.classList.contains('space')"),
     'sandbox': ('app.html', "(async () => { document.querySelector('[data-mode=sandbox]').click(); for (let i = 0; i < 40 && !document.querySelector('.sb-dock'); i++) await new Promise(r => setTimeout(r, 250)); return !!document.querySelector('.sb-dock'); })()"),
     'kr':      ('app.html#o=' + '%EC%B2%9C%EB%A6%AC%EC%95%88%202A%ED%98%B8', "(async () => { for (let i = 0; i < 60 && !document.querySelector('.krcard'); i++) await new Promise(r => setTimeout(r, 250)); return !!document.querySelector('.krcard b'); })()"),
+    'venus':   ('app.html', "(async () => { const w = (ms) => new Promise(r => setTimeout(r, ms)); document.querySelector('[data-mode=sandbox]').click(); for (let i = 0; i < 40 && !document.querySelector('.sb-dock'); i++) await w(250); [...document.querySelectorAll('button')].find(b => /금성 테라포밍/.test(b.textContent)).click(); await w(800); for (let k = 0; k < 5; k++) { document.querySelector('.sb-terra .sb-tgo')?.click(); await w(500); } const sea = document.querySelector('.sb-seam')?.value; document.querySelector('.sb-terra .sb-tx').click(); await w(3000); return sea === '400'; })()"),
     'english': ('app.html?lang=en', READY),
     'embed':   ('app.html?embed=1', READY + " && document.body.classList.contains('embed')"),
     'phone':   ('app.html', READY + " && document.documentElement.scrollWidth <= innerWidth"),

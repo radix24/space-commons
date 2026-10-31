@@ -267,6 +267,7 @@ function updateTempMap() {
       limb.scale.setScalar(b.Rkm / O.AU_KM * (1.03 + 0.01 * Math.max(0, Math.log10(P) + 1))); limb.visible = true; }
     else if (limb) limb.visible = false;
     const cu = b.mesh?.children[1]?.material?.userData?.climate;
+    if (b.surfTex && cu) { const m = b.mesh.children[1].material, t = texOf(b.surfTex); if (m.map !== t) { m.map = t; m.needsUpdate = true; } } // the ground once the clouds are gone
     if (cu && k) { const x = ATM.extremes(k.Ts + impactHeat(b), k.a.P + ((b.sea ?? -1) > -0.5 ? 2 : 0)), top = Object.entries(k.a.mix).sort((p1, p2) => p2[1] - p1[1])[0]?.[0];
       const tl = Math.abs(Math.sin((b.tilt ?? TILT[b.name] ?? 0) * Math.PI / 180)); cu.uWater.value = (k.a.mix.H2O || 0) > 0.001 || (b.sea ?? -1) > -0.5 || b.name === 'Earth' ? 1 : 0; cu.uSea.value = b.sea ?? -1; cu.uLife.value = b.life || 0; if (b.hmap && !cu.uH.value) { cu.uH.value = texOf(b.hmap, '.png'); cu.uHasH.value = 1; } cu.uOn.value = 1; cu.uTeq.value = x.eq - (x.eq - x.pole) * 0.3 * tl; cu.uTpole.value = x.pole + (x.eq - x.pole) * 0.6 * tl; cu.uBoil.value = 373 + 30 * Math.log10(Math.max(k.a.P, 0.01));
       cu.uCloud.value = Math.max(0, Math.min(1, (Math.log10(Math.max(k.a.P, 1e-4)) - 0.3) / 1.4)) + (k.a.mix.H2O > 0.005 && x.eq > 273 && x.eq < cu.uBoil.value ? 0.25 : 0);
@@ -613,7 +614,10 @@ function moveToOrbit(b, d) { // put a body on a circular orbit d AU from its sta
   b.r = add(st.r, [d * Math.cos(ang), d * Math.sin(ang), 0]); b.v = add(st.v, [-sp * Math.sin(ang), sp * Math.cos(ang), 0]); b.trail.fill(0); b.tn = 0; sim.E0 = energy(); showNums();
   toast(`${b.ko}을(를) 별에서 ${fmt(d, 2)} AU 원 궤도로 옮겼습니다. "보기 → 온도 지도"로 표면 온도를 확인해 보세요`); }
 // terraforming: each step is what has actually been proposed, with what it would take; the climate model then shows the result
-const MARS_H = { lo: -8200, span: 29500 }; const marsSea = (m) => (m - MARS_H.lo) / MARS_H.span, marsM = (h) => Math.round(MARS_H.lo + h * MARS_H.span);
+// elevation maps (0..255 over lo..lo+span metres): Mars from MOLA, Venus from Magellan (tools/make_venus_height.py); the sea level is set in metres
+const ELEV = { Mars: { lo: -8200, span: 29500, map: 'disp_mars', min: -8000, max: 4000 }, Venus: { lo: -2900, span: 14500, map: 'disp_venus', min: -2000, max: 4000 } };
+const seaH = (n, m) => (m - ELEV[n].lo) / ELEV[n].span, seaM = (n, h) => Math.round(ELEV[n].lo + h * ELEV[n].span);
+const marsSea = (m) => seaH('Mars', m), marsM = (h) => seaM('Mars', h);
 const TERRA = {
   Mars: { ko: '화성', steps: [
     ['극관을 검게 덮어 녹이기', '극관에 검은 먼지를 뿌려 햇빛을 더 흡수하게 하면, 얼어 있던 이산화탄소가 기체로 풀려나 대기가 짙어집니다. 다만 실제로 풀려날 수 있는 양은 기압 0.02기압 정도로 추정됩니다.', (b) => { b.atm.P = 0.03; b.atm.mix = { CO2: 0.95, N2: 0.03, Ar: 0.02 }; b.atm.albedo = 0.2; }],
@@ -624,9 +628,9 @@ const TERRA = {
   ] },
   Venus: { ko: '금성', steps: [
     ['L1 지점에 햇빛 가리개', '태양과 금성 사이의 라그랑주 L1 지점에 거대한 가리개를 띄워 햇빛을 90% 막습니다. 표면이 수백 년에 걸쳐 식기 시작합니다.', (b) => { b.shade = 0.9; }],
-    ['이산화탄소를 돌로 굳히기', '식은 대기의 이산화탄소를 칼슘·마그네슘과 반응시켜 탄산염 암석으로 묶어 둡니다. 92기압이던 대기가 3기압 정도로 줄어듭니다.', (b) => { b.atm.P = 3; b.atm.mix = { CO2: 0.6, N2: 0.4 }; b.atm.albedo = 0.4; }],
-    ['수소로 물 만들기, 비', '가져온 수소를 남은 이산화탄소와 반응시켜 물을 만들면 수백 년 동안 비가 내려 저지대에 바다가 생깁니다.', (b) => { b.atm.P = 1.5; b.atm.mix = { N2: 0.8, CO2: 0.15, H2O: 0.03, Ar: 0.02 }; b.atm.albedo = 0.32; b.sea = 0.42; }],
-    ['자전 빠르게, 가리개 조절', '금성의 하루는 243일이라 한쪽이 너무 오래 낮입니다. 가리개로 24시간 주기의 낮과 밤을 흉내 내고, 햇빛을 지구 수준으로 맞춥니다.', (b) => { b.shade = 0.45; b.spinH = 24; }],
+    ['이산화탄소를 돌로 굳히기', '식은 대기의 이산화탄소를 칼슘·마그네슘과 반응시켜 탄산염 암석으로 묶어 둡니다. 92기압이던 대기가 3기압 정도로 줄어듭니다.', (b) => { b.atm.P = 3; b.atm.mix = { CO2: 0.6, N2: 0.4 }; b.atm.albedo = 0.4; b.surfTex = 'venus_surface'; }],
+    ['수소로 물 만들기, 비', '가져온 수소를 남은 이산화탄소와 반응시켜 물을 만들면 수백 년 동안 비가 내려 저지대에 바다가 생깁니다.', (b) => { b.atm.P = 1.5; b.atm.mix = { N2: 0.8, CO2: 0.15, H2O: 0.03, Ar: 0.02 }; b.atm.albedo = 0.32; b.sea = seaH('Venus', 400); }], // +400 m floods the lowland plains, about 37% of the surface
+    ['자전 빠르게, 가리개 조절', '금성의 하루는 243일이라 한쪽이 너무 오래 낮입니다. 가리개로 24시간 주기의 낮과 밤을 흉내 내고, 햇빛을 지구 수준으로 맞춥니다.', (b) => { b.shade = 0.75; b.spinH = 24; } /* still a quarter of the light: Venus gets 1.9 times Earth's sunlight */],
     ['초록 행성', '바다 주변에서 식물이 자라 산소를 만듭니다. 이론으로는 가능하지만 수천 년과 엄청난 에너지가 드는, 가장 어려운 테라포밍입니다.', (b) => { b.atm.mix = { N2: 0.75, O2: 0.2, CO2: 0.02, H2O: 0.02, Ar: 0.01 }; b.life = 1; }],
   ] },
 };
@@ -658,19 +662,19 @@ function checkQuiz(box, qs, k = 0, score = 0) {
 }
 function terraform(name) {
   let b = byName(name); if (!b) { root.querySelector('.sb-now').click(); b = byName(name); } if (!b) return;
-  const T = TERRA[name]; ATM.atmOf(b); if (name === 'Mars') b.hmap = 'disp_mars'; b.terraStep = 0; select(b); focus(name, b.Rkm / O.AU_KM * 5);
+  const T = TERRA[name]; ATM.atmOf(b); if (ELEV[name]) b.hmap = ELEV[name].map; b.terraStep = 0; select(b); focus(name, b.Rkm / O.AU_KM * 5);
   root.querySelector('.sb-temp').checked = true; root.querySelector('.sb-temp').dispatchEvent(new Event('change'));
   const box = root.querySelector('.sb-terra'); box.hidden = false;
   const draw = () => { const i = b.terraStep, s = T.steps[i];
     box.innerHTML = `<header><b>${T.ko} 테라포밍</b><span>${i} / ${T.steps.length}</span><button class="sb-tx">닫기</button></header>
       <ol>${T.steps.map((x, k) => `<li class="${k < i ? 'done' : k === i ? 'next' : ''}">${x[0]}</li>`).join('')}</ol>
-      ${name === 'Mars' && (b.sea ?? -1) > -0.5 ? `<div class="sb-prop"><label>해수면 (해발)</label><input class="sb-seam" type="number" step="100" value="${marsM(b.sea)}"><span class="u">m</span><input class="sb-sear" type="range" min="-8000" max="4000" step="50" value="${marsM(b.sea)}"></div>` : ''}
+      ${ELEV[name] && (b.sea ?? -1) > -0.5 ? `<div class="sb-prop"><label>해수면 (해발)</label><input class="sb-seam" type="number" step="100" value="${seaM(name, b.sea)}"><span class="u">m</span><input class="sb-sear" type="range" min="${ELEV[name].min}" max="${ELEV[name].max}" step="50" value="${seaM(name, b.sea)}"></div>` : ''}
       ${s ? `<p>${s[1]}</p><button class="sb-tgo">${i + 1}단계: ${s[0]}</button>` : `<p>모든 단계를 마쳤습니다. 오른쪽 정보 창에서 표면 온도와 물 상태를 확인하고, 시간을 흘려 보세요.</p>`}
       <div class="sb-learn"></div>`;
     learnLinks(box.querySelector('.sb-learn'), ['teq', 'hz', 'atmos'], name);
     box.querySelector('.sb-tx').onclick = () => { box.hidden = true; };
-    const sm = box.querySelector('.sb-seam'), sr = box.querySelector('.sb-sear'), setSea = (m) => { b.sea = marsSea(m); sm.value = m; sr.value = m; };
-    if (sm) { sm.onchange = () => setSea(Math.max(-8000, Math.min(4000, +sm.value))); sr.oninput = () => setSea(+sr.value); }
+    const sm = box.querySelector('.sb-seam'), sr = box.querySelector('.sb-sear'), setSea = (m) => { b.sea = seaH(name, m); sm.value = m; sr.value = m; };
+    if (sm) { sm.onchange = () => setSea(Math.max(ELEV[name].min, Math.min(ELEV[name].max, +sm.value))); sr.oninput = () => setSea(+sr.value); }
     const go = box.querySelector('.sb-tgo'); if (go) go.onclick = () => { s[2](b); b.terraStep++; atmEditor(b); draw(); toast(`${T.ko}: ${s[0]}`); }; };
   draw();
 }
