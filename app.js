@@ -1630,7 +1630,7 @@ function select(o) {
     tb.innerHTML = '<tr><th>다음 통과 (10° 이상)</th><th>최고 고도</th><th>보임</th></tr>';
     for (const p of ps) { const tr = tb.insertRow(); const f = (t) => new Date(t).toLocaleString(LOCALE, { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
       for (const v of [`${f(p.rise)} ~ ${new Date(p.set).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit', hour12: false })}`, `${p.max.toFixed(0)}°`, p.lit && p.dark ? '예' : '아니오']) tr.insertCell().textContent = v; }
-    if (!ps.length) tb.insertRow().insertCell().textContent = mode.space ? '통과 예보는 지상 모드에서 볼 수 있습니다' : '3일 안에 10° 위로 지나가지 않습니다';
+    if (!ps.length) tb.insertRow().insertCell().textContent = mode.space ? '통과 예보는 관측 모드에서 볼 수 있습니다' : '3일 안에 10° 위로 지나가지 않습니다';
     $('info-exo').innerHTML = ''; $('info-exo').append(tb); $('info-exo').hidden = false;
     const km = o.korea && krMission(o.id);
     if (o.korea) { const ab = $('info-about'), box = document.createElement('div'); box.className = 'krcard'; ab.hidden = false; ab.innerHTML = '';
@@ -1704,7 +1704,7 @@ function select(o) {
   if (o.planet && o.p.probe && JOURNEYS[o.p.name]) journeyTimeline(o.p);
   showPhoto(o.kindName === 'dso' ? o : null);
   showWiki(o); writeHash(); syncObsButton();
-  if (o.kindName === 'site') $('info-goto').textContent = mode.space ? '착륙 지점으로 비행' : '우주 모드에서 볼 수 있음';
+  if (o.kindName === 'site') $('info-goto').textContent = mode.space ? '착륙 지점으로 비행' : '탐험 모드에서 볼 수 있음';
   else if (o.planet && o.p.probe) $('info-goto').textContent = mode.space ? '탐사선으로 비행' : '이동 · 확대'; else $('info-goto').textContent = '이동 · 확대';
 }
 function exoDetail(o) { // system map + planet table, appended under the info table
@@ -2075,7 +2075,7 @@ $('search').addEventListener('change', (e) => {
   const n = /^(ngc|ic)0*(\d+)$/.exec(q); if (n) q = n[1] + n[2];
   let mk = searchIndex.get(q);
   if (!mk) for (const [k, v] of searchIndex) if (k.startsWith(q)) { mk = v; break; }
-  if (mk) { const o = mk(); if (o.kindName === 'site' && !mode.space) setMode(true); if (o.planet && (!o.p.world || (o.p.probe && !o.p.active))) { $('status').textContent = o.p.probe ? `${o.name}: 이 시각의 위치 자료가 없습니다` : `${o.name}: 우주 모드에서 볼 수 있습니다`; return; } select(o); flyTo(o); e.target.blur(); } else $('status').textContent = `"${e.target.value}" 를 찾지 못했습니다`;
+  if (mk) { const o = mk(); if (o.kindName === 'site' && !mode.space) setMode(true); if (o.planet && (!o.p.world || (o.p.probe && !o.p.active))) { $('status').textContent = o.p.probe ? `${o.name}: 이 시각의 위치 자료가 없습니다` : `${o.name}: 탐험 모드에서 볼 수 있습니다`; return; } select(o); flyTo(o); e.target.blur(); } else $('status').textContent = `"${e.target.value}" 를 찾지 못했습니다`;
 });
 
 // ---------- UI ----------
@@ -2160,7 +2160,7 @@ const KVN_TEXT = `<header><b>KVN 연세 전파천문대 · 서대문구 신촌</
   <p>연세대학교 신촌캠퍼스(서대문구)에는 지름 21 m 전파망원경이 있습니다. 한국천문연구원이 운영하는 <b>한국우주전파관측망(KVN)</b>의 서울 관측소로, 울산·제주(탐라)·평창의 같은 크기 망원경과 함께 하늘을 봅니다.</p>
   <p><b>VLBI(초장기선 전파간섭계)</b>: 멀리 떨어진 망원경들이 같은 천체를 동시에 관측하고, 원자시계로 시각을 맞춘 신호를 대전의 상관센터에서 합칩니다. 그러면 망원경 사이 거리(연세–탐라 약 478 km)만 한 거대한 망원경처럼 아주 작은 각도까지 구분할 수 있습니다.</p>
   <p>KVN은 22·43·86·129 GHz 네 대역을 한꺼번에 받아, 별이 태어나는 구름의 물·메탄올 메이저, 블랙홀에서 뿜어 나오는 제트 같은 것을 관측합니다. 눈에 보이는 빛이 아니라 전파라서 낮에도, 흐린 날에도 관측할 수 있습니다.</p>
-  <p><b>서대문과 연세대의 우주</b>: 같은 신촌캠퍼스의 지상국은 연세대 학생들이 만든 큐브위성(누리호 2차의 미먼, 5차의 율리시스·BEE-1012·SD-1 SAT)과 교신합니다. 우주 모드에서 연세대 위성의 궤도는 파란색으로 그려집니다.</p>
+  <p><b>서대문과 연세대의 우주</b>: 같은 신촌캠퍼스의 지상국은 연세대 학생들이 만든 큐브위성(누리호 2차의 미먼, 5차의 율리시스·BEE-1012·SD-1 SAT)과 교신합니다. 탐험 모드에서 연세대 위성의 궤도는 파란색으로 그려집니다.</p>
   <p class="small">출처: 한국천문연구원 KVN, 연세대학교 발표 자료</p>`;
 function kvnPanel() { let b = $('kvn'); if (!b) { b = document.createElement('div'); b.id = 'kvn'; document.body.append(b); } b.innerHTML = KVN_TEXT; b.hidden = false; b.querySelector('.tm-x').onclick = () => { b.hidden = true; }; }
 $('place').onchange = (e) => { const v = PLACES[e.target.value]; if (!v) return; [state.lat, state.lon] = v; $('lat').value = v[0]; $('lon').value = v[1]; if (e.target.value === 'yonsei') kvnPanel(); };
@@ -2182,7 +2182,7 @@ $('shot').onclick = () => {
 };
 // ---------- A3. take a long exposure: stars sweep arcs around the celestial pole; longer and higher-ISO shots reach fainter stars ----------
 function longExposure() {
-  if (mode.space) { $('status').textContent = '장노출 사진은 지상 모드에서 찍을 수 있습니다'; return; }
+  if (mode.space) { $('status').textContent = '장노출 사진은 관측 모드에서 찍을 수 있습니다'; return; }
   const sec = +$('exp-sec').value, iso = +$('exp-iso').value, W = canvas.width, H = canvas.height, k = W / innerWidth;
   const out = document.createElement('canvas'); out.width = W; out.height = H; const g = out.getContext('2d');
   g.drawImage(canvas, 0, 0); g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(0, 0, W, H); // the live frame, darkened, keeps the ground and horizon
@@ -3530,7 +3530,7 @@ function tourMaker() {
       <textarea rows="2" placeholder="이 장면에서 할 말">${esc(s.say || '')}</textarea><label>머무름 <input type="number" min="1" max="600" value="${s.wait}"> 초</label></li>`).join('')}</ol>
     ${tourSteps.length ? '' : '<p class="small tm-empty">아직 담은 장면이 없습니다.</p>'}
     <div class="row"><button class="tm-add">지금 화면 담기</button><button class="tm-play" ${tourSteps.length ? '' : 'disabled'}>재생</button><button class="tm-save" ${tourSteps.length ? '' : 'disabled'}>파일로 저장</button><button class="tm-clear" ${tourSteps.length ? '' : 'disabled'}>모두 지우기</button></div>
-    <p class="small">저장한 파일은 "저장·공유 → 애드온·발표 불러오기"로 다시 열 수 있습니다. 투어는 지상 모드의 시점을 담습니다.</p>`;
+    <p class="small">저장한 파일은 "저장·공유 → 애드온·발표 불러오기"로 다시 열 수 있습니다. 투어는 관측 모드의 시점을 담습니다.</p>`;
   box.querySelector('.tm-x').onclick = () => { box.hidden = true; };
   box.querySelectorAll('.tm-list li').forEach(li => { const i = +li.dataset.i;
     li.querySelector('textarea').oninput = (e) => { tourSteps[i].say = e.target.value.slice(0, 300); };
@@ -3606,7 +3606,7 @@ $('sync-btn').onclick = () => classSync.open();
 // ---------- first visit: a four-step guide, shown once (and again from the help line) ----------
 const GUIDE = [['#c', '하늘 둘러보기', '끌어서 둘러보고, 휠이나 두 손가락으로 확대합니다. 별이나 행성을 누르면 설명이 나옵니다.'],
   ['#search', '찾기', '천체 이름(목성, M31, 시리우스)이나 좌표를 적으면 그쪽으로 갑니다.'],
-  ['#modes', '세 가지 모드', '지상: 내가 선 곳의 밤하늘 · 우주: 태양계와 은하를 날아다니기 · 샌드박스: 행성과 별을 직접 만들어 보는 실험실'],
+  ['#modes', '세 가지 모드', '지상: 내가 선 곳의 밤하늘 · 우주: 태양계와 은하를 날아다니기 · 실험 모드: 행성과 별을 직접 만들어 보는 실험실'],
   ['#cards-btn', '배우기', '우주 알아보기에서 개념 카드와 확인 문제로 차근차근 배울 수 있습니다. 관측·배우기 메뉴에 더 많은 도구가 있습니다.']];
 function showGuide(k = 0) {
   document.querySelector('.guide')?.remove(); if (k >= GUIDE.length) { try { localStorage.setItem('space-commons-guided', '1'); } catch {} return; }

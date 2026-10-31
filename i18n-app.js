@@ -109,13 +109,13 @@ export const PH_APP = [
   [': 멀리 떨어진 망원경들이 같은 천체를 동시에 관측하고, 원자시계로 시각을 맞춘 신호를 대전의 상관센터에서 합칩니다. 그러면 망원경 사이 거리(연세–탐라 약 478 km)만 한 거대한 망원경처럼 아주 작은 각도까지 구분할 수 있습니다.', ': telescopes far apart observe the same object at the same time, and their signals, time-stamped by atomic clocks, are combined at the correlator in Daejeon. Together they resolve angles as fine as a single giant telescope as wide as the distance between them (about 478 km from Yonsei to Tamna).'],
   ['KVN은 22·43·86·129 GHz 네 대역을 한꺼번에 받아, 별이 태어나는 구름의 물·메탄올 메이저, 블랙홀에서 뿜어 나오는 제트 같은 것을 관측합니다. 눈에 보이는 빛이 아니라 전파라서 낮에도, 흐린 날에도 관측할 수 있습니다.', 'KVN receives four bands at once, 22, 43, 86 and 129 GHz, to observe things like water and methanol masers in star-forming clouds and jets shooting out of black holes. Because it works with radio waves, not visible light, it can observe by day and on cloudy days.'],
   ['서대문과 연세대의 우주', 'Seodaemun, Yonsei and space'],
-  [': 같은 신촌캠퍼스의 지상국은 연세대 학생들이 만든 큐브위성(누리호 2차의 미먼, 5차의 율리시스·BEE-1012·SD-1 SAT)과 교신합니다. 우주 모드에서 연세대 위성의 궤도는 파란색으로 그려집니다.', ': a ground station on the same Sinchon campus talks to CubeSats built by Yonsei students (MIMAN on Nuri\'s second flight; Ulysses, BEE-1012 and SD-1 SAT on the fifth). In space mode the orbits of Yonsei satellites are drawn in blue.'],
+  [': 같은 신촌캠퍼스의 지상국은 연세대 학생들이 만든 큐브위성(누리호 2차의 미먼, 5차의 율리시스·BEE-1012·SD-1 SAT)과 교신합니다. 탐험 모드에서 연세대 위성의 궤도는 파란색으로 그려집니다.', ': a ground station on the same Sinchon campus talks to CubeSats built by Yonsei students (MIMAN on Nuri\'s second flight; Ulysses, BEE-1012 and SD-1 SAT on the fifth). In Explore mode the orbits of Yonsei satellites are drawn in blue.'],
   ['출처: 한국천문연구원 KVN, 연세대학교 발표 자료', 'Sources: KASI (KVN), Yonsei University announcements'],
   // tour maker
   ['투어 만들기', 'Make a tour'],
   ['하늘을 원하는 대로 맞춘 뒤 "지금 화면 담기"를 누르세요. 장면마다 설명을 적고 머무를 시간을 정하면, 장면 사이를 천천히 옮겨 가며 자막과 함께 보여 줍니다.', 'Set up the sky the way you want, then press "Add this view". Write a caption for each scene and choose how long to stay, and the tour glides from scene to scene with your captions.'],
   ['지금 화면 담기', 'Add this view'], ['파일로 저장', 'Save as file'], ['모두 지우기', 'Clear all'], ['아직 담은 장면이 없습니다.', 'No scenes yet.'],
-  ['저장한 파일은 "저장·공유 → 애드온·발표 불러오기"로 다시 열 수 있습니다. 투어는 지상 모드의 시점을 담습니다.', 'Open a saved file again with "Save & share → Load add-on or presentation". Tours record ground-mode views.'],
+  ['저장한 파일은 "저장·공유 → 애드온·발표 불러오기"로 다시 열 수 있습니다. 투어는 관측 모드의 시점을 담습니다.', 'Open a saved file again with "Save & share → Load add-on or presentation". Tours record Observe-mode views.'],
   ['이 장면에서 할 말', 'What to say in this scene'], ['머무름', 'Stay'], ['위로', 'Move up'], ['지우기', 'Delete'], ['투어 이름', 'Tour name'], ['나의 하늘 투어', 'My sky tour'],
   // Nuri flight 3 replay
   ['이륙: 나로우주센터, 1단 75톤 엔진 4기 점화', 'Liftoff from Naro Space Center: four 75-tonne first-stage engines ignite'],
@@ -127,7 +127,7 @@ export const PH_APP = [
   ['누리호 3차 발사 재생이 끝났습니다 (궤적은 공개된 비행 순서를 바탕으로 한 근사입니다)', 'Nuri flight 3 replay finished (the path is an approximation based on the published flight sequence)'],
   ['누리호 3차 발사 · 2023년 5월 25일 18시 24분 · 18배속', 'Nuri flight 3 · May 25, 2023, 18:24 KST · 18× speed'],
   ['누리호 3차 발사 다시 보기', 'Replay Nuri flight 3'], ['한국 우주개발 연표', 'Korean spaceflight timeline'], ['이 위성의 눈으로 지구 보기', 'See Earth from this satellite'],
-  ['통과 예보는 지상 모드에서 볼 수 있습니다', 'Pass predictions are shown in ground mode'], ['3일 안에 10° 위로 지나가지 않습니다', 'No passes above 10° in the next 3 days'],
+  ['통과 예보는 관측 모드에서 볼 수 있습니다', 'Pass predictions are shown in Observe mode'], ['3일 안에 10° 위로 지나가지 않습니다', 'No passes above 10° in the next 3 days'],
   // info panel
   ['검색창에 적은 적경·적위 (J2000)', 'RA and Dec typed in the search box (J2000)'], ['좌표 지점', 'Coordinate point'], ['가까운 밝은 별', 'Nearest bright star'],
   ['궤도: JPL SBDB', 'orbit: JPL SBDB'], ['탐사선 · 위치: JPL Horizons', 'Spacecraft · position: JPL Horizons'],

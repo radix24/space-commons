@@ -40,9 +40,9 @@
   <input id="search" list="search-list" placeholder="검색: M31, NGC 7000, Jupiter, Sirius…" autocomplete="off">
   <datalist id="search-list"></datalist>
   <div id="modes" role="tablist">
-    <button data-mode="ground" class="on">지상</button>
-    <button data-mode="space">우주</button>
-    <button data-mode="sandbox">샌드박스</button>
+    <button data-mode="space" data-tip="우주를 날아다니며 행성과 별, 은하를 둘러봅니다.">탐험</button>
+    <button data-mode="ground" class="on" data-tip="내가 선 곳에서 오늘 하늘에 무엇이 보이는지 봅니다.">관측</button>
+    <button data-mode="sandbox" data-tip="행성과 별을 직접 만들고 바꿔 보는 실험실입니다.">실험</button>
   </div>
   <div id="tools">
     <button id="tonight-btn" class="ground-only" title="지금 볼 수 있는 천체 (T)">지금 하늘</button>

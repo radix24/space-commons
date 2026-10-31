@@ -1020,7 +1020,7 @@ function labCircular() {
   box.append(check);
   deeper(box, `활력 방정식(vis-viva) <span class="tex">v^2 = GM\\left(\\frac{2}{r} - \\frac{1}{a}\\right)</span>에서 원 궤도는 a = r 이므로 <span class="tex">v = \\sqrt{GM/r}</span>, 무한히 멀리(a → ∞) 가려면 <span class="tex">v = \\sqrt{2GM/r}</span>로 √2배입니다.
     태양의 GM = 1.327×10¹¹ km³/s², r = 1 AU를 넣으면 ${fmt(vc, 2)} km/s와 ${fmt(ve, 2)} km/s입니다. 궤도 에너지 <span class="tex">\\varepsilon = \\frac{v^2}{2} - \\frac{GM}{r}</span>가 음수면 타원, 0이면 포물선, 양수면 쌍곡선입니다.
-    이 샌드박스는 다른 행성의 중력도 계산하므로, 목성 근처를 지나는 궤도는 조금씩 바뀝니다.`);
+    이 실험 모드는 다른 행성의 중력도 계산하므로, 목성 근처를 지나는 궤도는 조금씩 바뀝니다.`);
   noteAndSave(box, '원 궤도와 탈출 속도', () => { const s = last && O.elements(add(last.r, byName('Sun').r, -1), add(last.v, byName('Sun').v, -1)); return { '던진 속도 km/s': v.value, '이심률': s ? fmt(s.e, 3) : '-', '긴반지름 AU': s && s.e < 1 ? fmt(s.a, 3) : '-' }; });
   lab = { tick() { if (!last) return set([['원 궤도 속도 (1 AU)', `${fmt(vc, 2)} km/s`], ['탈출 속도 (1 AU)', `${fmt(ve, 2)} km/s`]]);
     const s = O.elements(add(last.r, byName('Sun').r, -1), add(last.v, byName('Sun').v, -1));
@@ -1170,7 +1170,7 @@ function labPorkchop() {
 function labFlyby() {
   freshSystem(); sim.playing = false;
   const box = labBox('플라이바이 설계', '행성 곁을 지나가면 행성 기준 속도는 그대로인데, 태양 기준 속도는 바뀝니다.');
-  steps(box, ['행성, 접근 속도 v∞, 최근접 고도, 지나가는 쪽을 정하면 꺾이는 각도와 태양 기준 속도 변화를 계산합니다.', '"샌드박스에서 해 보기"를 누르면 같은 조건으로 탐사선을 실제로 지나가게 해서 계산과 비교합니다.']);
+  steps(box, ['행성, 접근 속도 v∞, 최근접 고도, 지나가는 쪽을 정하면 꺾이는 각도와 태양 기준 속도 변화를 계산합니다.', '"실험 모드에서 해 보기"를 누르면 같은 조건으로 탐사선을 실제로 지나가게 해서 계산과 비교합니다.']);
   const planet = field(box, '행성', el('select')); for (const n of ['Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn']) planet.append(new Option(KO[n], n)); planet.value = 'Jupiter';
   const vinf = field(box, '접근 속도 v∞ (km/s)', num(6, 0.1, 0.5, 30)), alt = field(box, '최근접 고도 (km)', num(200000, 100, 100)), ang = field(box, '접근 방향: 행성 진행 방향과의 각도 (°)', num(120, 1, 0, 180));
   const side = field(box, '지나가는 쪽', el('select')); side.append(new Option('반시계 방향으로 꺾임', '1'), new Option('시계 방향으로 꺾임', '-1')); // which way gains depends on the approach: the table says
@@ -1194,7 +1194,7 @@ function labFlyby() {
     g.fillStyle = '#c9d1e6'; g.font = '10px "Pretendard Variable", "Malgun Gothic", sans-serif'; g.fillText(tr('가는 선: 태양 기준 속도 (들어옴 · 나감)'), 6, 14);
   };
   for (const i of [planet, vinf, alt, ang, side]) i.oninput = i.onchange = calc;
-  box.append(btn('샌드박스에서 해 보기', () => { calc(); freshSystem(sim.t); const pl = byName(plan.n), sun = byName('Sun');
+  box.append(btn('실험 모드에서 해 보기', () => { calc(); freshSystem(sim.t); const pl = byName(plan.n), sun = byName('Sun');
     // planet frame axes: x along the planet's heliocentric velocity, y toward the Sun side within the orbit plane, z = orbit normal
     const ex = scale(add(pl.v, sun.v, -1), 1 / norm(add(pl.v, sun.v, -1))), rr = add(pl.r, sun.r, -1), ez = scale(cross(rr, ex), 1 / norm(cross(rr, ex))), ey = cross(ez, ex);
     const vdir = add(scale(ex, Math.cos(plan.th)), ey, Math.sin(plan.th));
@@ -1293,7 +1293,7 @@ function labMission() {
 function labLagrange() {
   resetSolarSystem(sim.t, ['Sun', 'Jupiter']); sim.speed = 200; sim.playing = true; focus('Sun', 14);
   const box = labBox('라그랑주점과 트로이 소행성', '태양과 목성 사이에서 둘과 함께 도는 다섯 자리가 있습니다. 어느 자리가 안정할까요?');
-  steps(box, ['태양과 목성만 남긴 샌드박스입니다. L1~L5 다섯 점에 시험 입자를 놓았습니다(살짝 흔들어 둠).', '몇십 년을 돌려 보며 어떤 입자가 제자리를 맴돌고 어떤 입자가 떠나는지 보세요.', '실제 목성 트로이 소행성 1만여 개가 L4, L5 근처에 모여 있습니다.']);
+  steps(box, ['태양과 목성만 남긴 실험 모드입니다. L1~L5 다섯 점에 시험 입자를 놓았습니다(살짝 흔들어 둠).', '몇십 년을 돌려 보며 어떤 입자가 제자리를 맴돌고 어떤 입자가 떠나는지 보세요.', '실제 목성 트로이 소행성 1만여 개가 L4, L5 근처에 모여 있습니다.']);
   const J = byName('Jupiter'), S = byName('Sun'), rel = add(J.r, S.r, -1), a = norm(rel), m = J.m / S.m, rH = a * Math.cbrt(m / 3), ang = Math.atan2(rel[1], rel[0]);
   const w = norm(cross(rel, add(J.v, S.v, -1))) / (a * a), pts = { L1: [a - rH, 0], L2: [a + rH, 0], L3: [-a * (1 + 5 * m / 12), 0], L4: [a * Math.cos(Math.PI / 3), a * Math.sin(Math.PI / 3)], L5: [a * Math.cos(Math.PI / 3), -a * Math.sin(Math.PI / 3)] };
   const probes = {}; const cm = (J.m * a) / (J.m + S.m); // barycentre offset along the Sun-Jupiter line

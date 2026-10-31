@@ -163,7 +163,7 @@ const EXACT_CARDS = {
   '지구에서 본 행성 위치가 시간에 따라 지나간 길': 'Path of the planet among the stars as seen from Earth',
   // ---- card page ----
   '확인': 'Check', '풀이 보기': 'Show answer', '다음 문제 →': 'Next question →', '이미 맞힌 문제입니다.': 'Already answered correctly.', '식 읽기': 'Reading the formula', '← 목차': '← Contents',
-  '먼저 볼 것': 'Read first', '식으로 쓰면': 'As a formula', '한눈에 보기': 'At a glance', '전공 심화: 유도와 실제': 'Advanced: derivation and practice', '샌드박스에서 해 보기': 'Try it in the sandbox',
+  '먼저 볼 것': 'Read first', '식으로 쓰면': 'As a formula', '한눈에 보기': 'At a glance', '전공 심화: 유도와 실제': 'Advanced: derivation and practice', '실험 모드에서 해 보기': 'Try it in the Experiment mode',
   '이어서 볼 것': 'Read next', '읽었지만 확인 문제가 남았습니다': 'Read, but check questions remain', '바로 시작할 수 있습니다': 'You can start right away', '다음에 볼 개념': 'What to read next', '문제 맞힘 ✓': 'Answered ✓',
   '기초': 'Basic', '교양': 'General', '전공': 'Advanced',
   // ---- labs2.js ----

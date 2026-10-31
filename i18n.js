@@ -143,7 +143,7 @@ const PH = [
   ['하늘을 원하는 대로 맞춘 뒤 "지금 화면 담기"를 누르세요. 장면마다 설명을 적고 머무를 시간을 정하면, 장면 사이를 천천히 옮겨 가며 자막과 함께 보여 줍니다.', 'Set up the sky, then press "Capture this view". Write a caption and a pause for each scene; playback glides between scenes with captions.'],
   ['지금 화면 담기', 'Capture this view'], ['파일로 저장', 'Save as file'], ['모두 지우기', 'Clear all'], ['재생', 'Play'], ['아직 담은 장면이 없습니다.', 'No scenes yet.'],
   ['이 장면에서 할 말', 'What to say in this scene'], ['머무름', 'Stay'], ['투어 이름', 'Tour name'], ['나의 하늘 투어', 'My sky tour'],
-  ['저장한 파일은 "저장·공유 → 애드온·발표 불러오기"로 다시 열 수 있습니다. 투어는 지상 모드의 시점을 담습니다.', 'Open a saved file again with "Save & share → Load add-on or presentation". Tours record ground-mode views.'],
+  ['저장한 파일은 "저장·공유 → 애드온·발표 불러오기"로 다시 열 수 있습니다. 투어는 관측 모드의 시점을 담습니다.', 'Open a saved file again with "Save & share → Load add-on or presentation". Tours record Observe-mode views.'],
   ['개념 카드', 'Concept cards'], ['확인 문제', 'Check questions'], ['다음 문제', 'Next question'], ['결과 보기', 'See result'], ['다시 풀기', 'Try again'],
   ['맞았습니다. ', 'Correct. '], ['아쉽습니다. ', 'Not quite. '], ['활력 방정식', 'Vis-viva equation'], ['호만 전이', 'Hohmann transfer'], ['오베르트 효과', 'Oberth effect'],
   ['항성 진화', 'Stellar evolution'], ['별의 최후', 'Fates of stars'], ['평형 온도와 온실 효과', 'Equilibrium temperature and greenhouse'], ['생명 가능 지대', 'Habitable zone'], ['대기를 붙잡는 힘', 'Holding on to air'],
@@ -200,10 +200,10 @@ const PH = [
   ['궤도 자료로 최근접 2시간 전부터 120배속으로 재생합니다', 'Replays real trajectories from 2 hours before closest approach at 120×'],
   ['앞으로 90일 · 누르면 그 순간으로 이동합니다', 'Next 90 days · tap to jump to that moment'],
   ['지평선 위 15° 이상에 밝은 천체가 없습니다', 'Nothing bright more than 15° above the horizon'],
-  ['통과 예보는 지상 모드에서 볼 수 있습니다', 'Pass predictions are shown in Ground mode'],
+  ['통과 예보는 관측 모드에서 볼 수 있습니다', 'Pass predictions are shown in Observe mode'],
   ['일 안에 10° 위로 지나가지 않습니다', ' days: no passes above 10°'], ['이 브라우저에만 저장됩니다', 'saved in this browser only'],
   ['천체 주위 공전', 'orbiting'], ['주위 공전', '· orbiting'], ['공전', 'orbit'], ['현재 화면 링크를 복사했습니다', 'Link to this view copied'], ['이 링크를 복사하세요', 'Copy this link'],
-  ['이 시각의 위치 자료가 없습니다', 'no position data for this time'], ['우주 모드에서 볼 수 있습니다', 'visible in Space mode'], ['우주 모드에서 볼 수 있음', 'Visible in Space mode'],
+  ['이 시각의 위치 자료가 없습니다', 'no position data for this time'], ['탐험 모드에서 볼 수 있습니다', 'visible in Explore mode'], ['탐험 모드에서 볼 수 있음', 'Visible in Explore mode'],
   ['받는 중 · 지금 맨눈으로 보일 수 있음', 'in sunlight · may be visible to the naked eye now'], ['지금은 하늘이 밝습니다', 'the sky is bright now'],
   ['보틀 척도: 1 아주 어두운 하늘 ~ 9 도심', 'Bortle scale: 1 darkest sky ~ 9 inner city'], ['해가 떠 있을 때 하늘을 어떻게 보여 줄지', 'How to show the sky while the Sun is up'],
   ['지평선 근처의 굴절과 소광', 'Refraction and extinction near the horizon'], ['눈의 암순응을 지키는 붉은 화면 (N)', 'Red screen that keeps your night vision (N)'],
@@ -255,7 +255,7 @@ const PH = [
   ['은하 쌍', 'Galaxy pair'], ['은하 삼중', 'Galaxy triplet'], ['은하군', 'Galaxy group'], ['발광성운', 'Emission nebula'], ['반사성운', 'Reflection nebula'], ['초신성 잔해', 'Supernova remnant'],
   ['성단+성운', 'Cluster + nebula'], ['행성상성운', 'Planetary nebula'], ['산개성단', 'Open cluster'], ['구상성단', 'Globular cluster'], ['성협', 'Association'], ['성운', 'Nebula'], ['은하', 'Galaxy'], ['기타', 'Other'],
   // recent features: lessons, history, sizes, labs, plan, gear, eclipse map, long exposure
-  ['맨눈 별 4만 1천 개(확대하면 가이아 별 300만 개)와 NGC/IC 천체 1만 2천 개를 불러오는 중', 'Loading 41,000 naked-eye stars (3 million Gaia stars when zoomed) and 12,000 NGC/IC objects'], ['샌드박스', 'Sandbox'], ['수업 링크', 'Lesson link'], ['한국 천문학', 'Korean astronomy'],
+  ['맨눈 별 4만 1천 개(확대하면 가이아 별 300만 개)와 NGC/IC 천체 1만 2천 개를 불러오는 중', 'Loading 41,000 naked-eye stars (3 million Gaia stars when zoomed) and 12,000 NGC/IC objects'], ['실험 모드', 'Experiment'], ['수업 링크', 'Lesson link'], ['한국 천문학', 'Korean astronomy'],
   ['크기 비교', 'Size comparison'], ['우주 알아보기', 'Explore the universe'], ['카메라 겹치기', 'Camera overlay'], ['장노출', 'Long exposure'],
   ['녹화 중지', 'Stop recording'], ['녹화', 'Record'], ['자동 비행', 'Auto tour'], ['우리 은하 밖으로', 'Outside the Milky Way'],
   ['위성으로 판정', 'Rate from satellite'], ['실제 지형', 'Real terrain'], ['아날렘마', 'Analemma'], ['가시광', 'Visible light'],
@@ -280,7 +280,7 @@ const PH = [
   ['관측지 주변 약 50 km의 실제 산 능선 (AWS Terrain Tiles: SRTM 등 공개 고도 자료)', 'Real mountain ridges within about 50 km of the site (AWS Terrain Tiles: SRTM and other open elevation data)'], ['낮 하늘', 'Daytime sky'], ['지금 시계 시각에 1년 동안 태양이 있을 자리 (8자 모양)', 'Where the Sun stands at this clock time over a year (figure-eight)'], ['파장', 'Wavelength'],
   ['같은 하늘을 다른 빛(파장)으로 보기', 'See the same sky in other light (wavelengths)'], ['은하수 표현', 'Milky Way style'], ['은하수를 실제 사진(ESO 전천 파노라마)으로 볼지, 그림으로 볼지', 'Show the Milky Way as a real photo (ESO all-sky panorama) or an illustration'], ['별자리 그림 (Johan Meuris, Free Art License)', 'Constellation art (Johan Meuris, Free Art License)'],
   ['한국 별자리 그림', 'Korean constellation art'], ['한국 전통 별자리를 고르고 별자리 그림을 켰을 때 겹칠 옛 천문도', 'Old star chart overlaid when Korean traditional constellations and constellation art are on'], ['어제 하루 동안 위성이 찍은 실제 지구 사진 (NASA GIBS)', 'Real satellite imagery of Earth from yesterday (NASA GIBS)'], ['글자와 버튼을 크게', 'Larger text and buttons'],
-  ['빨강·초록을 구별하기 어려운 분을 위한 파랑·주황 색 구성', 'Blue/orange colours for people who find red and green hard to tell apart'], ['별의 반짝임과 화면 이동 애니메이션을 줄입니다', 'Reduce star twinkling and camera animations'], ['미국 NOAA 오로라 예보 (30~90분 뒤): 우주에서는 지구 밤 쪽에, 지상에서는 가까우면 지평선에', 'NOAA aurora forecast (30-90 min ahead): on Earth\'s night side in Space mode, on the horizon in Ground mode when close'], ['예: 겨울 대삼각형 찾기', 'e.g. Find the Winter Triangle'],
+  ['빨강·초록을 구별하기 어려운 분을 위한 파랑·주황 색 구성', 'Blue/orange colours for people who find red and green hard to tell apart'], ['별의 반짝임과 화면 이동 애니메이션을 줄입니다', 'Reduce star twinkling and camera animations'], ['미국 NOAA 오로라 예보 (30~90분 뒤): 우주에서는 지구 밤 쪽에, 지상에서는 가까우면 지평선에', 'NOAA aurora forecast (30-90 min ahead): on Earth\'s night side in Explore mode, on the horizon in Observe mode when close'], ['예: 겨울 대삼각형 찾기', 'e.g. Find the Winter Triangle'],
   ['예: 별의 색과 온도의 관계를 설명할 수 있다', 'e.g. Explain how a star\'s colour relates to its temperature'], ['세 별 가운데 가장 붉은 별은?', 'Which of the three stars is the reddest?'], ['그 별의 표면 온도는 태양보다 높을까요?', 'Is its surface temperature higher than the Sun\'s?'], ['여기에 링크가 나옵니다', 'The link appears here'],
   ['예보: Open-Meteo. 관측지의 위도·경도(소수 둘째 자리)만 보냅니다. 시상(대기 흔들림)은 브라우저에서 받을 수 있는 공개 예보가 없어 넣지 않았습니다.', 'Forecast: Open-Meteo. Only the site\'s latitude and longitude (2 decimals) are sent. Seeing (air turbulence) is not included because no open forecast is available to browsers.'], ['USB·직렬 케이블: LX200 명령을 쓰는 가대(미드, 셀레스트론 일부, SynScan 등). 네트워크: ASCOM Alpaca 서버 주소. 위험한 동작을 막기 위해 해가 떠 있을 때는 태양 쪽으로 보내지 마세요.', 'USB/serial cable: mounts that use LX200 commands (Meade, some Celestron, SynScan, etc.). Network: ASCOM Alpaca server address. For safety, never point at the Sun while it is up.'], ['실제 크기 비율 그대로 · 표면 사진은 실제 지도', 'True relative sizes · surfaces are real maps'], ['암석 행성', 'Rocky planets'],
   ['지구와 거대 행성', 'Earth and the giant planets'], ['위성과 왜행성', 'Moons and dwarf planets'], ['목성과 태양', 'Jupiter and the Sun'], ['가까운 별', 'Nearby stars'],
@@ -301,7 +301,7 @@ const PH = [
   ['조선왕조실록의 객성: 티코 초신성', 'A guest star in the Joseon Annals: Tycho\'s supernova'], ['선조 5년(1572년 11월) 실록에 왕량성(카시오페이아자리) 근처에 객성이 나타났다는 기록이 있습니다. 유럽에서 티코 브라헤가 관측한 바로 그 초신성(SN 1572)입니다.', 'The Annals for the 5th year of King Seonjo (November 1572) record a guest star near Wangnyang (Cassiopeia): the same supernova (SN 1572) that Tycho Brahe observed in Europe.'], ['티코 초신성 (SN 1572)', 'Tycho\'s supernova (SN 1572)'], ['등급으로 낮에도 보였습니다. 지금은 X선으로 빛나는 잔해만 남았습니다.', ' mag, visible even in daylight. Today only a remnant glowing in X-rays is left.'],
   ['최대 밝기', 'Peak brightness'], ['조선왕조실록의 객성: 케플러 초신성', 'A guest star in the Joseon Annals: Kepler\'s supernova'], ['선조 37년(1604년 10월) 미수(전갈자리 꼬리) 근처에 객성이 나타나 여러 달 관측했다는 기록이 남아 있습니다. 케플러가 유럽에서 관측한 우리 은하의 마지막 맨눈 초신성(SN 1604)이며, 조선의 기록은 밝기 변화를 날마다 적어 오늘날 연구에도 쓰입니다.', 'Records from the 37th year of King Seonjo (October 1604) describe a guest star near the Tail mansion (Scorpius\' tail) watched for months. It is the Milky Way\'s last naked-eye supernova (SN 1604), also seen by Kepler; the Joseon daily brightness notes are still used in research.'], ['케플러 초신성 (SN 1604)', 'Kepler\'s supernova (SN 1604)'],
   ['등급. 저녁 남서쪽 하늘, 목성과 토성 가까이에 나타났습니다.', ' mag. It appeared in the southwestern evening sky near Jupiter and Saturn.'], ['성변측후단자의 핼리 혜성', 'Halley\'s Comet in the Seongbyeon Cheukhu Danja'], ['영조 35년(1759년) 관상감은 핼리 혜성을 매일 관측해 위치와 꼬리 길이를 기록했습니다(성변측후단자). 핼리가 예측한 혜성의 귀환을 동아시아에서 정밀하게 남긴 기록입니다.', 'In the 35th year of King Yeongjo (1759) the royal observatory logged Halley\'s Comet daily, noting its position and tail length (Seongbyeon Cheukhu Danja): a precise East Asian record of the return Halley predicted.'], ['새벽 동남쪽 하늘의 핼리 혜성', 'Halley\'s Comet in the southeastern dawn sky'],
-  ['근대 천문학의 시작', 'The start of modern astronomy'], ['대한제국 말기부터 일제 강점기에 근대 기상·천문 관측이 시작되었고, 1974년 국립천문대(지금의 한국천문연구원)가 세워졌습니다.', 'Modern weather and astronomical observation began in the late Korean Empire and under Japanese rule, and the National Astronomical Observatory (now KASI) was founded in 1974.'], ['다누리, 한국의 첫 달 탐사선', 'Danuri, Korea\'s first lunar orbiter'], ['2022년 8월 발사되어 12월 달 궤도에 들어갔습니다. 섀도캠으로 달 극지방의 영구 음영 지역을 찍고 있습니다. 우주 모드에서 다누리를 검색해 보세요.', 'Launched in August 2022, it entered lunar orbit in December. Its ShadowCam images permanently shadowed regions near the Moon\'s poles. Search for Danuri in Space mode.'],
+  ['근대 천문학의 시작', 'The start of modern astronomy'], ['대한제국 말기부터 일제 강점기에 근대 기상·천문 관측이 시작되었고, 1974년 국립천문대(지금의 한국천문연구원)가 세워졌습니다.', 'Modern weather and astronomical observation began in the late Korean Empire and under Japanese rule, and the National Astronomical Observatory (now KASI) was founded in 1974.'], ['다누리, 한국의 첫 달 탐사선', 'Danuri, Korea\'s first lunar orbiter'], ['2022년 8월 발사되어 12월 달 궤도에 들어갔습니다. 섀도캠으로 달 극지방의 영구 음영 지역을 찍고 있습니다. 탐험 모드에서 다누리를 검색해 보세요.', 'Launched in August 2022, it entered lunar orbit in December. Its ShadowCam images permanently shadowed regions near the Moon\'s poles. Search for Danuri in Explore mode.'],
   ['지구 둘레 궤도 설계', 'Design an Earth orbit'], ['높이와 기울기를 정하면 위성이 지구 위를 지나가는 길(지상 궤적)과, 대전 지상국과 하루에 몇 분 교신할 수 있는지 계산합니다.', 'Set altitude and inclination to see the satellite\'s path over Earth (ground track) and how many minutes a day it can talk to the Daejeon ground station.'], ['미리 만든 궤도를 골라 보거나, 높이와 경사각을 직접 정하세요.', 'Pick a preset orbit, or set altitude and inclination yourself.'], ['태양동기 궤도는 경사각이 약 98°일 때 궤도면이 하루 0.9856°씩 돌아 1년에 한 바퀴를 맞춥니다.', 'In a Sun-synchronous orbit (inclination about 98°) the orbital plane turns 0.9856° a day, one full turn per year.'],
   ['정지궤도는 지상 궤적이 한 점에 머뭅니다.', 'A geostationary orbit\'s ground track stays at one point.'], ['다목적실용위성 3호 (태양동기)', 'KOMPSAT-3 (Sun-synchronous)'], ['천리안 2A (정지궤도)', 'GEO-KOMPSAT-2A (geostationary)'], ['몰니야 궤도', 'Molniya orbit'],
   ['미리 만든 궤도', 'Preset orbit'], ['높이 (km, 원 궤도)', 'Altitude (km, circular orbit)'], ['경사각 (°)', 'Inclination (°)'], ['이심률 (몰니야 0.74)', 'Eccentricity (Molniya 0.74)'],
@@ -341,7 +341,7 @@ const PH = [
   ['표면에 서서 하늘 보기', 'Stand on the surface and look at the sky'], ['겉보기 등급 (예상)', 'Apparent magnitude (predicted)'], [' (망원경 필요)', ' (telescope needed)'], [' (쌍안경 필요)', ' (binoculars needed)'],
   ['근일점 거리', 'Perihelion distance'], ['근일점 통과', 'Perihelion passage'], ['이심률', 'Eccentricity'], [' (다시 돌아오지 않는 궤도)', ' (will not return)'],
   ['혜성 밝기는 예측과 크게 다를 수 있습니다', 'Comet brightness can differ greatly from predictions'], ['절대 등급 H', 'Absolute magnitude H'], ['궤도 긴반지름', 'Semi-major axis'], ['역사 기록 속의 천체 · 위치는 지금 남은 잔해', 'Object from historical records · position is the remnant today'],
-  ['그때의 밝기 (추정)', 'Brightness then (estimated)'], ['에 서 있음', ' (standing on surface)'], ['주소창의 링크를 복사해 나눠 주세요', 'Copy the link in the address bar to share'], ['장노출 사진은 지상 모드에서 찍을 수 있습니다', 'Long-exposure photos work in Ground mode'],
+  ['그때의 밝기 (추정)', 'Brightness then (estimated)'], ['에 서 있음', ' (standing on surface)'], ['주소창의 링크를 복사해 나눠 주세요', 'Copy the link in the address bar to share'], ['장노출 사진은 관측 모드에서 찍을 수 있습니다', 'Long-exposure photos work in Observe mode'],
   ['· 별 한계 약', '· star limit about'], ['이 브라우저는 화면 녹화를 지원하지 않습니다', 'This browser does not support screen recording'], ['녹화 중: 화면에 보이는 하늘이 영상으로 저장됩니다 (글자 표시는 빠짐)', 'Recording: the sky on screen is saved as video (labels not included)'], ['자동 비행이 끝났습니다', 'Auto tour finished'],
   ['이각', 'elongation'], ['동방', 'eastern'], ['서방', 'western'], ['저녁 하늘)', 'evening sky)'],
   ['새벽 하늘)', 'morning sky)'], ['그림자 지도', 'Shadow map'], ['국제우주정거장 (ISS)', 'International Space Station (ISS)'], ['톈궁 (중국 우주정거장)', 'Tiangong (Chinese space station)'],
@@ -393,14 +393,14 @@ const PH = [
   ['전공 심화: 유도와 실제', 'Going deeper: derivation and practice'], ['먼저 볼 것', 'Read first'], ['이어서 볼 것', 'Read next'], ['식으로 쓰면', 'As a formula'], ['한눈에 보기', 'At a glance'], ['식 읽기', 'Reading the formula'],
   ['확인 문제', 'Check'], ['풀이 보기', 'Show answer'], ['다음 문제 →', 'Next question →'], ['정답입니다.', 'Correct.'], ['다시 생각해 보세요.', 'Think again.'], ['이미 맞힌 문제입니다.', 'Already answered correctly.'],
   ['← 목차', '← Contents'], ['다음에 볼 개념', 'Up next'], ['읽었지만 확인 문제가 남았습니다', 'Read, but its questions are not all answered'], ['바로 시작할 수 있습니다', 'Ready to start'], ['을 다 읽었습니다', ' all read'],
-  ['샌드박스에서 해 보기', 'Try it in the sandbox'], ['읽은 개념', 'Concepts read'], ['맞힌 확인 문제', 'Questions answered'], ['문제 맞힘 ✓', 'answered ✓'], ['먼저: ', 'First: '],
+  ['실험 모드에서 해 보기', 'Try it in the Experiment mode'], ['읽은 개념', 'Concepts read'], ['맞힌 확인 문제', 'Questions answered'], ['문제 맞힘 ✓', 'answered ✓'], ['먼저: ', 'First: '],
   ['카드마다 직접 조작하는 그림, 먼저 볼 것과 이어서 볼 것', 'each card has a live diagram, what to read first and what to read next'], ['개 개념', ' concepts'], ['단원', ' chapters'], [' 읽음', ' read'], [' 맞힘', ' answered'],
   ['교양', 'General'], ['기초', 'Basic'], ['전공', 'Advanced'], ['답: ', 'Answer: '],
   // grouped menus, first-run guide, canvas captions
   ['저장·공유', 'Save & share'], ['배우기', 'Learn'], ['관측', 'Observe'], ['더 많은 표시 설정', 'More display options'],
   ['하늘 둘러보기', 'Look around the sky'], ['끌어서 둘러보고, 휠이나 두 손가락으로 확대합니다. 별이나 행성을 누르면 설명이 나옵니다.', 'Drag to look around; scroll or pinch to zoom. Tap a star or planet to read about it.'],
   ['천체 이름(목성, M31, 시리우스)이나 좌표를 적으면 그쪽으로 갑니다.', 'Type a name (Jupiter, M31, Sirius) or coordinates to go there.'],
-  ['세 가지 모드', 'Three modes'], ['지상: 내가 선 곳의 밤하늘 · 우주: 태양계와 은하를 날아다니기 · 샌드박스: 행성과 별을 직접 만들어 보는 실험실', 'Ground: the night sky where you stand · Space: fly through the solar system and the galaxy · Sandbox: a lab where you build planets and stars'],
+  ['세 가지 모드', 'Three modes'], ['지상: 내가 선 곳의 밤하늘 · 우주: 태양계와 은하를 날아다니기 · 실험 모드: 행성과 별을 직접 만들어 보는 실험실', 'Ground: the night sky where you stand · Space: fly through the solar system and the galaxy · Sandbox: a lab where you build planets and stars'],
   ['우주 알아보기에서 개념 카드와 확인 문제로 차근차근 배울 수 있습니다. 관측·배우기 메뉴에 더 많은 도구가 있습니다.', 'Learn step by step with concept cards and check questions. The Observe and Learn menus hold more tools.'],
   ['건너뛰기', 'Skip'], ['시작하기', 'Start'], ['다음', 'Next'], ['찾기', 'Search'],
   ['두 번 누르면 처음 사용 안내를 다시 봅니다', 'Double-click to see the first-time guide again'],
@@ -415,7 +415,7 @@ const PH = [
 // whole sentences built from templates (run before the phrase table, so names inside are translated after)
 const RX0 = [...RX_APP, ...RX_SB, ...RX_CARDS];
 // short words that are only safe as the whole text of an element
-const EXACT = { '예': 'Yes', '아니오': 'No', '끝': 'Done', '식': 'Eclipse', '개': '' };
+const EXACT = { '탐험': 'Explore', '관측': 'Observe', '실험': 'Experiment', '예': 'Yes', '아니오': 'No', '끝': 'Done', '식': 'Eclipse', '개': '' };
 const RX = [
   [/(\d[\d,]*)\s?개(?![가-힣])/g, '$1'],
   [/(\d[\d,.]*)만 km/g, (m, n) => `${Math.round(parseFloat(n.replace(/,/g, '')) * 1e4).toLocaleString('en-US')} km`],
