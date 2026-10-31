@@ -2089,7 +2089,17 @@ $('dt').onchange = (e) => { const t = new Date(e.target.value).getTime(); if (!i
 $('dt').onfocus = (e) => { e.target.value = toLocalInput(state.time); };
 const PLACES = { seoul: [37.57, 126.98], busan: [35.18, 129.08], jeju: [33.36, 126.53], tokyo: [35.68, 139.69], newyork: [40.71, -74.01],
   london: [51.51, -0.13], sydney: [-33.87, 151.21], atacama: [-24.63, -70.40], maunakea: [19.82, -155.47], northpole: [89.9, 0] };
-$('place').onchange = (e) => { const v = PLACES[e.target.value]; if (!v) return; [state.lat, state.lon] = v; $('lat').value = v[0]; $('lon').value = v[1]; };
+// Yonsei University's Sinchon campus in Seodaemun-gu: home of the KVN Yonsei radio telescope and the ground station of Yonsei's CubeSats
+PLACES.yonsei = [37.5652, 126.9411];
+{ const o = new Option('연세대 KVN 전파망원경 (서대문구)', 'yonsei'); $('place').options[0].after(o); }
+const KVN_TEXT = `<header><b>KVN 연세 전파천문대 · 서대문구 신촌</b><button class="tm-x" title="닫기">닫기</button></header>
+  <p>연세대학교 신촌캠퍼스(서대문구)에는 지름 21 m 전파망원경이 있습니다. 한국천문연구원이 운영하는 <b>한국우주전파관측망(KVN)</b>의 서울 관측소로, 울산·제주(탐라)·평창의 같은 크기 망원경과 함께 하늘을 봅니다.</p>
+  <p><b>VLBI(초장기선 전파간섭계)</b>: 멀리 떨어진 망원경들이 같은 천체를 동시에 관측하고, 원자시계로 시각을 맞춘 신호를 대전의 상관센터에서 합칩니다. 그러면 망원경 사이 거리(연세–탐라 약 478 km)만 한 거대한 망원경처럼 아주 작은 각도까지 구분할 수 있습니다.</p>
+  <p>KVN은 22·43·86·129 GHz 네 대역을 한꺼번에 받아, 별이 태어나는 구름의 물·메탄올 메이저, 블랙홀에서 뿜어 나오는 제트 같은 것을 관측합니다. 눈에 보이는 빛이 아니라 전파라서 낮에도, 흐린 날에도 관측할 수 있습니다.</p>
+  <p><b>서대문과 연세대의 우주</b>: 같은 신촌캠퍼스의 지상국은 연세대 학생들이 만든 큐브위성(누리호 2차의 미먼, 5차의 율리시스·BEE-1012·SD-1 SAT)과 교신합니다. 우주 모드에서 연세대 위성의 궤도는 파란색으로 그려집니다.</p>
+  <p class="small">출처: 한국천문연구원 KVN, 연세대학교 발표 자료</p>`;
+function kvnPanel() { let b = $('kvn'); if (!b) { b = document.createElement('div'); b.id = 'kvn'; document.body.append(b); } b.innerHTML = KVN_TEXT; b.hidden = false; b.querySelector('.tm-x').onclick = () => { b.hidden = true; }; }
+$('place').onchange = (e) => { const v = PLACES[e.target.value]; if (!v) return; [state.lat, state.lon] = v; $('lat').value = v[0]; $('lon').value = v[1]; if (e.target.value === 'yonsei') kvnPanel(); };
 $('night').onclick = () => { const on = document.body.classList.toggle('red'); $('night').classList.toggle('on', on); $('night').textContent = on ? '야간 시야 끄기' : '야간 시야'; };
 // eyepiece: true field of view of common setups, drawn as a circle; picking one also zooms to fit it
 $('eyepiece').onchange = (e) => { if (e.target.value === 'custom') { $('wx').hidden = true; $('gear').hidden = false; applyGear(true); return; }
@@ -2368,7 +2378,9 @@ function satState(s, ms, sunEqU) {
 }
 const stations = {}; // NORAD id -> model group
 // Korean satellites: which hand-built model (craft.js) and its real span in metres, from the TLE name
+const YONSEI = (s) => s.id === 52900 || /MIMAN|UEL-?Y|BEE-1012|SD-1/i.test(s.tle || ''); // Yonsei University CubeSats: own models, orbits drawn in Yonsei blue
 function krCraft(s) { const n = s.tle || '';
+  if (YONSEI(s)) return [/UEL/i.test(n) ? 'UEL-Y-Sys' : /BEE-1012/i.test(n) ? 'BEE-1012' : /SD-1/i.test(n) ? 'SD-1 SAT' : 'MIMAN', /BEE-1012/i.test(n) ? 0.8 : 0.6];
   return /KOMPSAT-5|ARIRANG-5/.test(n) ? ['KOMPSAT-5', 6] : /GEO-KOMPSAT-2B/.test(n) ? ['GEO-KOMPSAT-B', 14] : /GEO-KOMPSAT|COMS/.test(n) ? ['GEO-KOMPSAT', 14] : /KOMPSAT|ARIRANG/.test(n) ? ['KOMPSAT', 6]
     : /KOREASAT|MUGUNG/.test(n) ? ['Koreasat', 28] : /CAS500/.test(n) ? ['CAS500', 6] : /STSAT|NEXTSAT|KITSAT/.test(n) ? ['Microsat', 2] : ['CubeSat', 0.5]; }
 function stationModel(id) {
@@ -2395,7 +2407,7 @@ function updateStations() { // space mode near Earth: station models at their re
     krOrbitsAt = state.time; krOrbits.clear();
     for (const s of sats) { if (!s.korea) continue; const P = 2 * Math.PI / s.rec.no * 60e3, pts = [];
       for (let i = 0; i <= 96; i++) { const pv = satellite.propagate(s.rec, new Date(state.time + P * i / 96)); if (pv?.position) pts.push(new THREE.Vector3(pv.position.x, pv.position.y, pv.position.z).divideScalar(1e6)); }
-      const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0xff7aa2, transparent: true, opacity: 0.28 })); l.frustumCulled = false; krOrbits.add(l); }
+      const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial(YONSEI(s) ? { color: 0x3d8bff, transparent: true, opacity: 0.85 } : { color: 0xff7aa2, transparent: true, opacity: 0.28 })); l.frustumCulled = false; krOrbits.add(l); }
   }
   krOrbits.position.copy(E).sub(sp.pos);
 }
@@ -3924,7 +3936,9 @@ function drawLabels() {
   updateMissionTimeline();
   used = 0;
   discs = [];
-  for (const p of PLANETS) if (p.world && p.mesh.visible && p.rpx > 4 && p.world.dot(camFwd()) > 0) { const s = toScreen(p.world); if (s) discs.push([s[0], s[1], p.rpx, mode.space ? p.camDist : p.dist]); }
+  for (const p of PLANETS) { if (!p.world || !p.mesh.visible || p.world.dot(camFwd()) <= 0) continue;
+    const r = mode.space ? (p.camDist > 0 ? Math.asin(Math.min(1, bodyR(p) / p.camDist)) / (view.fov / 2 * D2R) * innerHeight / 2 : 0) : p.rpx; // in space the disc size comes from the true distance
+    if (r > 4) { const s = toScreen(p.world); if (s) discs.push([s[0], s[1], r, mode.space ? p.camDist : p.dist]); } }
   const gOn = groundOn();
   if ($('t-labels').checked && sky.visible) { // outside the Milky Way only the galaxy labels are drawn
     const fwd = camFwd(), cosLim = Math.cos(Math.min(85, view.fov * 0.75) * D2R);

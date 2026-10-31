@@ -1,7 +1,10 @@
 // English version. Content gets real English text at startup; UI strings go through a phrase dictionary.
 // Language: ?lang=en|ko, then the saved choice, then the browser language.
-import { TOURS, FLYBY_INFO, ECLIPSES, SHOWERS } from './content.js';
+import { TOURS, FLYBY_INFO, ECLIPSES, SHOWERS, JOURNEYS } from './content.js';
 import { ORBITERS, SITES } from './content-missions.js';
+import { PH_APP, RX_APP, JOURNEY_EN } from './i18n-app.js';
+import { PH_SB, RX_SB } from './i18n-sandbox.js';
+import { PH_CARDS, RX_CARDS } from './i18n-cards.js';
 
 const q = new URLSearchParams(location.search).get('lang');
 let saved = null; try { saved = localStorage.getItem('space-commons-lang'); } catch {}
@@ -113,6 +116,7 @@ if (EN) { // content in English
     LEO: 'comet 55P/Tempel-Tuttle', GEM: 'asteroid 3200 Phaethon', URS: 'comet 8P/Tuttle' };
   for (const sh of SHOWERS) { sh.ko = sh.en; sh.parent = PARENT_EN[sh.id] || sh.parent; }
   for (const o of ORBITERS) { o.ko = EN_NAMES[o.name] || o.name; o.note = EN_NOTES[o.name] || o.note; }
+  for (const [k, v] of Object.entries(JOURNEY_EN)) (JOURNEYS[k] || []).forEach((e, i) => { if (v[i]) e[1] = v[i]; });
   for (const s of SITES) { s.ko = s.name.replace('Chang-e', "Chang'e"); s.note = SITE_EN[s.name] || s.note; }
 }
 export function englishBodies(PLANETS) { // planets, moons, probes: English names and notes
@@ -122,6 +126,10 @@ export function englishBodies(PLANETS) { // planets, moons, probes: English name
 
 // ---------- UI phrases (longest first) ----------
 const PH = [
+  // 0.1.0a: redesigned sandbox, KVN, Yonsei
+  ['찾기', 'Find'], ['일/초', 'd/s'], ['억 년', '100 Myr'],
+  ['연세대 KVN 전파망원경 (서대문구)', 'KVN Yonsei radio telescope (Seodaemun, Seoul)'], ['KVN 연세 전파천문대 · 서대문구 신촌', 'KVN Yonsei Radio Observatory · Sinchon, Seodaemun'],
+  ['미먼 (MIMAN)', 'MIMAN'], ['연세대학교', 'Yonsei University'],
   // 0.0.12l-r: Korean satellite cards, tour maker, learning links, performance meter
   ['한국 우주개발 연표', 'Korean spaceflight timeline'], ['이 위성의 눈으로 지구 보기', "See Earth from this satellite"], ['누리호 3차 발사 다시 보기', 'Replay Nuri flight 3'],
   ['맨눈으로 볼 수 있는 한국 위성 (24시간 안)', 'Korean satellites visible to the eye (next 24 h)'], ['최고 ', 'max '], ['탑재체', 'Payload'], ['운영', 'Operator'], ['발사', 'Launch'],
@@ -233,15 +241,15 @@ const PH = [
   ['은하수', 'Milky Way'], ['궤도', 'Orbits'], ['지면', 'Ground'], ['이름', 'Labels'], ['위도', 'Lat'], ['경도', 'Lon'], ['광공해', 'Light pollution'], ['시골', 'rural'], ['교외', 'suburban'],
   ['도심', 'inner city'], ['도시', 'city'], ['서울', 'Seoul'], ['부산', 'Busan'], ['제주', 'Jeju'], ['도쿄', 'Tokyo'], ['뉴욕', 'New York'], ['런던', 'London'], ['시드니', 'Sydney'], ['북극', 'North Pole'],
   ['실시간', 'Live'], ['정지', 'Pause'], ['지금', 'Now'], ['−1시간', '−1 h'], ['−1분', '−1 min'], ['+1시간', '+1 h'], ['+1분', '+1 min'], ['+1일', '+1 day'], ['더 보기', 'More'], ['접기', 'Less'],
-  ['지상', 'Ground'], ['우주', 'Space'], ['명장면', 'Encounters'], ['투어', 'Tours'], ['링크', 'Link'], ['캡처', 'Capture'], ['이전', 'Back'], ['다음', 'Next'], ['끝', 'Done'], ['메모', 'Note'],
+  ['지상', 'Ground'], ['우주', 'Space'], ['명장면', 'Encounters'], ['투어', 'Tours'], ['링크', 'Link'], ['캡처', 'Capture'], ['이전', 'Back'], ['다음', 'Next'], ['메모', 'Note'],
   ['행성 텍스처', 'Planet textures'], ['대기 때문에 별이 반짝이는 모습', 'Stars twinkling through the air'], ['반짝임', 'Twinkle'], ['한국 전통 별자리', 'Korean traditional'], ['서양 별자리', 'Western'],
   ['12° 이하로 확대하면 실제 망원경 사진이 하늘에 겹칩니다 (DSS2)', 'Zoom below 12° to overlay real telescope imagery (DSS2)'], ['실사 하늘', 'Photo sky'], ['소행성대', 'Asteroids'], ['선택하지 않은 탐사선의 지나온 길도 모두 표시', 'Show every spacecraft path, not only the selected one'], ['탐사선 경로', 'Probe paths'],
   ['지금 보고 있는 천체(없으면 태양)에서 빛이 퍼져 나가는 모습', 'Watch light spread from the body you are viewing (or the Sun)'], ['빛 출발', 'Emit light'], ['빛 지우기', 'Clear light'],
-  ['에서 빛이 출발했습니다. 시간을 빠르게 하면 퍼지는 모습이 잘 보입니다.', ': light emitted. Speed up time to watch it spread.'], ['의 빛이 ', ' light reached '], ['에 닿았습니다', ''], ['별자리 문화', 'Sky culture'], ['지구', 'Earth'], ['발사', 'Launched'], ['설명', 'About'], ['도착', 'Arrived'], ['위치', 'Location'], ['속도', 'Speed'], ['햇빛', 'Sunlight'], ['받는 중', 'in sunlight'], ['보임', 'Visible'], ['예', 'yes'], ['아니오', 'no'],
+  ['에서 빛이 출발했습니다. 시간을 빠르게 하면 퍼지는 모습이 잘 보입니다.', ': light emitted. Speed up time to watch it spread.'], ['의 빛이 ', ' light reached '], ['에 닿았습니다', ''], ['별자리 문화', 'Sky culture'], ['지구', 'Earth'], ['발사', 'Launched'], ['설명', 'About'], ['도착', 'Arrived'], ['위치', 'Location'], ['속도', 'Speed'], ['햇빛', 'Sunlight'], ['받는 중', 'in sunlight'], ['보임', 'Visible'], ['아니오', 'no'],
   ['소유격', 'Genitive'], ['약자', 'Abbreviation'], ['복사점', 'radiant'], ['활동 기간', 'Active'], ['모천체', 'Parent body'], ['참고', 'Note'], ['거리', 'Distance'], ['광년', 'light-years'],
   ['별자리', 'Constellation'], ['등급', 'Magnitude'], ['크기', 'Size'], ['위치각', 'Position angle'], ['시직경', 'Apparent size'], ['반지름', 'Radius'], ['온도', 'Temp.'], ['발견', 'Found'],
-  ['항성', 'Star'], ['행성', 'planet'], ['위성', 'moon'], ['주위', '· nearby'], ['달', 'Moon'], ['식', 'eclipse'], ['고도', 'alt'], ['시야', 'Field'], ['방위', 'az'], ['실시야', 'true field'],
-  ['태양에서', 'From the Sun'], ['가장 가까운 천체', 'nearest:'], ['별 카탈로그 실패', 'star catalogue failed'], ['천체', 'objects'], ['별 ', 'Stars '], ['개', ''], ['실패', 'failed'],
+  ['항성', 'Star'], ['행성', 'planet'], ['위성', 'moon'], ['주위', '· nearby'], ['달', 'Moon'], ['고도', 'alt'], ['시야', 'Field'], ['방위', 'az'], ['실시야', 'true field'],
+  ['태양에서', 'From the Sun'], ['가장 가까운 천체', 'nearest:'], ['별 카탈로그 실패', 'star catalogue failed'], ['천체', 'objects'], ['별 ', 'Stars '], ['실패', 'failed'],
   ['횡단 시각 변화', 'TTV'], ['식 시각 변화', 'ETV'], ['밝기 변조', 'Brightness mod.'], ['펄서 시각', 'Pulsar timing'], ['위치 측정', 'Astrometry'], ['맥동 시각', 'Pulsation timing'], ['원반 운동', 'Disk kinematics'],
   ['미세중력렌즈', 'Microlensing'], ['직접 촬영', 'Imaging'], ['시선속도', 'Radial velocity'], ['횡단', 'Transit'],
   ['은하 쌍', 'Galaxy pair'], ['은하 삼중', 'Galaxy triplet'], ['은하군', 'Galaxy group'], ['발광성운', 'Emission nebula'], ['반사성운', 'Reflection nebula'], ['초신성 잔해', 'Supernova remnant'],
@@ -402,8 +410,14 @@ const PH = [
   ['← 파랗고 뜨거움   색 (BP−RP)   붉고 차가움 →', '← blue, hot   colour (BP−RP)   red, cool →'], ['밝음', 'bright'], ['어두움', 'faint'], ['주계열', 'Main sequence'], ['백색왜성', 'White dwarfs'], ['거성', 'Giants'],
   ['← 뜨거움   표면 온도   차가움 →', '← hot   surface temperature   cool →'], ['광도 (태양=1)', 'Luminosity (Sun = 1)'], ['초거성', 'Supergiants'],
   ['대전 지상국', 'Daejeon station'], ['← 동쪽    별자리 사이    서쪽 →', '← east    among the stars    west →'], ['시간 ↓', 'time ↓'],
+  ...PH_APP, ...PH_SB, ...PH_CARDS,
 ].sort((a, b) => b[0].length - a[0].length);
+// whole sentences built from templates (run before the phrase table, so names inside are translated after)
+const RX0 = [...RX_APP, ...RX_SB, ...RX_CARDS];
+// short words that are only safe as the whole text of an element
+const EXACT = { '예': 'Yes', '아니오': 'No', '끝': 'Done', '식': 'Eclipse', '개': '' };
 const RX = [
+  [/(\d[\d,]*)\s?개(?![가-힣])/g, '$1'],
   [/(\d[\d,.]*)만 km/g, (m, n) => `${Math.round(parseFloat(n.replace(/,/g, '')) * 1e4).toLocaleString('en-US')} km`],
   [/(\d+)일 뒤/g, 'in $1 days'], [/(\d+)일 지남/g, '$1 days ago'], [/극대 (\d+)일 전/g, 'peak in $1 days'], [/(\d+(?:\.\d+)?)일/g, '$1 d'],
   [/(\d+(?:\.\d+)?)시간/g, '$1 h'], [/(\d+(?:\.\d+)?)분/g, '$1 min'], [/(\d+(?:\.\d+)?)초/g, '$1 s'], [/(\d{4})년/g, '$1'], [/(\d+)월 /g, (m, n) => ['', 'Jan ', 'Feb ', 'Mar ', 'Apr ', 'May ', 'Jun ', 'Jul ', 'Aug ', 'Sep ', 'Oct ', 'Nov ', 'Dec '][+n]],
@@ -413,7 +427,9 @@ const cache = new Map();
 export function tr(t) {
   if (!EN || !t || !/[가-힣]/.test(t)) return t;
   if (cache.has(t)) return cache.get(t);
+  const x = EXACT[t.trim()]; if (x != null) return x;
   let o = t.replace(/극대 (\d+)일 전/g, 'peak in $1 days'); // whole phrases first, then numbers with units
+  for (const [re, f] of RX0) o = o.replace(re, f);
   for (const [k, v] of PH) if (o.includes(k)) o = o.split(k).join(v);
   for (const [re, f] of RX) o = o.replace(re, f);
   o = o.replace(/\s{2,}/g, ' ');

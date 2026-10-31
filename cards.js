@@ -1,5 +1,5 @@
 import { EN, tr } from './i18n.js';
-import { CARD_EN, CHAPTERS_EN, INTROS_EN } from './cards-en.js';
+import { CARD_EN, CHAPTERS_EN, INTROS_EN, EQ_EN } from './cards-en.js';
 import { QUIZ2 } from './quiz2.js';
 // Space Commons concept cards: astrodynamics from the two-body problem to relative motion, each with a live widget.
 // Level: 기초 (high school), 교양 (university general education), 전공 (astrodynamics course). Formulas in KaTeX.
@@ -279,7 +279,7 @@ const SCIENCE = [
       예를 들어 피라미드를 지을 무렵(기원전 2600년)의 북극성은 용자리 투반이었고, 지금은 폴라리스이며, 약 1만 2천 년 뒤에는 베가가 북극 근처에 옵니다. 천상열차분야지도의 별이 지금 하늘과 조금씩 어긋나는 것도 세차 운동 때문입니다.`,
     deep: String.raw`세차 운동의 주기 <span class="tex">T = 2\pi/\dot\psi</span>, 일반 세차 <span class="tex">\dot\psi = \frac{3}{2}\frac{GM}{a^3}\frac{C-A}{C\,\omega}\cos\varepsilon</span> (달과 태양의 기여 합). 춘분점이 황도를 따라 해마다 50.3″씩 서쪽으로 움직이므로, 별자리의 적경·적위 좌표는 기준 시점(J2000 등)을 함께 밝혀야 합니다.
       여기에 18.6년 주기의 작은 끄덕임(장동)이 겹칩니다. 기원전 2세기 히파르코스가 처음 발견했습니다.`,
-    widget(box) { const K = canvas(box, 340, 260), yr = slider(box, '연도', -13000, 14000, 1, 2026, (x) => x < 0 ? `기원전 ${-x + 1}년` : `${x}년`), R = readout(box);
+    widget(box) { const K = canvas(box, 340, 260), yr = slider(box, '연도', -13000, 14000, 1, 2026, (x) => EN ? (x < 0 ? `${-x + 1} BC` : `AD ${x}`) : x < 0 ? `기원전 ${-x + 1}년` : `${x}년`), R = readout(box);
       return () => { const g = K.g; clear(K); const cx = K.w / 2, cy = K.h / 2, S = 2.4, eclR = 266, eclD = 66.56; // gnomonic-ish: plot around the ecliptic pole
         const proj = (ra, de) => { const d = sep(ra, de, eclR, eclD), pa = Math.atan2(Math.sin((ra - eclR) * D2R), Math.cos(eclD * D2R) * Math.tan(de * D2R) - Math.sin(eclD * D2R) * Math.cos((ra - eclR) * D2R)); return [cx - S * d * Math.sin(pa), cy - S * d * Math.cos(pa)]; };
         g.strokeStyle = C.grid; g.beginPath(); for (let k = 0; k <= 120; k++) { const [r, d] = precessPole(k / 120 * 25772); const [x, y] = proj(r, d); k ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke();
@@ -434,7 +434,7 @@ const MORE = [
         g.fillStyle = 'rgba(79,227,193,.25)'; g.fillRect(X(a), 40, X(b) - X(a), 60); dot(g, X(0.012), 70, 8, starColorHex(m));
         for (const [n, d2] of [['수성', 0.39], ['금성', 0.72], ['지구', 1], ['화성', 1.52], ['목성', 5.2]]) { dot(g, X(d2), 70, 3, C.text); text(g, n, X(d2), 120, C.mute, 9, 'center'); }
         text(g, '거리 (로그 눈금, 0.01~10 AU)', K.w / 2, K.h - 6, C.mute, 9, 'center');
-        R([['별의 밝기', `${L < 0.01 ? L.toExponential(1) : fmt(L, 3)} 태양`], ['생명 가능 지대', `${fmt(a, 3)} ~ ${fmt(b, 3)} AU`], ['예', 'TRAPPIST-1 (0.09 태양질량): 0.03~0.05 AU에 행성 3개']]); }; } },
+        R([['별의 밝기', `${L < 0.01 ? L.toExponential(1) : fmt(L, 3)} 태양`], ['생명 가능 지대', `${fmt(a, 3)} ~ ${fmt(b, 3)} AU`], [EN ? 'Example' : '예', 'TRAPPIST-1 (0.09 태양질량): 0.03~0.05 AU에 행성 3개']]); }; } },
   { id: 'blackbody', level: '교양', title: '흑체 복사: 별의 색과 온도', tag: '빨간 별은 차갑고 파란 별은 뜨겁다',
     eq: String.raw`\lambda_\text{max} = \frac{2898\,\mu\text{m·K}}{T},\qquad L = 4\pi R^2\sigma T^4`,
     body: `뜨거운 물체는 온도에 따라 정해진 모양의 빛을 내는데, 이를 흑체 복사라고 합니다. 별빛도 거의 흑체 복사라서, 별의 색으로 표면 온도를 잴 수 있습니다. 온도가 높을수록 더 밝아지고, 가장 센 빛의 파장이 짧아져 파랗게 보입니다(빈의 법칙). 구체적으로 가장 센 빛의 파장은 2,898 μm·K를 온도로 나눈 값이라, 태양(약 5,800 K)은 약 500 nm 청록빛에서 가장 밝습니다.`,
@@ -1194,10 +1194,11 @@ export function openCards(o = {}) { opts = o; if (!root) build(); root.hidden = 
 function close() { if (root) { root.hidden = true; cancelAnimationFrame(anim); } }
 
 // English: swap in the translated text (cards-en.js) once everything above is defined; numbers and answers stay from the Korean source
+const TEXT_EN = { '보통': 'ordinary', '유성': 'meteor', '달력': 'calendar', '확장': 'spread', '조석': 'tide', '안': 'in', '밖': 'out', '주계열': 'MS' }; // words inside \text{} of symbol readings
 if (EN) {
   for (const c of ALL) { const e = CARD_EN[c.id]; if (!e) continue;
-    Object.assign(c, { title: e.title, tag: e.tag, body: e.body, deep: e.deep });
-    if (EXPLAIN[c.id]) { EXPLAIN[c.id].r = e.r; EXPLAIN[c.id].s.forEach((x, i) => { if (e.s?.[i]) x[1] = e.s[i]; }); }
+    Object.assign(c, { title: e.title, tag: e.tag, body: e.body, deep: e.deep }); if (EQ_EN[c.id]) c.eq = EQ_EN[c.id];
+    if (EXPLAIN[c.id]) { EXPLAIN[c.id].r = e.r; EXPLAIN[c.id].s.forEach((x, i) => { if (e.s?.[i]) x[1] = e.s[i]; x[0] = x[0].replace(/\\text\{([^}]*)\}/g, (m, w) => TEXT_EN[w] ? String.raw`\text{` + TEXT_EN[w] + '}' : m); }); }
     const qs = [QUIZ[c.id], ...(QUIZ2[c.id] || [])];
     (e.quiz || []).forEach((qe, i) => { const q = qs[i]; if (!q) return; q.q = qe.q; q.why = qe.why; if (qe.opts) q.opts = qe.opts; if (qe.unit != null) q.unit = qe.unit; }); }
   CHAPTERS.forEach((ch, i) => { ch.title = CHAPTERS_EN[i] || ch.title; ch.intro = INTROS_EN[i] || ch.intro; });

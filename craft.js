@@ -617,6 +617,23 @@ function cubesat() {
   return g;
 }
 
+// ---- Yonsei University CubeSats in their real form factors (6U = 2 x 1 x 3 units, 12U = 2 x 2 x 3), from Yonsei's launch announcement ----
+// w, d: cross-section (m), L: length; wings: deployable panel count per side; cam: nadir camera aperture (m); payload adds a box on the top face
+function ucube(w, d, L, wings, cam, extra) {
+  const K = kmat(), g = new THREE.Group(), hw = w / 2 - 0.004, hd = d / 2 - 0.004;
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(g, gBox(0.0085, L, 0.0085), K.alu, [sx * hw, 0, sz * hd]);
+  for (const y of [-1, 1]) add(g, gBox(w - 0.004, 0.004, d - 0.004), K.dark, [0, y * (L / 2 - 0.002), 0]);
+  add(g, gBox(w - 0.012, L - 0.01, d - 0.012), K.cfrp);
+  add(g, gBox(0.002, L - 0.02, d - 0.017), K.cells, [hw + 0.003, 0, 0]); add(g, gBox(0.002, L - 0.02, d - 0.017), K.cells, [-hw - 0.003, 0, 0]);
+  add(g, gBox(w - 0.017, L - 0.02, 0.002), K.cells, [0, 0, hd + 0.003]); add(g, gBox(w - 0.017, L - 0.02, 0.002), K.cells, [0, 0, -hd - 0.003]);
+  for (const sx of [-1, 1]) for (let k = 0; k < wings; k++) { const p = grp(g, [sx * (hw + 0.006 + (k + 0.5) * (L - 0.02) * 0.98), L / 2 - d / 2, 0]); solarPanel(p, (L - 0.02) * 0.96, d - 0.017, K.cells, 0.003); }
+  for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + Math.PI / 4; beam(g, V(Math.cos(a) * 0.03, -L / 2, Math.sin(a) * 0.03), V(Math.cos(a) * 0.2, -L / 2 - 0.01, Math.sin(a) * 0.2), 0.0015, K.alu, 4); } // UHF tape antennas
+  if (cam) { add(g, gCyl(cam, cam, 0.03, 20), K.anod, [w * 0.18, -L / 2 - 0.016, 0]); add(g, gCyl(cam * 0.7, cam * 0.7, 0.002, 20), K.glass, [w * 0.18, -L / 2 - 0.032, 0]); }
+  add(g, gBox(0.05, 0.004, 0.05), K.beta, [-w * 0.2, L / 2 + 0.002, -d * 0.15]); // S-band patch
+  if (extra) extra(g, K, w, d, L);
+  return g;
+}
+
 const BUILDERS = {
   // ---- deep-space missions added with their real trajectories (JPL Horizons) ----
   // Cassini: 6.8 m stack - 4 m high-gain dish on top, bus and propulsion module, Huygens probe on the side, three RTGs, 11 m magnetometer boom
@@ -722,6 +739,12 @@ const BUILDERS = {
   'Microsat'() { return bake(microsat()); },
   // university CubeSats: 3U frame
   'CubeSat'() { return bake(cubesat()); },
+  // Yonsei: MIMAN (Nuri flight 2, 2022; size not published, drawn as a 3U with a dust camera), UEL-Y-Sys (6U, 9.55 kg, fine-dust camera and lunar rover parts),
+  // BEE-1012 (12U, 21.93 kg, protein crystal growth lab), SD-1 SAT (3U, 4.1 kg, radiation shielding test) - Nuri flight 5, 7 Oct 2026
+  'MIMAN'() { return bake(ucube(0.1, 0.1, 0.34, 1, 0.02)); },
+  'UEL-Y-Sys'() { return bake(ucube(0.226, 0.1, 0.366, 2, 0.032)); },
+  'BEE-1012'() { return bake(ucube(0.226, 0.226, 0.366, 2, 0.02, (g, K, w, d, L) => { add(g, gBox(w * 0.6, 0.03, d * 0.6), K.white ?? K.beta, [0, L / 2 + 0.017, 0]); })); },
+  'SD-1 SAT'() { return bake(ucube(0.1, 0.1, 0.34, 1, 0.015, (g, K, w, d, L) => { for (const s of [-1, 1]) add(g, gBox(0.04, 0.012, 0.04), s > 0 ? K.alu : K.dark, [s * 0.025, L / 2 + 0.008, 0.02]); })); }, // two shielding samples on top
   // Solar Orbiter: 2.5 x 3.1 x 2.7 m bus behind a 3.1 x 2.4 m titanium heat shield, two 3-panel wings (18 m span), 4.4 m mag boom
   'Solar Orbiter'() {
     const g = new THREE.Group();
@@ -837,6 +860,10 @@ const BUILDERS = {
       x.strokeStyle = 'rgba(165,167,170,0.35)'; for (let k = 0; k < cols; k++) { x.beginPath(); x.moveTo(k * 512 / cols, 0); x.lineTo(k * 512 / cols, 1024); x.stroke(); }
       const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; t.anisotropy = 8; return t; };
     const paint = (rows, cols, seed) => { const t = skin(rows, cols, seed); return std(0xffffff, 0.05, 0.5, { map: t, bumpMap: t, bumpScale: 0.6 }); };
+    const ribs = () => { const cv = document.createElement('canvas'); cv.width = 512; cv.height = 64; const x = cv.getContext('2d');
+      for (let k = 0; k < 64; k++) { const v = k % 2 ? 236 : 214; x.fillStyle = `rgb(${v},${v},${v - 3})`; x.fillRect(k * 8, 0, 8, 64); }
+      const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; return std(0xffffff, 0.1, 0.55, { map: t, bumpMap: t, bumpScale: 1.2 }); };
+    const ribbed = ribs(), seam = std(0xd7d8d6, 0.2, 0.5);
     const grey = std(0x9a9da3, 0.55, 0.45), dark = std(0x2a2c31, 0.4, 0.55), alu = std(0xb9bcc2, 0.85, 0.3), copper = std(0x8a5a3c, 0.8, 0.35);
     const nozzleM = std(0x2e2b2a, 0.75, 0.4, { side: THREE.DoubleSide }), hotM = std(0x6b4a3a, 0.7, 0.45, { side: THREE.DoubleSide });
     const tube = (parent, r, len, mat, x, y, z, seg = SEG) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, seg), mat); m.position.set(x, y + len / 2, z); parent.add(m); return m; };
@@ -854,37 +881,39 @@ const BUILDERS = {
       for (const a of [0.5, 2.6, 4.7]) { const s = new THREE.Mesh(new THREE.CylinderGeometry(0.025 * size, 0.025 * size, 0.6 * size, 6), alu); s.position.set(Math.cos(a) * 0.17 * size, -0.05 * size, Math.sin(a) * 0.17 * size); s.rotation.set(Math.sin(a) * 0.35, 0, -Math.cos(a) * 0.35); e.add(s); } // gimbal struts
       bell(e, 0.16 * size, (vac ? 0.82 : 0.58) * size, (vac ? 2.6 : 1.55) * size, 0, -0.55 * size, 0, vac ? hotM : nozzleM);
       return e; };
-    const lettering = () => { // the national flag above "대한민국", written top to bottom as on the rocket
+    const lettering = (text = '대한민국', flag = true) => { // vertical lettering as on the rocket in KARI's launch photos: flag and "대한민국" on stage 2, "누리" on stage 1
       const cv = document.createElement('canvas'); cv.width = 256; cv.height = 1280; const x = cv.getContext('2d');
       x.clearRect(0, 0, 256, 1280);
-      x.save(); x.translate(128, 120); x.fillStyle = '#ffffff'; x.fillRect(-100, -67, 200, 134); x.strokeStyle = 'rgba(0,0,0,0.25)'; x.lineWidth = 2; x.strokeRect(-100, -67, 200, 134);
+      if (flag) { x.save(); x.translate(128, 120); x.fillStyle = '#ffffff'; x.fillRect(-100, -67, 200, 134); x.strokeStyle = 'rgba(0,0,0,0.25)'; x.lineWidth = 2; x.strokeRect(-100, -67, 200, 134);
       x.rotate(Math.atan2(2, 3)); x.beginPath(); x.arc(0, 0, 33, Math.PI, 0); x.fillStyle = '#cd2e3a'; x.fill(); x.beginPath(); x.arc(0, 0, 33, 0, Math.PI); x.fillStyle = '#0047a0'; x.fill();
       x.beginPath(); x.arc(-16.5, 0, 16.5, 0, Math.PI); x.fillStyle = '#cd2e3a'; x.fill(); x.beginPath(); x.arc(16.5, 0, 16.5, Math.PI, 0); x.fillStyle = '#0047a0'; x.fill(); x.restore();
-      x.fillStyle = '#111'; for (const [dx, dy, a] of [[-64, -42, -0.98], [64, -42, 0.98], [-64, 42, 0.98], [64, 42, -0.98]]) { x.save(); x.translate(128 + dx, 120 + dy); x.rotate(a); for (let k = -1; k <= 1; k++) x.fillRect(-16, k * 8 - 2.5, 32, 5); x.restore(); }
+      x.fillStyle = '#111'; for (const [dx, dy, a] of [[-64, -42, -0.98], [64, -42, 0.98], [-64, 42, 0.98], [64, 42, -0.98]]) { x.save(); x.translate(128 + dx, 120 + dy); x.rotate(a); for (let k = -1; k <= 1; k++) x.fillRect(-16, k * 8 - 2.5, 32, 5); x.restore(); } }
       x.fillStyle = '#16181d'; x.font = '900 170px "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", "Pretendard Variable", sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
-      [...'대한민국'].forEach((ch, k) => x.fillText(ch, 128, 360 + k * 220));
+      const chars = [...text], step = flag ? 220 : 1280 / (chars.length + 0.6); chars.forEach((ch, k) => x.fillText(ch, 128, (flag ? 360 : step * 0.8) + k * step));
       const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t; };
     // ---- stage 1: 0-21.6 m
     const s1 = new THREE.Group(); g.add(s1);
-    ring(s1, 1.82, 1.4, grey, 0, 1.78); // aft skirt
+    ring(s1, 1.82, 1.4, ribbed, 0, 1.78); // aft skirt: white, stiffened by stringers
     const shield = new THREE.Mesh(new THREE.CylinderGeometry(1.78, 1.78, 0.12, SEG), dark); shield.position.y = 0.3; s1.add(shield); // base heat shield
     for (const [x, z] of [[0.82, 0.82], [-0.82, 0.82], [0.82, -0.82], [-0.82, -0.82]]) engine(s1, x, 0.32, z, 1.0, false);
-    for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + Math.PI / 4, f = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.8, 0.35), grey); f.position.set(Math.cos(a) * 1.86, 0.9, Math.sin(a) * 1.86); f.rotation.y = -a; s1.add(f); } // engine-bay fairings
+    for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + Math.PI / 4, f = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.8, 0.35), paint(1, 2, 11 + k)); f.position.set(Math.cos(a) * 1.86, 0.9, Math.sin(a) * 1.86); f.rotation.y = -a; s1.add(f); } // engine-bay fairings
     tube(s1, 1.75, 20.2, paint(6, 12, 3), 0, 1.4, 0);
-    const band = new THREE.Mesh(new THREE.CylinderGeometry(1.756, 1.756, 10.5, 32, 1, true, 0.2, 1.0), new THREE.MeshStandardMaterial({ map: lettering(), transparent: true, roughness: 0.5, metalness: 0.05, depthWrite: false })); band.position.y = 15.6; s1.add(band); // above the bulkhead ring at 9.6 m // faces +X+Z
-    ring(s1, 1.765, 0.35, grey, 9.6); // LOX/kerosene common bulkhead area
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(1.756, 1.756, 8, 32, 1, true, 0.2, 1.0), new THREE.MeshStandardMaterial({ map: lettering('누리', false), transparent: true, roughness: 0.5, metalness: 0.05, depthWrite: false })); band.position.y = 15.2; s1.add(band); // "누리" down the first stage // faces +X+Z
+    ring(s1, 1.758, 0.06, seam, 9.6); // tank joint
     // ---- interstage and stage 2: 21.6-33.3 m
     const s2 = new THREE.Group(); g.add(s2);
-    ring(s2, 1.48, 2.0, grey, 21.6, 1.76); // conical interstage
+    ring(s2, 1.48, 2.0, ribbed, 21.6, 1.76); // conical interstage, white with stringers
     engine(s2, 0, 23.0, 0, 0.95, true); // vacuum engine, inside the interstage until stage 1 drops
     tube(s2, 1.45, 9.3, paint(4, 10, 5), 0, 23.6, 0);
-    ring(s2, 1.47, 0.4, grey, 32.9);
+    const band2 = new THREE.Mesh(new THREE.CylinderGeometry(1.456, 1.456, 7.4, 32, 1, true, 0.2, 1.0), new THREE.MeshStandardMaterial({ map: lettering(), transparent: true, roughness: 0.5, metalness: 0.05, depthWrite: false })); band2.position.y = 28.6; s2.add(band2); // flag and "대한민국" on stage 2
+
+    ring(s2, 1.47, 0.4, ribbed, 32.9);
     // ---- stage 3, payload and fairing: 33.3-47.2 m
     const s3 = new THREE.Group(); g.add(s3);
-    ring(s3, 1.3, 0.6, grey, 33.3, 1.45);
+    ring(s3, 1.3, 0.6, ribbed, 33.3, 1.45);
     engine(s3, 0, 33.9, 0, 0.42, true);
     tube(s3, 1.3, 3.4, paint(2, 8, 7), 0, 33.9, 0);
-    ring(s3, 1.32, 0.25, dark, 37.3); // payload adapter ring
+    ring(s3, 1.306, 0.05, seam, 37.3); // fairing joint
     const payload = new THREE.Group(); payload.position.y = 38.2; payload.visible = false; s3.add(payload); // NEXTSat-2, shown once the fairing opens
     payload.add(new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.2, 1.0), foil(0xd6a843, 0.38)));
     const fairing = new THREE.Group(); s3.add(fairing);
@@ -892,7 +921,7 @@ const BUILDERS = {
     for (const side of [0, 1]) { // two shells with a visible split line
       const h = new THREE.Group(); fairing.add(h);
       const cylH = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.3, 4.5, 32, 1, true, side * Math.PI + 0.004, Math.PI - 0.008), fm); cylH.position.y = 39.85; h.add(cylH);
-      const pts = []; for (let k = 0; k <= 24; k++) { const t = k / 24; pts.push(new THREE.Vector2(1.3 * Math.sqrt(Math.max(0, 1 - Math.pow(t, 1.6))) * (1 - 0.05 * t), 5.3 * t)); }
+      const pts = []; for (let k = 0; k <= 24; k++) { const t = k / 24; pts.push(new THREE.Vector2(t < 0.97 ? 1.3 * Math.sqrt(Math.max(0, 1 - Math.pow(t, 2.2))) : 1.3 * Math.sqrt(1 - Math.pow(0.97, 2.2)) * (1 - (t - 0.97) / 0.03), 5.3 * t)); } // tangent ogive with a blunt tip
       const nose = new THREE.Mesh(new THREE.LatheGeometry(pts, 32, side * Math.PI + 0.004, Math.PI - 0.008), fm); nose.position.y = 42.1; h.add(nose);
       h.userData.side = side; }
     const cap = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 8), grey); cap.position.y = 47.4; fairing.add(cap);

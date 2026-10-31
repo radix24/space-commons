@@ -1,4 +1,16 @@
-import { tr } from './i18n.js';
+import { tr, EN } from './i18n.js';
+// English for the "deeper" notes, which mix text and formulas (one per lab, in file order)
+const DEEP_EN = [
+  String.raw`Earth bulges at the equator (J2 = 1.083×10⁻³), so the orbital plane slowly turns: <span class="tex">\dot\Omega = -\tfrac{3}{2} n J_2 (R/p)^2 \cos i</span>. At an inclination of 63.4° a Molniya orbit's perigee stays put (<span class="tex">5\cos^2 i = 1</span>), so its apogee always sits over high northern latitudes. Contact time treats Earth as a sphere, ignores atmospheric refraction, and counts only elevations above 10°.`,
+  String.raw`The speed a rocket gains is set by the Tsiolkovsky equation <span class="tex">\Delta v = I_{sp} g_0 \ln(m_0/m_f)</span>, but some is lost fighting gravity on the way up (gravity loss, 1–1.5 km/s) and to drag (0.1–0.3 km/s), so reaching low orbit really takes about 9.3–10 km/s. A gravity turn keeps the thrust along the velocity, so the flight path tips over naturally without wings, and holding the angle of attack at zero in the thick lower air spares the structure. The stage figures here are typical values.`,
+  String.raw`Real galaxies merge faster than this model because of their dark matter halos and gas. Even so, stars almost never hit each other: they are tens of millions of star diameters apart, so a galaxy collision is a mixing of orbits, not a crash of stars. The Mice Galaxies (NGC 4676) and the Antennae (NGC 4038/4039) were first explained by this kind of calculation.`,
+  String.raw`At the tip of the red giant branch the Sun's radius is calculated to reach about 1.2 AU (Schröder & Smith 2008). Mass loss widens Earth's orbit to about 1.5 AU, but tides and drag from the swollen Sun's outer atmosphere will probably still swallow it. The radii and luminosities here simplify a typical evolutionary track.`,
+  String.raw`The lens equation for a point-mass lens is <span class="tex">\beta = \theta - \theta_E^2/\theta</span>, and the Einstein radius is <span class="tex">\theta_E = \sqrt{\frac{4GM}{c^2}\frac{D_{LS}}{D_L D_S}}</span>. A background star right behind the lens (β = 0) becomes a ring; slightly off, it splits into two images on either side of the lens. Microlensing searches for exoplanets work the same way.`,
+  String.raw`Real studies use SPH (smoothed-particle hydrodynamics) with millions of particles and track pressure and temperature too (Canup 2004, 2012). This is a toy model with only gravity between particles and bounce and friction on contact, so only the shapes and trends match (a glancing impact makes a disk). It also shows why the Moon has little iron: the heavy iron cores merge into Earth, and lighter mantle material stays in the disk.`,
+  String.raw`Data: NASA TESS sector 2, the detrended light curve from the Data Validation (DV) report (exo.MAST), binned to 10 minutes. Multiplying by the star's radius (about 1.23 times the Sun's) gives the planet's radius, and measuring the same star's radial velocity gives its mass (about 10 Jupiters), so its density follows.`,
+  String.raw`Data: SDSS DR17, plate 1198 · MJD 52669 · fiber 61, binned to 4 Å. Emission lines such as Hα (6563 Å), [N II] and [O III] come from gas clouds where stars are born; the Ca H and K and Na D absorption lines come from the atmospheres of old stars. The speed uses the relativistic Doppler formula, and at this distance Hubble's law works well.`,
+  String.raw`Data: Gaia DR3, 6,000 stars picked at random with parallax above 10 mas (within 100 pc) and parallax precision better than 5%. Absolute magnitude is <span class="tex">M_G = G + 5\log_{10}(\varpi/100)</span> (ϖ is the parallax in mas). The distance slider is an approximation that thins the sample in proportion to volume.`,
+];
 // Stage-3 sandbox labs that run their own small simulations on a canvas inside the lab panel:
 // D1 Earth-orbit design, D2 launch to orbit, D3 galaxy collision, D4 the Sun's life, D5 black-hole lensing, D6 impact debris.
 // h = helpers from sandbox.js: { labBox, steps, field, num, btn, results, deeper, el, fmt }
@@ -41,7 +53,7 @@ export function labOrbitDesign(h) {
       ['대전 지상국 교신 (고도 10° 이상)', contact >= 86000 ? '하루 종일 (정지궤도)' : `하루 약 ${h.fmt(contact / 60, 0)}분`], ['원 궤도 속도', `${h.fmt(Math.sqrt(MU / a), 2)} km/s`]]);
   }
   sel.value = 'sso'; sel.onchange();
-  h.deeper(box, '지구가 적도 쪽으로 불룩해서(J2 = 1.083×10⁻³) 궤도면이 천천히 돕니다: <span class="tex">\\dot\\Omega = -\\tfrac{3}{2} n J_2 (R/p)^2 \\cos i</span>. 몰니야 궤도는 경사각 63.4°에서 근지점이 움직이지 않아(<span class="tex">5\\cos^2 i = 1</span>), 원지점이 늘 북반구 고위도 위에 머뭅니다. 교신 시간은 지구를 공으로, 대기 굴절 없이 고도 10° 이상일 때로 계산했습니다.');
+  h.deeper(box, EN ? DEEP_EN[0] : '지구가 적도 쪽으로 불룩해서(J2 = 1.083×10⁻³) 궤도면이 천천히 돕니다: <span class="tex">\\dot\\Omega = -\\tfrac{3}{2} n J_2 (R/p)^2 \\cos i</span>. 몰니야 궤도는 경사각 63.4°에서 근지점이 움직이지 않아(<span class="tex">5\\cos^2 i = 1</span>), 원지점이 늘 북반구 고위도 위에 머뭅니다. 교신 시간은 지구를 공으로, 대기 굴절 없이 고도 10° 이상일 때로 계산했습니다.');
 }
 
 // ---- D2: fly a three-stage rocket from the pad to orbit (2D, drag, gravity turn) ----
@@ -76,7 +88,7 @@ export function labLaunch(h) {
     const vc = Math.sqrt(MU / (RE + Math.max(0, S.y)));
     set([['시간', `${h.fmt(S.t, 0)}초 · ${Math.min(3, S.st + 1)}단`], ['고도', `${h.fmt(S.y, 1)} km`], ['수평 속도 / 그 고도의 궤도 속도', `${h.fmt(S.vx, 2)} / ${h.fmt(vc, 2)} km/s`], ['결과', S.done || '비행 중']]);
   });
-  h.deeper(box, '로켓이 얻는 속도는 치올콥스키 식 <span class="tex">\\Delta v = I_{sp} g_0 \\ln(m_0/m_f)</span>로 정해지지만, 올라가는 동안 중력을 이기느라(중력 손실, 1~1.5 km/s)와 공기 저항(0.1~0.3 km/s)으로 잃는 몫이 있어 저궤도에 실제로는 약 9.3~10 km/s가 필요합니다. 중력 선회는 추력을 늘 속도 방향으로 두어 날개 없이도 비행 경로가 자연스럽게 눕게 하는 방법으로, 공기 저항이 큰 저고도에서 받음각을 0으로 지켜 구조에 무리가 가지 않게 합니다. 여기의 단별 수치는 대표값입니다.');
+  h.deeper(box, EN ? DEEP_EN[1] : '로켓이 얻는 속도는 치올콥스키 식 <span class="tex">\\Delta v = I_{sp} g_0 \\ln(m_0/m_f)</span>로 정해지지만, 올라가는 동안 중력을 이기느라(중력 손실, 1~1.5 km/s)와 공기 저항(0.1~0.3 km/s)으로 잃는 몫이 있어 저궤도에 실제로는 약 9.3~10 km/s가 필요합니다. 중력 선회는 추력을 늘 속도 방향으로 두어 날개 없이도 비행 경로가 자연스럽게 눕게 하는 방법으로, 공기 저항이 큰 저고도에서 받음각을 0으로 지켜 구조에 무리가 가지 않게 합니다. 여기의 단별 수치는 대표값입니다.');
 }
 
 // ---- D3: two disc galaxies pass each other (Toomre & Toomre 1972: massive cores, test-particle discs) ----
@@ -106,7 +118,7 @@ export function labGalaxies(h) {
     const d = Math.hypot(...S.cores[0].p.map((v, i) => v - S.cores[1].p[i]));
     set([['시간', `약 ${h.fmt(S.t * 0.11, 2)}억 년 (원반 반지름 15 kpc 기준)`], ['두 중심 사이', `${h.fmt(d, 2)} (원반 반지름 단위)`]]);
   });
-  h.deeper(box, '실제 은하는 암흑 물질 헤일로와 가스 때문에 이 모형보다 빨리 합쳐집니다. 그래도 별끼리는 거의 부딪히지 않습니다: 별 사이 거리가 별 크기의 수천만 배라 은하 충돌은 별들의 충돌이 아니라 궤도끼리의 뒤섞임입니다. 생쥐 은하(NGC 4676), 안테나 은하(NGC 4038/4039)가 이 계산으로 처음 설명되었습니다.');
+  h.deeper(box, EN ? DEEP_EN[2] : '실제 은하는 암흑 물질 헤일로와 가스 때문에 이 모형보다 빨리 합쳐집니다. 그래도 별끼리는 거의 부딪히지 않습니다: 별 사이 거리가 별 크기의 수천만 배라 은하 충돌은 별들의 충돌이 아니라 궤도끼리의 뒤섞임입니다. 생쥐 은하(NGC 4676), 안테나 은하(NGC 4038/4039)가 이 계산으로 처음 설명되었습니다.');
 }
 
 // ---- D4: the Sun's life replayed: radius against the planets' orbits ----
@@ -125,7 +137,7 @@ export function labSunLife(h) {
     const eaten = []; PL.forEach(([n, a0]) => { const a = a0 / M; g.strokeStyle = a < Rau ? 'rgba(76,141,246,.6)' : '#3a3936'; g.beginPath(); g.arc(cx, cy, a * sc, 0, 7); g.stroke(); if (a < Rau) eaten.push(n); else txt(g, n, cx + a * sc + 3, cy - 3, '#d8d2c6', 9); });
     set([['단계', s.st], ['반지름', `태양 지금의 ${h.fmt(s.R, s.R < 1 ? 3 : 0)}배 (${h.fmt(Rau, Rau < 0.1 ? 4 : 2)} AU)`], ['밝기', `${h.fmt(s.L, s.L < 10 ? 1 : 0)}배`], ['남은 질량', `${h.fmt(M * 100, 0)}%`], ['삼켜진 행성', eaten.join(', ') || '없음']]); };
   age.oninput = draw; draw();
-  h.deeper(box, '적색거성 가지 끝에서 태양 반지름은 약 1.2 AU까지 커진다고 계산됩니다(Schröder & Smith 2008). 질량 손실로 지구 궤도도 약 1.5 AU로 넓어지지만, 부푼 태양의 바깥 대기가 일으키는 조석과 끌림 때문에 결국 삼켜질 가능성이 큽니다. 여기의 반지름과 밝기는 대표 진화 경로를 단순화한 값입니다.');
+  h.deeper(box, EN ? DEEP_EN[3] : '적색거성 가지 끝에서 태양 반지름은 약 1.2 AU까지 커진다고 계산됩니다(Schröder & Smith 2008). 질량 손실로 지구 궤도도 약 1.5 AU로 넓어지지만, 부푼 태양의 바깥 대기가 일으키는 조석과 끌림 때문에 결국 삼켜질 가능성이 큽니다. 여기의 반지름과 밝기는 대표 진화 경로를 단순화한 값입니다.');
 }
 
 // ---- D5: gravitational lensing by a black hole, traced per pixel ----
@@ -151,7 +163,7 @@ export function labLensing(h) {
     cv.g.strokeStyle = 'rgba(76,141,246,.35)'; cv.g.setLineDash([3, 3]); cv.g.beginPath(); cv.g.arc(lx, ly, tE, 0, 7); cv.g.stroke(); cv.g.setLineDash([]);
     set([['아인슈타인 반지름 (점선)', `${h.fmt(tE, 0)} 픽셀 · 질량의 제곱근에 비례`], ['검은 원', '빛이 빠져나오지 못하는 그림자 (크기는 과장)']]); }
   mass.oninput = draw; draw();
-  h.deeper(box, '점 질량 렌즈의 렌즈 방정식은 <span class="tex">\\beta = \\theta - \\theta_E^2/\\theta</span>이고, 아인슈타인 반지름은 <span class="tex">\\theta_E = \\sqrt{\\frac{4GM}{c^2}\\frac{D_{LS}}{D_L D_S}}</span>입니다. 배경 별이 렌즈 바로 뒤(β = 0)면 고리가 되고, 조금 벗어나면 렌즈 양쪽에 상이 두 개 생깁니다. 미세 중력 렌즈법으로 외계 행성을 찾는 원리도 같습니다.');
+  h.deeper(box, EN ? DEEP_EN[4] : '점 질량 렌즈의 렌즈 방정식은 <span class="tex">\\beta = \\theta - \\theta_E^2/\\theta</span>이고, 아인슈타인 반지름은 <span class="tex">\\theta_E = \\sqrt{\\frac{4GM}{c^2}\\frac{D_{LS}}{D_L D_S}}</span>입니다. 배경 별이 렌즈 바로 뒤(β = 0)면 고리가 되고, 조금 벗어나면 렌즈 양쪽에 상이 두 개 생깁니다. 미세 중력 렌즈법으로 외계 행성을 찾는 원리도 같습니다.');
 }
 
 // ---- D6: an impact between two rubble planets: gravity, contact pressure and damping (a simple SPH-like particle model) ----
@@ -177,7 +189,7 @@ export function labImpact(h) {
     for (const a of P) { const r = Math.hypot(a.x - cx, a.y - cy); if (r > 1.25) { const v2 = a.vx ** 2 + a.vy ** 2; if (v2 > 2 * 0.6 / r) esc++; else disk++; }
       g.fillStyle = a.c ? (a.iron ? '#4c8df6' : '#d9a650') : (a.iron ? '#8f5a3a' : '#8fb8c9'); g.fillRect(w / 2 + (a.x - cx) * sc - 1, H / 2 - (a.y - cy) * sc - 1, 2.2, 2.2); }
     set([['궤도를 도는 파편 (원반)', `${disk}개 (${h.fmt(disk / n * 100, 1)}%)`], ['날아가 버린 파편', `${esc}개`], ['색', '파랑: 원시 지구 · 노랑: 테이아 · 붉은 기: 철 핵']]); });
-  h.deeper(box, '실제 연구는 수백만 개의 입자로 압력과 온도까지 계산하는 SPH(매끄러운 입자 유체 역학)를 씁니다(Canup 2004, 2012). 여기서는 입자 사이 중력과 맞닿았을 때의 반발·마찰만 넣은 간이 모형이라, 모양과 경향(비스듬한 충돌이 원반을 만든다)만 비슷합니다. 달에 철이 적은 이유도 이 그림으로 설명됩니다: 무거운 철 핵은 지구 쪽으로 합쳐지고 가벼운 맨틀 물질이 원반에 남습니다.');
+  h.deeper(box, EN ? DEEP_EN[5] : '실제 연구는 수백만 개의 입자로 압력과 온도까지 계산하는 SPH(매끄러운 입자 유체 역학)를 씁니다(Canup 2004, 2012). 여기서는 입자 사이 중력과 맞닿았을 때의 반발·마찰만 넣은 간이 모형이라, 모양과 경향(비스듬한 충돌이 원반을 만든다)만 비슷합니다. 달에 철이 적은 이유도 이 그림으로 설명됩니다: 무거운 철 핵은 지구 쪽으로 합쳐지고 가벼운 맨틀 물질이 원반에 남습니다.');
 }
 
 // ---- E1: real observations ----
@@ -195,7 +207,7 @@ export async function labTess(h) {
     const bins = new Array(50).fill(0).map(() => []); ph.forEach((p, i) => bins[Math.floor(p * 50) % 50].push(rows[i][1])); const means = bins.map(b => b.length ? b.reduce((s, v) => s + v, 0) / b.length : 0), depth = -Math.min(...means);
     set([['접기 주기', `${h.fmt(per, 4)}일`], ['가장 깊은 골', `${h.fmt(depth, 2)} ppt (천분율)`], ['행성 반지름 / 별 반지름', `${h.fmt(Math.sqrt(depth / 1000), 3)}`], ['정답과 비교', Math.abs(per - d.period_days) < 0.003 ? `맞습니다: WASP-18b, 주기 ${d.period_days}일, 목성보다 약 1.2배 큰 뜨거운 목성` : '아직 골이 흩어져 있습니다']]); };
   P.oninput = draw; draw();
-  h.deeper(box, '자료: NASA TESS 2섹터, 탐지 검증(DV) 보고서의 추세 제거 광도 곡선(exo.MAST)을 10분 단위로 묶었습니다. 별 반지름(태양의 약 1.23배)을 곱하면 행성 반지름이 나오고, 같은 별을 시선 속도로 재면 질량(목성의 약 10배)도 알 수 있어 밀도를 구할 수 있습니다.');
+  h.deeper(box, EN ? DEEP_EN[6] : '자료: NASA TESS 2섹터, 탐지 검증(DV) 보고서의 추세 제거 광도 곡선(exo.MAST)을 10분 단위로 묶었습니다. 별 반지름(태양의 약 1.23배)을 곱하면 행성 반지름이 나오고, 같은 별을 시선 속도로 재면 질량(목성의 약 10배)도 알 수 있어 밀도를 구할 수 있습니다.');
 }
 export async function labSdss(h) {
   const box = h.labBox('실제 자료: 은하의 적색편이 재기', 'SDSS(슬론 디지털 전천 탐사)가 찍은 실제 은하의 스펙트럼입니다. 수소와 산소, 나트륨 같은 원소의 선이 실험실보다 긴 파장 쪽으로 밀려 있습니다.');
@@ -211,7 +223,7 @@ export async function labSdss(h) {
     const v = 299792 * ((1 + z) ** 2 - 1) / ((1 + z) ** 2 + 1), D = v / 70;
     set([['적색편이 z', h.fmt(z, 4)], ['멀어지는 속도', `${h.fmt(v, 0)} km/s`], ['허블 법칙 거리 (H₀ = 70)', `약 ${h.fmt(D, 0)} Mpc (${h.fmt(D * 3.2616 / 100, 1)}억 광년)`], ['SDSS 파이프라인 값과 비교', Math.abs(z - d.z_pipeline) < 0.002 ? `맞습니다 (z = ${d.z_pipeline})` : '선이 아직 어긋나 있습니다']]); };
   Z.oninput = draw; draw();
-  h.deeper(box, '자료: SDSS DR17, 판 1198 · 관측일 MJD 52669 · 광섬유 61번 스펙트럼을 4 Å 단위로 묶었습니다. Hα(6563 Å)와 [N II], [O III] 같은 방출선은 별이 태어나는 가스 구름에서, Ca H·K와 Na D 흡수선은 늙은 별들의 대기에서 나옵니다. 속도는 상대론적 도플러 식으로 구했고, 이 거리에서는 허블 법칙이 잘 맞습니다.');
+  h.deeper(box, EN ? DEEP_EN[7] : '자료: SDSS DR17, 판 1198 · 관측일 MJD 52669 · 광섬유 61번 스펙트럼을 4 Å 단위로 묶었습니다. Hα(6563 Å)와 [N II], [O III] 같은 방출선은 별이 태어나는 가스 구름에서, Ca H·K와 Na D 흡수선은 늙은 별들의 대기에서 나옵니다. 속도는 상대론적 도플러 식으로 구했고, 이 거리에서는 허블 법칙이 잘 맞습니다.');
 }
 export async function labGaiaHR(h) {
   const box = h.labBox('실제 자료: 가이아로 그린 H-R도', '유럽우주국 가이아 위성이 거리를 정밀하게 잰, 100 pc(326광년) 안의 별 6천 개입니다. 색(BP−RP)과 절대 등급으로 찍으면 H-R도가 저절로 나타납니다.');
@@ -226,5 +238,5 @@ export async function labGaiaHR(h) {
     txt(g, '주계열', X(1.4), Y(7) - 6, '#d9a650', 10); txt(g, '백색왜성', X(0), Y(13) + 4, '#a9c6ff', 10); txt(g, '거성', X(1.2), Y(0.5), '#ff9a6a', 10);
     set([['그린 별', `${n}개 (무작위 표본에서 거리 비율로 고름)`], ['주계열 / 백색왜성 / 거성 (대략)', `${ms} / ${wd} / ${gi}`]]); };
   dist.oninput = draw; draw();
-  h.deeper(box, '자료: Gaia DR3, 연주시차 10 mas 이상(100 pc 안), 시차 정밀도 5% 이내인 별을 무작위로 6천 개 뽑았습니다. 절대 등급은 <span class="tex">M_G = G + 5\log_{10}(\varpi/100)</span>(ϖ는 mas 단위 시차)로 구했습니다. 거리 슬라이더는 부피에 비례해 표본 수를 줄인 근사입니다.');
+  h.deeper(box, EN ? DEEP_EN[8] : '자료: Gaia DR3, 연주시차 10 mas 이상(100 pc 안), 시차 정밀도 5% 이내인 별을 무작위로 6천 개 뽑았습니다. 절대 등급은 <span class="tex">M_G = G + 5\log_{10}(\varpi/100)</span>(ϖ는 mas 단위 시차)로 구했습니다. 거리 슬라이더는 부피에 비례해 표본 수를 줄인 근사입니다.');
 }
