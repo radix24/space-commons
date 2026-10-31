@@ -3494,7 +3494,7 @@ $('tourmk-btn').onclick = () => tourMaker();
     for (const id of ids) { const b = $(id); if (!b) continue; b.setAttribute('role', 'menuitem'); pop.append(b); b.addEventListener('click', () => { pop.hidden = true; }); }
     pop.dataset.menu = name; btn.dataset.menu = name;
     btn.onclick = (e) => { e.stopPropagation(); const open = pop.hidden; pops.forEach(q => q.hidden = true); if (!open) return; const r = btn.getBoundingClientRect();
-      pop.style.left = Math.min(r.left, innerWidth - 200) + 'px'; pop.style.top = r.bottom + 4 + 'px'; pop.hidden = false; };
+      pop.style.top = r.bottom + 4 + 'px'; pop.hidden = false; pop.style.left = Math.max(8, Math.min(r.left, innerWidth - pop.offsetWidth - 8)) + 'px'; };
     wrap.append(btn); document.body.append(pop); pops.push(pop); tools.append(wrap);
   }
   addEventListener('click', (e) => { if (!e.target.closest('.menu-pop')) pops.forEach(q => q.hidden = true); });

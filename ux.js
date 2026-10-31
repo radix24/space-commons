@@ -124,7 +124,7 @@ const TOURS = {
 let tourEl = null;
 function endTour() { tourEl?.remove(); tourEl = null; document.querySelectorAll('.guide-hl').forEach(e => e.classList.remove('guide-hl')); }
 function runTour(key, k = 0) {
-  endTour(); const tour = TOURS[key], st = tour.steps[k]; if (!st) return;
+  endTour(); $('ux-hint')?.remove(); const tour = TOURS[key], st = tour.steps[k]; if (!st) return;
   st.run?.();
   setTimeout(() => {
     tourEl = document.createElement('div'); tourEl.className = 'guide';
