@@ -11,6 +11,7 @@ import { BODY_INFO_EN } from './bodyinfo-en.js';
 import { SHOWERS, TOURS, MOON_STATES, FLYBY_INFO, ECLIPSES, JOURNEYS } from './content.js';
 import { KR_SATS, ORBITERS, SITES } from './content-missions.js';
 import { krMission, KR_TIMELINE } from './kr-missions.js';
+import { watchRenderer, frameTick } from './perf.js';
 
 // ---------- constants & helpers ----------
 const D2R = Math.PI / 180, R2D = 180 / Math.PI;
@@ -55,7 +56,7 @@ function bvToRGB(bv) {
 const canvas = $('c');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, logarithmicDepthBuffer: true, preserveDrawingBuffer: true, alpha: true }); // alpha: the camera shows through in AR // preserve: screenshot button
 renderer.autoClear = false;
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+watchRenderer(renderer); // resolution follows the measured frame rate (perf.js)
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(70, 1, 250, 1300) // ground sphere (r=800) must not hit the near plane at wide fields; log depth keeps planets precise;
 const planetScene = new THREE.Scene(); // solar-system bodies, drawn after the sky with their own camera
@@ -792,13 +793,20 @@ function terrainPatch(p, loc) {
   Object.assign(p.patch, { alt, dir, half }); p.patch.mesh.visible = true;
 }
 const planetGroup = new THREE.Group(); planetScene.add(planetGroup);
+const EAGER_TEX = new Set(['Sun', 'Mercury', 'Venus', 'Earth', 'Moon', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']);
+function loadBodyTex(p) { p.texPending = false; texLoader.load(p.img, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; p.mesh.material.uniforms.map.value = t; }); }
+let lazyTexAt = 0;
+function lazyTextures(now) { // about four times a second: load a body's map once it is drawn larger than 2 pixels across
+  if (now - lazyTexAt < 250) return; lazyTexAt = now;
+  for (const p of PLANETS) { if (!p.texPending || !p.mesh.visible) continue; const d = p.mesh.position.length(); if (!d) continue;
+    if (p.mesh.scale.x / d / (view.fov * D2R) * innerHeight > 1) loadBodyTex(p); } }
 for (const p of PLANETS) {
   p.mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 32), planetMat(p.tex ? p.tex() : rocky('#8a8580', ['#5a5650', '#b0aaa0'], 5), p.emissive));
   p.mesh.renderOrder = 5;
   // real texture maps (Solar System Scope, CC BY 4.0); procedural map stays as fallback
   if (p.name === 'Moon') p.mesh.material.uniforms.isMoon.value = 1;
   if (p.name === 'Earth') texLoader.load('textures/2k_earth_nightmap.jpg', (t) => { t.colorSpace = THREE.SRGBColorSpace; p.mesh.material.uniforms.night.value = t; p.mesh.material.uniforms.hasNight.value = 1; });
-  if (p.img) texLoader.load(p.img, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; p.mesh.material.uniforms.map.value = t; });
+  if (p.img) { p.texPending = true; if (EAGER_TEX.has(p.name)) loadBodyTex(p); } // moons and dwarf planets wait until they are a few pixels wide
   if (p.ring) {
     const rg = new THREE.RingGeometry(1.11, 2.33, 128, 1);
     const pos = rg.attributes.position, uv = rg.attributes.uv;
@@ -1108,8 +1116,13 @@ function loadHD(model) { // swap in NASA's detailed version (1.7-9 MB) only when
 }
 gltfLoader.setDRACOLoader(new DRACOLoader().setDecoderPath('vendor/draco/'));
 for (const p of PROBES) if (!p.model) { const c = buildCraft(p.name); if (c) { p.mesh.clear(); p.mesh.add(fitUnit(c)); } }
-for (const m of ['voyager', 'pioneer', 'jwst', 'juno', 'parker', 'lro', 'mro']) gltfLoader.load(`models/${m}.glb`, (g) => swapModel(m, fitUnit(m === 'voyager' ? voyagerBlack(g.scene) : g.scene)), undefined, (e) => console.warn('model', m, e.message));
-(async () => { // New Horizons ships as 3D-printing STL parts; assemble them with flight-like materials
+let probeModelsAsked = false;
+function loadProbeModels() { // NASA spacecraft models (about 6 MB): fetched the first time the view goes to space
+  if (probeModelsAsked) return; probeModelsAsked = true;
+  for (const m of ['voyager', 'pioneer', 'jwst', 'juno', 'parker', 'lro', 'mro']) gltfLoader.load(`models/${m}.glb`, (g) => swapModel(m, fitUnit(m === 'voyager' ? voyagerBlack(g.scene) : g.scene)), undefined, (e) => console.warn('model', m, e.message));
+loadNewHorizons();
+}
+async function loadNewHorizons() { // New Horizons ships as 3D-printing STL parts; assemble them with flight-like materials
   const stl = new STLLoader(), parts = { antenna: 0xe8e6e0, body: 0xd8b25a, body_l: 0xd8b25a, body_r: 0xd8b25a, rtg: 0x4c4f57 };
   const g = new THREE.Group();
   try {
@@ -1119,7 +1132,7 @@ for (const m of ['voyager', 'pioneer', 'jwst', 'juno', 'parker', 'lro', 'mro']) 
     }));
     swapModel('nh', fitUnit(g));
   } catch (e) { /* keep placeholder */ }
-})();
+}
 // Voyager's ten-sided bus wears black thermal blankets; the NASA model paints it beige
 function voyagerBlack(root) {
   root.traverse(o => { for (const m of [].concat(o.material || [])) {
@@ -1924,7 +1937,7 @@ function setMode(space) {
   flight = null; tracking = null; showPhoto(null); select(null);
   orbits.visible = space && $('t-orbits').checked;
   if (space) {
-    sp.saved = { ...view }; view.fov = 60;
+    loadProbeModels(); sp.saved = { ...view }; view.fov = 60;
     updateSkyMatrix(); computeHelio();
     const earth = PLANETS.find(p => p.name === 'Earth');
     sp.target = earth; sp.dist = bodyR(earth) * 5;
@@ -2140,7 +2153,7 @@ function tonight() { // what is up right now: planets, the Moon and bright Messi
 $('tonight-btn').onclick = () => $('tonight').hidden ? tonight() : ($('tonight').hidden = true);
 $('tonight-close').onclick = () => $('tonight').hidden = true;
 addEventListener('keydown', (e) => { if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-  if (e.code === 'KeyF') $('full').click(); if (e.code === 'KeyN') $('night').click(); if (e.code === 'KeyO') $('obs-btn').click(); if (e.code === 'KeyY' && !mode.space) $('today-btn').click(); if (e.code === 'KeyP') $('shot').click(); if (e.code === 'KeyT' && !mode.space) $('tonight-btn').click(); });
+  if (e.code === 'KeyF' && !e.shiftKey) $('full').click(); if (e.code === 'KeyN') $('night').click(); if (e.code === 'KeyO') $('obs-btn').click(); if (e.code === 'KeyY' && !mode.space) $('today-btn').click(); if (e.code === 'KeyP') $('shot').click(); if (e.code === 'KeyT' && !mode.space) $('tonight-btn').click(); });
 
 // ---------- guided tours ----------
 let tour = null, tourStep = -1;
@@ -3955,6 +3968,7 @@ function drawLabels() {
 // ---------- main loop ----------
 const skyNight = new THREE.Color(0x02040a), skyDay = new THREE.Color(0x3d72b8), skyTwi = new THREE.Color(0x1a2a50), bg = new THREE.Color();
 function frame(now) {
+  if (!sandboxOn) { frameTick(now); lazyTextures(now); }
   if (sandboxOn) { state.lastReal = now; requestAnimationFrame(frame); return; } // the sandbox draws itself
   const dt = now - state.lastReal; state.lastReal = now;
   state.time += dt * state.speed;

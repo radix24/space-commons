@@ -7,6 +7,7 @@ import * as O from './orbits.js';
 import { openCards } from './cards.js';
 import * as L2 from './labs2.js';
 import * as ATM from './atmos.js';
+import { watchRenderer, frameTick } from './perf.js';
 
 const { dot, cross, norm, add, scale } = O.vec;
 const PL = ['Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'];
@@ -553,7 +554,7 @@ const speedLabel = (s) => s >= 1 ? `1초에 ${s}일` : s * 24 >= 1 ? `1초에 ${
 function loop(now) {
   const dt = Math.min(0.1, (now - lastNow) / 1000); lastNow = now;
   if (sim.playing) { advance(sim.speed * dt); recordTrails(); } updateFlashes(dt);
-  draw(); raf = requestAnimationFrame(loop);
+  draw(); frameTick(now); raf = requestAnimationFrame(loop);
 }
 
 // ---------------- selection, editing, throwing ----------------
@@ -1315,7 +1316,7 @@ function buildUI() {
     <div class="sb-gridlbl"></div>
     <div class="sb-toast" hidden></div>`;
   document.body.append(root);
-  renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); root.prepend(renderer.domElement);
+  renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true }); watchRenderer(renderer); root.prepend(renderer.domElement);
   scene = new THREE.Scene(); scene.background = new THREE.Color(0x05070d); scene.add(starLight, ambient, burnPrev, baryMark);
   for (const ax of [[1, 0, 0], [0, 1, 0], [0, 0, 1]]) { const g2 = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-ax[0], -ax[1], -ax[2]), new THREE.Vector3(...ax)]); baryMark.add(new THREE.Line(g2, new THREE.LineBasicMaterial({ color: 0xffd36a }))); }
   baryMark.add(new THREE.Mesh(new THREE.TorusGeometry(0.45, 0.04, 6, 24), new THREE.MeshBasicMaterial({ color: 0xffd36a }))); baryMark.visible = false;

@@ -617,3 +617,17 @@ input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px rg
 .kracts { display: flex; flex-wrap: wrap; gap: 4px; } .kracts button { font-size: 12px; }
 .krtl { list-style: none; margin: 8px 0 0; padding: 0; font-size: 12.5px; } .krtl li { padding: 3px 0; border-top: 1px solid var(--line); } .krtl span { display: inline-block; width: 86px; color: var(--mute); font-family: var(--mono, monospace); }
 .tn-head { padding: 10px 0 4px; font-size: 12px; color: var(--mute); border-top: 1px solid var(--line); margin-top: 6px; }
+#fps-meter { position: fixed; right: 8px; bottom: 8px; z-index: 9999; padding: 4px 8px; font: 500 11px/1.4 'IBM Plex Mono', monospace; color: #cfe0ff; background: rgba(8, 12, 24, .82); border: 1px solid rgba(120, 150, 210, .35); pointer-events: none; }
+/* phones: the search box keeps a usable width; the bar scrolls sideways for the space tools */
+@media (max-width: 480px) {
+  #topbar { gap: 6px; }
+  #topbar #search { flex: 1 0 110px; min-width: 0; width: auto; padding: 7px 8px; }
+  #modes { flex: none; } #modes button { padding: 5px 8px; font-size: 13px; }
+}
+@media (max-width: 480px) { /* sandbox on a phone: the clock takes its own line, the dock scrolls sideways instead of stacking letters */
+  .sb-bar .sb-clock { flex: 1 0 100%; flex-direction: row; gap: 10px; align-items: baseline; white-space: nowrap; }
+  .sb-transport { flex: 1 0 100%; } .sb-transport button { white-space: nowrap; padding: 0 8px; } .sb-transport .sb-speedr { flex: 1; width: auto; } .sb-speedl { white-space: nowrap; }
+  .sb-dock { left: 8px; right: 8px; transform: none; overflow-x: auto; scrollbar-width: none; }
+  .sb-dock button { flex: 1 0 auto; white-space: nowrap; padding: 8px 10px; }
+  .sb-dock button b { white-space: nowrap; }
+}
