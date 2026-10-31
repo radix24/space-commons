@@ -12,6 +12,7 @@ import { SHOWERS, TOURS, MOON_STATES, FLYBY_INFO, ECLIPSES, JOURNEYS } from './c
 import { KR_SATS, ORBITERS, SITES } from './content-missions.js';
 import { krMission, KR_TIMELINE } from './kr-missions.js';
 import { watchRenderer, frameTick } from './perf.js';
+import { initClassSync } from './classsync.js';
 
 // ---------- constants & helpers ----------
 const D2R = Math.PI / 180, R2D = 180 / Math.PI;
@@ -3416,9 +3417,35 @@ function tourMaker() {
     a.download = name.replace(/[\\/:*?"<>|]/g, '_') + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); };
 }
 $('tourmk-btn').onclick = () => tourMaker();
+// ---------- classroom sync (classsync.js): the teacher's view as a small state object, and how a student applies it ----------
+{ const b = document.createElement('button'); b.id = 'sync-btn'; b.title = '선생님 화면을 학생 기기가 실시간으로 따라옵니다'; b.textContent = '수업 동기화'; $('tools').append(b); }
+const selName = (o) => o ? (o.planet ? o.p.name : o.kindName === 'dso' ? (o.messier || o.name) : o.name) : ''; // same name the share link uses
+const classSync = initClassSync({
+  status: (t) => { $('status').textContent = t; },
+  snapshot: () => { const c = $('sc-caption'), r = (v, n) => +v.toFixed(n), m = sandboxOn ? 'x' : mode.space ? 's' : 'g';
+    return { m, t: Math.round(state.time), v: state.speed, lat: r(state.lat, 3), lon: r(state.lon, 3), az: r(view.az, 2), alt: r(view.alt, 2), fov: +view.fov.toPrecision(4),
+      ...(m === 's' ? { at: sp.target?.name || '', d: +sp.dist.toPrecision(5), q: sp.quat.toArray().map(x => r(x, 5)), ...(sp.target ? {} : { p: sp.pos.toArray().map(x => +x.toPrecision(7)) }) } : {}),
+      o: selName(selected), cap: c && !c.hidden ? c.textContent : '' }; },
+  apply: async (s, prev) => { // prev: the last state applied, so selection and mode only change when the teacher changed them
+    const n = (x, lo, hi) => Number.isFinite(+x) ? Math.max(lo, Math.min(hi, +x)) : null;
+    if (s.m === 'x') { if (!sandboxOn) await setSandbox(true); } else { if (sandboxOn) await setSandbox(false); setMode(s.m === 's'); }
+    if (n(s.t, -1e14, 1e14) != null) state.time = +s.t; if (n(s.v, -1e9, 1e9) != null && state.speed !== +s.v) { state.speed = +s.v; document.querySelectorAll('[data-speed]').forEach(x => x.classList.toggle('on', +x.dataset.speed === state.speed)); }
+    if (n(s.lat, -90, 90) != null) { state.lat = +s.lat; state.lon = n(s.lon, -360, 360) ?? state.lon; $('lat').value = state.lat; $('lon').value = state.lon; }
+    if (n(s.az, -1e4, 1e4) != null) { view.az = +s.az; view.alt = n(s.alt, -90, 90) ?? view.alt; view.fov = n(s.fov, 1e-4, 180) ?? view.fov; }
+    if (s.m === 's') { sp.flight = null; const p = s.at && PLANETS.find(x => x.name === s.at);
+      if (p) { if (sp.target !== p) { updateSkyMatrix(); computeHelio(); $('sp-target').textContent = `${p.ko} 주위 공전`; } sp.target = p; sp.dist = n(s.d, 1e-12, 1.2e16) ?? sp.dist; }
+      else if (!s.at) { sp.target = null; if (Array.isArray(s.p) && s.p.length === 3) sp.pos.fromArray(s.p.map(Number)); }
+      if (Array.isArray(s.q) && s.q.length === 4) sp.quat.fromArray(s.q.map(Number)).normalize(); }
+    if (!prev || prev.o !== s.o || prev.m !== s.m) { if (!s.o) { if (selected) select(null); }
+      else if (selName(selected) !== s.o) { const mk = searchIndex.get(String(s.o).toLowerCase().replace(/\s+/g, '')); if (mk) { const x = mk(); if (!x.planet || x.p.world) select(x); } } }
+    if (!prev || prev.cap !== s.cap) caption(String(s.cap || '').slice(0, 400));
+    if (s.m !== 'x') updateSkyMatrix(); writeHash();
+  },
+});
+$('sync-btn').onclick = () => classSync.open();
 // ---------- top bar: the most used tools stay visible, the rest go into three menus (fixed pop-ups, so the scrolling bar on phones does not clip them) ----------
 (function groupMenus() {
-  const groups = [['관측', ['today-btn', 'obs-btn', 'exp-btn', 'night', 'gyro', 'ar']], ['배우기', ['tour-btn', 'tourmk-btn', 'cine-btn', 'sizes-btn', 'hist-btn', 'ls-btn']], ['저장·공유', ['share', 'shot', 'rec-btn', 'offline-btn', 'addon-btn', 'full']]];
+  const groups = [['관측', ['today-btn', 'obs-btn', 'exp-btn', 'night', 'gyro', 'ar']], ['배우기', ['tour-btn', 'tourmk-btn', 'sync-btn', 'cine-btn', 'sizes-btn', 'hist-btn', 'ls-btn']], ['저장·공유', ['share', 'shot', 'rec-btn', 'offline-btn', 'addon-btn', 'full']]];
   const tools = $('tools'), lang = $('lang'), pops = [];
   for (const [name, ids] of groups) {
     const wrap = document.createElement('div'), btn = document.createElement('button'), pop = document.createElement('div');
@@ -3453,7 +3480,7 @@ function showGuide(k = 0) {
   if (r && sel !== '#c') { box.style.left = Math.max(8, Math.min(innerWidth - 300, r.left)) + 'px'; box.style.top = Math.min(innerHeight - 160, r.bottom + 10) + 'px'; tgt.classList.add('guide-hl'); setTimeout(() => tgt.classList.remove('guide-hl'), 4000); }
   g.querySelector('.g-next').onclick = () => showGuide(k + 1); g.querySelector('.g-skip').onclick = () => showGuide(GUIDE.length);
 }
-{ let seen = false; try { seen = !!localStorage.getItem('space-commons-guided'); } catch {} if (!seen && !location.hash.includes('lesson=')) setTimeout(() => { if (!sandboxOn && !document.body.classList.contains('embed')) showGuide(0); }, 2500); }
+{ let seen = false; try { seen = !!localStorage.getItem('space-commons-guided'); } catch {} if (!seen && !location.hash.includes('lesson=') && !/[?&]join=/.test(location.search)) setTimeout(() => { if (!sandboxOn && !document.body.classList.contains('embed')) showGuide(0); }, 2500); }
 $('help')?.addEventListener('dblclick', () => showGuide(0));
 // ---------- photo horizons: real 360-degree panoramas (ESO, CC BY 4.0) with the sky removed; choosing one also moves you there ----------
 let LANDS = {}; fetch('data/landscapes.json').then(r => r.json()).then(j => { LANDS = j; const s = $('landsel'); for (const [k, v] of Object.entries(j)) s.append(new Option(v.ko, k)); }).catch(() => {});
@@ -4124,6 +4151,7 @@ updateSkyMatrix(); requestAnimationFrame(frame);
   document.body.classList.add('ready');
   buildSearch();
   readHash();
+  classSync.joinFromLink(); // ?join=CODE from the classroom QR
   if (/[#&]sb=/.test(location.hash)) setSandbox(true).then(() => sandboxMod.sceneFromHash()); // a shared sandbox scene
   loadKorean().then(applySkyCulture).catch(() => {});
 })();

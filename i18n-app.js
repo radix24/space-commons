@@ -1,6 +1,24 @@
 // English phrases for app.js: [Korean, English] pairs merged into the phrase table in i18n.js, and
 // regexes for whole sentences built from templates (run before the phrase table).
 export const PH_APP = [
+  // classroom sync (classsync.js)
+  ['수업 동기화', 'Class sync'], ['선생님 화면을 학생 기기가 실시간으로 따라옵니다', "Students' devices follow the teacher's screen live"],
+  ['선생님 화면을 학생 기기가 실시간으로 따라옵니다. 같은 교실이 아니어도 인터넷만 되면 됩니다.', "Students' devices follow the teacher's screen live. They do not need to be in the same room, just online."],
+  ['수업 열기', 'Open a class'], ['수업 참여', 'Join a class'], ['참여', 'Join'], ['수업 코드 6자리', '6-character class code'], ['수업 코드', 'Class code'],
+  ['별명 (적지 않아도 됩니다)', 'Nickname (optional)'], ['별명', 'Nickname'], ['연결된 학생', 'Students connected'],
+  ['학생들이 QR 코드를 찍거나 수업 코드를 입력하면 이 화면을 따라옵니다.', 'Students scan the QR code or type the class code to follow this screen.'],
+  ['따라오기 잠시 멈춤', 'Pause following'], ['따라오기 다시 시작', 'Resume following'], ['다시 모으기', 'Bring everyone back'], ['수업 닫기', 'Close the class'],
+  ['보내는 것은 화면 상태(모드, 시각, 장소, 보는 방향, 선택한 천체, 자막)뿐입니다. 연결은 기기끼리 직접 이어집니다.', 'Only the view is sent (mode, time, place, direction, selected object, caption). Devices connect directly to each other.'],
+  ['수업에 참여했습니다', 'Joined the class'], ['수업에서 나가기', 'Leave the class'], ['나가기', 'Leave'],
+  ['선생님 화면을 따라가는 중', "Following the teacher's screen"], ['내 마음대로 보기', 'Look around myself'], ['내 마음대로 보는 중', 'Looking around on my own'],
+  ['선생님 화면으로 돌아가기', "Back to the teacher's screen"], ['선생님이 자유롭게 둘러보게 했습니다', 'The teacher has let everyone look around freely'],
+  ['선생님이 수업을 닫았습니다', 'The teacher closed the class'], ['연결할 수 없습니다. 학교 네트워크가 막고 있을 수 있습니다', 'Cannot connect. The school network may be blocking it'],
+  ['이 코드의 수업을 찾을 수 없습니다. 코드를 다시 확인해 주세요', 'No class found with this code. Please check the code'],
+  ['이 코드는 이미 쓰이고 있습니다. 다시 열어 주세요', 'This code is already in use. Please open the class again'],
+  ['연결 도구를 불러오지 못했습니다. 인터넷 연결을 확인해 주세요', 'Could not load the connection tool. Please check the internet connection'],
+  ['연결이 잠시 끊겼습니다. 다시 잇는 중...', 'Connection lost for a moment. Reconnecting...'], ['수업에 다시 연결했습니다', 'Reconnected to the class'],
+  ['수업을 여는 중...', 'Opening the class...'], ['수업에 연결하는 중...', 'Connecting to the class...'], ['수업을 닫았습니다', 'Class closed'], ['수업에서 나왔습니다', 'Left the class'],
+  ['학생들을 지금 화면으로 모았습니다', 'Brought every student back to this view'], ['수업 코드는 6자리입니다', 'The class code has 6 characters'], ['수업 참여 QR 코드', 'QR code to join the class'],
   // KVN panel (Yonsei, Seodaemun)
   ['KVN 연세 전파천문대 · 서대문구 신촌', 'KVN Yonsei Radio Observatory · Sinchon, Seodaemun'],
   ['연세대학교 신촌캠퍼스(서대문구)에는 지름 21 m 전파망원경이 있습니다. 한국천문연구원이 운영하는 ', 'Yonsei University\'s Sinchon campus in Seodaemun has a 21 m radio telescope. It is the Seoul station of the '],
@@ -60,6 +78,7 @@ export const PH_APP = [
 ];
 const DIR = { '북': 'N', '북동': 'NE', '동': 'E', '남동': 'SE', '남': 'S', '남서': 'SW', '서': 'W', '북서': 'NW' };
 export const RX_APP = [
+  [/^수업을 열었습니다: ([A-Z0-9]{6})$/, 'Class open: $1'],
   [/^어두운 시간 중 맑은 때\(구름 30% 이하\): (\d+)시간, (.+?)부터 · 대기 투명도 (.+?) \(습도·시정으로 추정\)$/, 'Clear hours in darkness (cloud 30% or less): $1 h, from $2 · transparency $3 (estimated from humidity and visibility)'],
   [/^(북동|북서|남동|남서|북|동|남|서) (\d+)°$/, (m, d, a) => `${DIR[d]} ${a}°`],
   [/달과 (\d+)°, 달빛 방해/g, '$1° from the Moon, moonlight interferes'],
