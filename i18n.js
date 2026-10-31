@@ -2,15 +2,15 @@
 // Language: ?lang=en|ko, then the saved choice, then the browser language.
 import { TOURS, FLYBY_INFO, ECLIPSES, SHOWERS, JOURNEYS } from './content.js';
 import { ORBITERS, SITES } from './content-missions.js';
-import { PH_APP, RX_APP, JOURNEY_EN } from './i18n-app.js';
-import { PH_SB, RX_SB } from './i18n-sandbox.js';
-import { PH_CARDS, RX_CARDS } from './i18n-cards.js';
 
 const q = new URLSearchParams(location.search).get('lang');
 let saved = null; try { saved = localStorage.getItem('space-commons-lang'); } catch {}
 export const LANG = (q === 'en' || q === 'ko') ? q : (saved === 'en' || saved === 'ko') ? saved
   : ((navigator.language || 'ko').toLowerCase().startsWith('ko') ? 'ko' : 'en');
 export const EN = LANG === 'en';
+// the large English tables (about 140 KB) are fetched only when the page is in English
+const [{ PH_APP = [], RX_APP = [], JOURNEY_EN = {} }, { PH_SB = [], RX_SB = [] }, { PH_CARDS = [], RX_CARDS = [] }] =
+  EN ? await Promise.all([import('./i18n-app.js'), import('./i18n-sandbox.js'), import('./i18n-cards.js')]) : [{}, {}, {}];
 export const LOCALE = EN ? 'en-US' : 'ko-KR';
 export function setLang(l) { try { localStorage.setItem('space-commons-lang', l); } catch {} const u = new URL(location.href); u.searchParams.set('lang', l); location.href = u.toString(); }
 document.documentElement.lang = LANG;
