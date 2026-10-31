@@ -18,13 +18,15 @@ h2.sec { font-size: clamp(30px, 4.2vw, 52px); line-height: 1.2; max-width: 16em;
 header { position: absolute; inset: 0 0 auto; z-index: 5; }
 header .wrap { display: flex; align-items: center; height: 72px; gap: 10px; }
 .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; font-family: Manrope, sans-serif; font-weight: 800; font-size: 19px; letter-spacing: -.03em; }
-.logo img { width: 26px; height: 26px; margin: 0 2px 0 4px; } /* the mark sits with air around it, as in the app bar */
-footer .logo img { width: 22px; height: 22px; margin-left: 0; }
+.logo img { width: 26px; height: 26px; margin: 0 2px 0 0; } /* small mark with air to its right; its left edge stays on the page's text edge */
+footer .logo img { width: 22px; height: 22px; }
 .logo b { color: var(--accent); } /* Space in ink, Commons in blue */
 .logo span { word-spacing: .22em; } /* the negative letter-spacing eats the space between the two words; same as the app bar */
 header nav { margin-left: auto; display: flex; gap: 26px; font-size: 15px; align-items: center; }
-header nav a { text-decoration: none; color: #C9CEE3; } header nav a:hover { color: #fff; }
-header nav a[aria-current] { color: #fff; border-bottom: 2px solid var(--accent); padding-bottom: 2px; }
+/* every link keeps the same underline space, so the current page's text sits on the same line as the others */
+header nav a:not(.btn) { text-decoration: none; color: #C9CEE3; padding: 4px 0 2px; border-bottom: 2px solid transparent; line-height: 1.4; }
+header nav a:not(.btn):hover { color: #fff; }
+header nav a[aria-current] { color: #fff; border-bottom-color: var(--accent); }
 .btn { display: inline-block; white-space: nowrap; background: var(--accent); color: #fff !important; text-decoration: none; padding: 11px 20px; font-weight: 600; font-size: 15px; border: 0; cursor: pointer; font-family: inherit; }
 .btn:hover { background: #3A7AE6; }
 .btn.ghost { background: transparent; border: 1px solid #4A5274; }
