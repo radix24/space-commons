@@ -21,6 +21,7 @@ header .wrap { display: flex; align-items: center; height: 72px; gap: 10px; }
 .logo img { width: 26px; height: 26px; margin: 0 2px 0 4px; } /* the mark sits with air around it, as in the app bar */
 footer .logo img { width: 22px; height: 22px; margin-left: 0; }
 .logo b { color: var(--accent); } /* Space in ink, Commons in blue */
+.logo span { word-spacing: .22em; } /* the negative letter-spacing eats the space between the two words; same as the app bar */
 header nav { margin-left: auto; display: flex; gap: 26px; font-size: 15px; align-items: center; }
 header nav a { text-decoration: none; color: #C9CEE3; } header nav a:hover { color: #fff; }
 header nav a[aria-current] { color: #fff; border-bottom: 2px solid var(--accent); padding-bottom: 2px; }
@@ -70,8 +71,10 @@ footer nav { display: flex; gap: 22px; }
 
 @media (max-width: 860px) {
   .wrap { padding: 0 16px; }
-  header nav { gap: 16px; }
-  header nav a:not(.btn):not(.keep) { display: none; }
+  /* phones: logo and the app button on the first row, the four pages on a second row */
+  header .wrap { position: relative; flex-wrap: wrap; height: auto; padding-top: 14px; padding-bottom: 6px; row-gap: 10px; }
+  header nav { width: 100%; margin-left: 0; gap: 18px; font-size: 14.5px; }
+  header nav .btn { position: absolute; right: 16px; top: 10px; padding: 8px 14px; font-size: 14px; }
   .tabs button { flex: 1 1 33%; border-bottom: 1px solid var(--line2); padding: 10px 6px; font-size: 14px; }
   .pano { height: 200px; }
   .try { aspect-ratio: 3 / 4; }

@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#070A16">
+<title>Space Commons 수업·활용</title>
+<meta name="description" content="수업 링크와 QR 코드 만들기, 수업 페이지에 넣는 코드, 개념 카드 68장, 내려받는 발표 자료. 교사와 진행자가 Space Commons를 수업에 쓰는 방법.">
+<link rel="icon" href="../assets/favicon.svg?v=3" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../vendor/pretendard/pretendardvariable.min.css">
+<link rel="stylesheet" href="about.css?v=4">
+<style>
+.top { padding: 170px 0 90px; border-bottom: 1px solid var(--rule); background: radial-gradient(ellipse at 80% 0%, #17204A 0%, var(--night) 60%); }
+.top h1 { font-size: clamp(36px, 5.6vw, 72px); line-height: 1.12; max-width: 14em; }
+.top h1 span { color: #9FC2FF; }
+.top .lead { margin-top: 22px; max-width: 36em; font-size: 18px; color: #D3D8EA; }
+.toc { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 6px 0; font-size: 15px; }
+.toc a { text-decoration: none; color: #C9CEE3; } .toc a:hover { color: #fff; }
+.toc a + a::before { content: '·'; margin: 0 14px; color: #4A5274; }
+section.s { padding: 110px 0; }
+
+/* lesson link maker */
+.maker { margin-top: 48px; display: grid; grid-template-columns: 1.05fr 1fr; gap: 0 56px; align-items: start; }
+.form { display: grid; gap: 18px; }
+.form label { display: grid; gap: 7px; font-size: 14px; color: var(--mute); }
+.form .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form input, .form select, .form textarea, .out textarea { width: 100%; background: #0F142A; color: var(--text); border: 1px solid var(--line2); border-radius: 0; padding: 11px 12px; font: 16px/1.5 'Pretendard Variable', Pretendard, sans-serif; }
+.form textarea { min-height: 96px; resize: vertical; }
+.form input:focus, .form select:focus, .form textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.form .custom { display: none; } .form .custom.on { display: grid; }
+.out { position: sticky; top: 24px; border: 1px solid var(--line2); padding: 26px; background: var(--paper); }
+.out h3 { font-size: 18px; }
+.out .where { margin-top: 10px; color: var(--soft); font-size: 15px; min-height: 2.8em; }
+.out .where.warn { color: #F2B67A; }
+.out .qr { margin-top: 18px; display: flex; gap: 18px; align-items: flex-end; }
+.out .qr canvas, .out .qr img { width: 148px; height: 148px; background: #fff; padding: 8px; image-rendering: pixelated; }
+.out .qr p { color: var(--mute); font-size: 13px; }
+.out .link { margin-top: 18px; font: 12.5px/1.5 'IBM Plex Mono', monospace; color: #9FC2FF; word-break: break-all; max-height: 6.2em; overflow: auto; }
+.out .acts { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 10px; }
+.out textarea { margin-top: 10px; min-height: 74px; font: 12.5px/1.5 'IBM Plex Mono', monospace; color: var(--soft); }
+.out .sub { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--rule); }
+.btn.small { padding: 9px 14px; font-size: 14px; }
+
+/* cards */
+.cardtools { margin-top: 40px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.cardtools input { flex: 1 1 260px; max-width: 420px; background: #0F142A; color: var(--text); border: 1px solid var(--line2); padding: 11px 12px; font: 16px 'Pretendard Variable', Pretendard, sans-serif; }
+.cardtools .lv button { background: transparent; border: 1px solid var(--line2); color: var(--soft); padding: 9px 14px; font: 14px 'Pretendard Variable', Pretendard, sans-serif; cursor: pointer; }
+.cardtools .lv button + button { border-left: 0; }
+.cardtools .lv button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.chapters { margin-top: 28px; }
+.ch { padding: 26px 0; border-top: 1px solid var(--line2); display: grid; grid-template-columns: 15em 1fr; gap: 0 40px; }
+.ch h3 { font-size: 19px; }
+.ch .intro2 { margin-top: 8px; color: var(--mute); font-size: 14px; }
+.ch ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0 32px; }
+.ch li { padding: 9px 0; border-bottom: 1px solid var(--rule); font-size: 15.5px; display: flex; gap: 10px; align-items: baseline; }
+.ch li .lvl { font: 500 11.5px 'IBM Plex Mono', 'Pretendard Variable', monospace; color: var(--accent); flex: 0 0 2.6em; }
+.ch li small { color: var(--mute); font-size: 13.5px; }
+.ch.hide, .ch li.hide { display: none; }
+.cardnote { margin-top: 18px; color: var(--mute); font-size: 14px; }
+
+/* downloads */
+.files { margin-top: 40px; border-top: 1px solid var(--line2); }
+.files a { display: grid; grid-template-columns: 1fr auto; gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--rule); text-decoration: none; align-items: baseline; }
+.files a:hover b { color: #9FC2FF; }
+.files b { font-weight: 600; font-size: 17px; }
+.files span { display: block; color: var(--soft); font-size: 15px; margin-top: 4px; }
+.files i { font: normal 13px 'IBM Plex Mono', monospace; color: var(--mute); }
+.nums { margin-top: 56px; display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--rule); }
+.nums > div { padding: 24px 24px 0 0; }
+.nums > div + div { padding-left: 24px; border-left: 1px solid var(--rule); }
+.nums .n { font-family: Manrope, sans-serif; font-weight: 800; font-size: clamp(40px, 5vw, 64px); letter-spacing: -.05em; line-height: 1; color: #fff; }
+.nums p { margin-top: 12px; color: var(--soft); font-size: 15px; }
+
+@media (max-width: 860px) {
+  .top { padding: 140px 0 70px; }
+  .top .lead { font-size: 16px; }
+  section.s { padding: 80px 0; }
+  .maker { grid-template-columns: 1fr; gap: 32px; }
+  .out { position: static; padding: 20px; }
+  .form .row { grid-template-columns: 1fr; }
+  .ch { grid-template-columns: 1fr; gap: 14px; }
+  .ch ul { grid-template-columns: 1fr; }
+  .nums { grid-template-columns: 1fr 1fr; }
+  .nums > div { padding: 20px 12px 20px 0 !important; border-left: 0 !important; border-bottom: 1px solid var(--rule); }
+  .nums > div:nth-child(even) { padding-left: 16px !important; border-left: 1px solid var(--rule) !important; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <a class="logo" href="../"><img src="../assets/sc-mark.svg?v=3" width="26" height="26" alt=""><span>Space <b>Commons</b></span></a>
+    <nav>
+      <a href="../">소개</a>
+      <a href="features.html">기능</a>
+      <a href="learn.html" aria-current="page">수업·활용</a>
+      <a href="local.html">서대문</a>
+      <a class="btn" href="../app.html">하늘 열기</a>
+    </nav>
+  </div>
+</header>
+
+<section class="top">
+  <div class="wrap">
+    <div class="kicker"><span class="mono">수업·활용</span><span>교사와 진행자를 위한 도구</span></div>
+    <h1>그 하늘을,<br><span>링크 하나로 나눠 줍니다</span></h1>
+    <p class="lead">장소와 시각, 볼 천체를 정하면 학생이 같은 하늘을 여는 링크와 QR 코드가 만들어집니다. 수업 페이지에 넣는 코드, 개념 카드 목록, 바로 쓰는 발표 자료도 여기 있습니다.</p>
+    <nav class="toc"><a href="#maker">수업 링크 만들기</a><a href="#cards">개념 카드 68장</a><a href="#files">발표 자료</a></nav>
+  </div>
+</section>
+
+<section class="s" id="maker">
+  <div class="wrap">
+    <div class="kicker"><span class="mono">01</span><span>수업 링크 만들기</span></div>
+    <h2 class="sec">정한 하늘이 학생 화면에 그대로 열립니다</h2>
+    <div class="maker">
+      <form class="form" id="lf" autocomplete="off" onsubmit="return false">
+        <label>수업 제목<input id="f-title" value="오늘 밤의 토성" maxlength="60"></label>
+        <label>수업 목표<input id="f-goal" value="토성이 하룻밤 동안 하늘에서 어떻게 움직이는지 관찰합니다" maxlength="160"></label>
+        <label>질문 (한 줄에 하나)<textarea id="f-qs">토성은 어느 방향에서 떠서 어느 방향으로 지나요?
+한 시간 뒤에는 고도가 얼마나 바뀌나요?</textarea></label>
+        <div class="row">
+          <label>장소<select id="f-place">
+            <option value="37.58,126.94">서대문 (서울)</option>
+            <option value="37.55,126.99">남산 (서울)</option>
+            <option value="36.16,128.98">보현산 (경북 영천)</option>
+            <option value="36.96,128.48">소백산 (충북 단양)</option>
+            <option value="33.36,126.46">1100고지 (제주)</option>
+            <option value="custom">직접 입력</option>
+          </select></label>
+          <label>날짜와 시각 (한국 시간)<input id="f-time" type="datetime-local"></label>
+        </div>
+        <div class="row custom" id="f-custom">
+          <label>위도<input id="f-lat" type="number" step="0.01" min="-90" max="90" value="37.57"></label>
+          <label>경도<input id="f-lon" type="number" step="0.01" min="-180" max="180" value="126.98"></label>
+        </div>
+        <label>볼 천체<select id="f-body">
+          <option value="">정하지 않음 (남쪽 하늘)</option>
+          <option value="Moon">달</option>
+          <option value="Venus">금성</option>
+          <option value="Mars">화성</option>
+          <option value="Jupiter">목성</option>
+          <option value="Saturn" selected>토성</option>
+          <option value="M42|83.82|-5.39">오리온 대성운 (M42)</option>
+          <option value="M45|56.75|24.12">플레이아데스 성단 (M45)</option>
+          <option value="M31|10.68|41.27">안드로메다 은하 (M31)</option>
+          <option value="Polaris|37.95|89.26">북극성</option>
+        </select></label>
+      </form>
+      <div class="out" aria-live="polite">
+        <h3 id="o-title">오늘 밤의 토성</h3>
+        <p class="where" id="o-where"></p>
+        <div class="qr"><div id="o-qr"></div><p>교실 화면에 띄우면 학생이 휴대폰으로 찍어 바로 엽니다.</p></div>
+        <div class="link" id="o-link"></div>
+        <div class="acts"><button class="btn small" id="b-copy" type="button">링크 복사</button><a class="btn small ghost" id="b-open" target="_blank" rel="noopener">앱에서 열기</a></div>
+        <div class="sub">
+          <h3>수업 페이지에 넣기</h3>
+          <textarea id="o-embed" readonly aria-label="수업 페이지에 넣는 코드"></textarea>
+          <div class="acts"><button class="btn small ghost" id="b-embed" type="button">코드 복사</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="s paper" id="cards">
+  <div class="wrap">
+    <div class="kicker"><span class="mono">02</span><span>개념 카드</span></div>
+    <h2 class="sec">68장의 개념 카드, 7개 장</h2>
+    <p class="intro">카드마다 직접 조작해 보는 그림과 확인 문제가 있습니다. 앱의 '우주 알아보기'에서 엽니다. 수준은 기초(고등학교), 교양(대학 교양), 전공(궤도역학 과목) 세 가지입니다.</p>
+    <div class="cardtools">
+      <input id="c-q" type="search" placeholder="카드 찾기: 조석, 케플러, 오로라…" aria-label="카드 찾기">
+      <div class="lv" role="group" aria-label="수준"><button aria-pressed="true" data-lv="">전체</button><button aria-pressed="false" data-lv="기초">기초</button><button aria-pressed="false" data-lv="교양">교양</button><button aria-pressed="false" data-lv="전공">전공</button></div>
+      <a class="btn small" href="../app.html">앱에서 우주 알아보기 열기</a>
+    </div>
+    <div class="chapters" id="chapters"></div>
+    <p class="cardnote" id="c-count"></p>
+    <div class="nums">
+      <div><div class="n">68</div><p>개념 카드. 화면에서 바로 조작하는 그림</p></div>
+      <div><div class="n">272</div><p>확인 문제. 카드마다 바로 한 문제, 더 깊이 세 문제</p></div>
+      <div><div class="n">21</div><p>실습. 관찰부터 실제 관측 자료까지 여섯 단계</p></div>
+      <div><div class="n">10</div><p>한국 천문학 역사 항목. 다섯 항목은 그날의 하늘로 갑니다</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="s" id="files">
+  <div class="wrap">
+    <div class="kicker"><span class="mono">03</span><span>발표 자료</span></div>
+    <h2 class="sec">내려받아 바로 쓰는 발표 순서</h2>
+    <p class="intro">파일을 받은 뒤 앱의 '저장·공유 → 애드온·발표 불러오기'로 열면, 정해 둔 장면과 설명이 차례로 재생됩니다. 앱의 '투어 만들기'로 지금 보는 화면을 하나씩 담아 나만의 발표를 만들 수도 있습니다.</p>
+    <div class="files">
+      <a href="../examples/lesson-eclipse.json" download><div><b>2027년 8월 2일 개기일식</b><span>달이 해를 가리는 과정과 그림자가 지나가는 길</span></div><i>JSON 내려받기</i></a>
+      <a href="../examples/lesson-retrograde.json" download><div><b>화성의 역행</b><span>화성이 별 사이에서 뒤로 가는 것처럼 보이는 까닭</span></div><i>JSON 내려받기</i></a>
+      <a href="../examples/lesson-diurnal.json" download><div><b>별의 일주 운동</b><span>하룻밤 동안 별이 북극성을 중심으로 도는 모습</span></div><i>JSON 내려받기</i></a>
+      <a href="../examples/addon-example.json" download><div><b>애드온 예시</b><span>내 천체를 하늘에 더하고 발표 순서를 붙이는 파일 형식</span></div><i>JSON 내려받기</i></a>
+    </div>
+    <div class="next"><a href="local.html">서대문 프로그램에서는 이렇게 씁니다</a><span>90분 체험과 이번 달 서울 하늘</span></div>
+  </div>
+  <footer>
+    <div class="wrap">
+      <a class="logo" href="../"><img src="../assets/sc-mark.svg?v=3" width="22" height="22" alt=""><span>Space <b>Commons</b></span></a>
+      <span>모두의 창업 2기 선정사업</span>
+      <nav><a href="features.html">기능</a><a href="local.html">서대문</a><a href="../app.html">앱 열기</a><a href="https://github.com/radix24/space-commons">GitHub</a></nav>
+    </div>
+  </footer>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<script type="module">
+import { altAz, altAzRaDec, dirName } from './sky.js';
+const $ = (id) => document.getElementById(id);
+const SITE = new URL('../app.html', location.href).href;
+const b64u = (s) => btoa(String.fromCharCode(...new TextEncoder().encode(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); // same as the app's lesson links
+
+// default time: today 20:00 Korean time
+{ const k = new Date(Date.now() + 9 * 3600000); $('f-time').value = `${k.toISOString().slice(0, 10)}T20:00`; }
+
+function build() {
+  const pv = $('f-place').value, custom = pv === 'custom';
+  $('f-custom').classList.toggle('on', custom);
+  const [lat, lon] = custom ? [+$('f-lat').value || 0, +$('f-lon').value || 0] : pv.split(',').map(Number);
+  const t = Date.parse($('f-time').value + ':00+09:00'), place = { lat, lon };
+  const q = new URLSearchParams({ m: 'g', t: new Date(isNaN(t) ? Date.now() : t).toISOString().slice(0, 16), lat: lat.toFixed(2), lon: lon.toFixed(2) });
+  const bv = $('f-body').value, opt = $('f-body').selectedOptions[0].textContent;
+  let p = { alt: 35, az: 180 }, where = `${$('f-place').selectedOptions[0].textContent}, 남쪽 하늘을 봅니다.`, warn = false;
+  if (bv && !isNaN(t)) {
+    const [id, ra, dec] = bv.split('|');
+    p = ra ? altAzRaDec(+ra, +dec, t, place) : altAz(id, t, place);
+    q.set('o', id);
+    if (p.alt < 0) { warn = true; where = `${opt}은(는) 그 시각에 지평선 아래에 있습니다. 시각을 바꿔 보세요.`; }
+    else where = `${opt}: ${dirName(p.az)}쪽 하늘, 고도 약 ${Math.round(p.alt)}°`;
+  }
+  q.set('az', p.az.toFixed(1)); q.set('alt', Math.max(5, Math.min(70, p.alt)).toFixed(1)); q.set('fov', '60');
+  const title = $('f-title').value.trim() || '오늘의 관측 수업';
+  q.set('lesson', b64u(JSON.stringify({ title, goal: $('f-goal').value.trim(), qs: $('f-qs').value.split('\n').map((s) => s.trim()).filter(Boolean) })));
+  const url = `${SITE}#${q}`;
+  $('o-title').textContent = title; $('o-where').textContent = where; $('o-where').classList.toggle('warn', warn);
+  $('o-link').textContent = url; $('b-open').href = url;
+  $('o-embed').value = `<iframe src="${SITE}?embed=1#${q}" width="100%" height="480" style="border:0" allow="fullscreen" title="${title.replace(/"/g, '&quot;')}"></iframe>`;
+  if (window.qrcode) { const qr = window.qrcode(0, 'L'); qr.addData(url); qr.make(); $('o-qr').innerHTML = qr.createImgTag(4, 0, title); }
+}
+$('lf').addEventListener('input', build); $('lf').addEventListener('change', build); build();
+async function copy(text, btn) { const old = btn.textContent; try { await navigator.clipboard.writeText(text); btn.textContent = '복사했습니다'; } catch { btn.textContent = '직접 선택해 복사하세요'; } setTimeout(() => btn.textContent = old, 1600); }
+$('b-copy').onclick = (e) => copy($('o-link').textContent, e.currentTarget);
+$('b-embed').onclick = (e) => copy($('o-embed').value, e.currentTarget);
+
+// concept cards
+const data = await fetch('data/cards.json').then((r) => r.json());
+$('chapters').innerHTML = data.map((ch) => `<div class="ch"><div><h3>${ch.title}</h3><p class="intro2">${ch.intro}</p></div><ul>${ch.cards.map((c) =>
+  `<li data-lv="${c.level}" data-k="${(c.title + ' ' + c.tag).toLowerCase()}"><span class="lvl">${c.level}</span><span>${c.title}<br><small>${c.tag}</small></span></li>`).join('')}</ul></div>`).join('');
+let lv = '';
+function filter() {
+  const k = $('c-q').value.trim().toLowerCase(); let n = 0;
+  for (const ch of document.querySelectorAll('.ch')) {
+    let any = false;
+    for (const li of ch.querySelectorAll('li')) { const on = (!lv || li.dataset.lv === lv) && (!k || li.dataset.k.includes(k)); li.classList.toggle('hide', !on); if (on) { any = true; n++; } }
+    ch.classList.toggle('hide', !any);
+  }
+  $('c-count').textContent = n === 68 ? '' : `${n}장을 찾았습니다`;
+}
+$('c-q').addEventListener('input', filter);
+document.querySelectorAll('.lv button').forEach((b) => b.onclick = () => { lv = b.dataset.lv; document.querySelectorAll('.lv button').forEach((x) => x.setAttribute('aria-pressed', x === b)); filter(); });
+</script>
+</body>
+</html>

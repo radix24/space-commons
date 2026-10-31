@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#070A16">
+<title>Space Commons 서대문</title>
+<meta name="description" content="서대문 생활권의 주민과 가족이 가까운 곳에서 천문·우주과학을 경험하는 약 90분 소규모 체험 프로그램, 그리고 이번 달 서울에서 보이는 하늘.">
+<link rel="icon" href="../assets/favicon.svg?v=3" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../vendor/pretendard/pretendardvariable.min.css">
+<link rel="stylesheet" href="about.css?v=4">
+<style>
+.top { position: relative; padding: 170px 0 110px; overflow: hidden; background: #05070f url(../textures/eso_milkyway_2k.jpg) 30% 45% / cover; }
+.top::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5,7,15,.6), rgba(5,7,15,.25) 50%, rgba(7,10,22,1)); }
+.top::after { content: ''; position: absolute; left: -60vw; width: 300vw; bottom: -1px; height: 9vw; background: url(img/ridge-namsan.svg) 0 0 / 100% 100%; }
+.top .wrap { position: relative; z-index: 1; }
+.top h1 { font-size: clamp(36px, 5.6vw, 72px); line-height: 1.12; max-width: 14em; }
+.top h1 span { color: #9FC2FF; }
+.top .lead { margin-top: 22px; max-width: 36em; font-size: 18px; color: #D3D8EA; }
+section.s { padding: 110px 0; }
+.two { margin-top: 56px; display: grid; grid-template-columns: 1fr 1fr; gap: 0 56px; }
+.two > div { padding: 26px 0; border-top: 1px solid var(--line2); }
+.two h3 { font-size: 20px; }
+.two p { margin-top: 10px; color: var(--soft); font-size: 16px; }
+.two .who { color: var(--accent); }
+.town { margin-top: 56px; display: grid; grid-template-columns: 1fr 1fr; gap: 0 56px; align-items: start; }
+.town-img { position: relative; overflow: hidden; aspect-ratio: 4 / 3; background: #05070f url(../textures/eso_milkyway_2k.jpg) 55% 40% / 300%; }
+.town-img::after { content: ''; position: absolute; bottom: -1px; left: -135%; width: 400%; height: 26%; background: url(img/ridge-namsan.svg) 0 0 / 100% 100%; }
+.town-pic .mono { display: block; margin-top: 10px; color: var(--mute); }
+.town-lead { font-size: 21px; line-height: 1.6; font-weight: 600; letter-spacing: -.02em; }
+.evening { list-style: none; margin: 30px 0 0; padding: 0; }
+.evening li { display: grid; grid-template-columns: 6.5em 1fr; gap: 16px; padding: 16px 0; border-top: 1px solid var(--rule); }
+.evening .mono { color: var(--accent); padding-top: 3px; }
+.evening p { color: var(--soft); font-size: 16px; }
+.evening p b { color: var(--text); font-weight: 600; }
+
+/* this month over Seoul */
+.month { margin-top: 48px; display: grid; grid-template-columns: repeat(30, 1fr); gap: 4px; align-items: end; }
+.month a { display: flex; flex-direction: column; align-items: center; gap: 6px; text-decoration: none; color: var(--mute); font: 500 11px 'IBM Plex Mono', monospace; }
+.month i { display: block; width: 100%; height: 64px; background: #11162C; position: relative; }
+.month i b { position: absolute; left: 0; right: 0; bottom: 0; background: #3A4266; }
+.month a.good i { outline: 1px solid var(--accent); }
+.month a.good { color: #fff; }
+.month a.wk { color: var(--soft); }
+.legend { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 6px 26px; color: var(--mute); font-size: 14px; }
+.legend span::before { content: ''; display: inline-block; width: 10px; height: 10px; margin-right: 8px; vertical-align: -1px; background: #3A4266; }
+.legend span.g::before { background: transparent; outline: 1px solid var(--accent); }
+.sky-cols { margin-top: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 0 56px; }
+.sky-cols h3 { font-size: 20px; margin-bottom: 4px; }
+.sky-cols .facts { margin-top: 14px; }
+.sky-cols .facts a { color: var(--text); }
+.note { margin-top: 16px; color: var(--mute); font-size: 14px; }
+
+/* KVN: four stations on a map of Korea, baseline from Sinchon */
+.kvn { margin-top: 48px; display: grid; grid-template-columns: 1fr 1.15fr; gap: 0 56px; align-items: start; }
+.kvn figure { margin: 0; }
+.kvn svg { width: 100%; height: auto; display: block; background: var(--paper); }
+.kvn figcaption { margin-top: 10px; color: var(--mute); }
+.kvn .nums3 { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line2); }
+.kvn .nums3 > div { padding: 20px 16px 0 0; }
+.kvn .nums3 > div + div { padding-left: 16px; border-left: 1px solid var(--rule); }
+.kvn .nums3 .n { font-family: Manrope, sans-serif; font-weight: 800; font-size: clamp(30px, 3.6vw, 46px); letter-spacing: -.04em; line-height: 1; color: #fff; }
+.kvn .nums3 p { margin-top: 10px; color: var(--soft); font-size: 14.5px; }
+.kvn .facts { margin-top: 28px; }
+.src { margin-top: 18px; color: var(--mute); font-size: 13.5px; }
+.src a { color: inherit; }
+
+/* for institutions */
+.offer { margin-top: 48px; display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line2); }
+.offer > div { padding: 26px 26px 0 0; }
+.offer > div + div { padding-left: 26px; border-left: 1px solid var(--rule); }
+.offer .n { font-family: Manrope, sans-serif; font-weight: 800; font-size: clamp(40px, 5vw, 64px); letter-spacing: -.05em; line-height: 1; color: #fff; }
+.offer p { margin-top: 12px; color: var(--soft); font-size: 15.5px; }
+.selected { margin-top: 56px; display: flex; align-items: center; gap: 16px; padding: 22px 0; border-top: 1px solid var(--line2); border-bottom: 1px solid var(--line2); font-size: 15px; font-weight: 600; line-height: 1.45; }
+.selected img { height: 40px; width: auto; }
+.selected small { display: block; font-weight: 400; color: var(--mute); font-size: 13px; }
+
+@media (max-width: 860px) {
+  .top { padding: 140px 0 80px; }
+  .top::after { height: 18vw; }
+  .top .lead { font-size: 16px; }
+  section.s { padding: 80px 0; }
+  .two, .town, .sky-cols { grid-template-columns: 1fr; gap: 28px 0; }
+  .town-lead { font-size: 18px; }
+  .evening li { grid-template-columns: 1fr; gap: 4px; }
+  .month { grid-template-columns: repeat(10, 1fr); gap: 10px 4px; }
+  .offer { grid-template-columns: 1fr; }
+  .offer > div, .offer > div + div { padding: 22px 0; border-left: 0; border-bottom: 1px solid var(--rule); }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <a class="logo" href="../"><img src="../assets/sc-mark.svg?v=3" width="26" height="26" alt=""><span>Space <b>Commons</b></span></a>
+    <nav>
+      <a href="../">소개</a>
+      <a href="features.html">기능</a>
+      <a href="learn.html">수업·활용</a>
+      <a href="local.html" aria-current="page">서대문</a>
+      <a class="btn" href="../app.html">하늘 열기</a>
+    </nav>
+  </div>
+</header>
+
+<section class="top">
+  <div class="wrap">
+    <a class="badge" href="#selected"><img src="modoo-logo-light.png" alt="모두의 창업"><span>모두의 창업 2기 선정사업</span></a>
+    <h1>대학에서 배우는 우주과학을,<br><span>동네에서 함께 올려다봅니다</span></h1>
+    <p class="lead">서대문 생활권의 주민과 가족이 가까운 곳에서 천문·우주과학을 경험하는 약 90분 소규모 체험입니다. Space Commons 웹 앱은 그 현장에서 쓰는 도구입니다.</p>
+  </div>
+</section>
+
+<section class="s" id="why">
+  <div class="wrap">
+    <div class="kicker"><span class="mono">01</span><span>왜 서대문에서</span></div>
+    <h2 class="sec">관심과 경험 사이의 거리를 줄입니다</h2>
+    <div class="two">
+      <div>
+        <span class="mono who">주민과 가족에게</span>
+        <h3>관심은 있는데, 갈 곳과 시간이 없습니다</h3>
+        <p>어디서 어떤 활동에 참여할 수 있는지 알기 어렵고, 멀리 이동해 일정을 맞추는 일이 부담입니다. 그래서 생활 반경 안의 공간에서, 그 자리에서 실제로 보이는 하늘로 프로그램을 만듭니다.</p>
+      </div>
+      <div>
+        <span class="mono who">지역기관에게</span>
+        <h3>행사를 열고 싶어도 준비가 여럿입니다</h3>
+        <p>주제 선정, 전문 해설, 장비, 현장 운영을 따로 준비해야 합니다. 그래서 기획부터 해설, 활동자료, 장비, 진행, 결과보고까지 묶은 회차 단위 프로그램으로 제안합니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="s paper" id="kvn">
+  <div class="wrap">
+    <div class="kicker"><span class="mono">02</span><span>연세대학교 · 신촌의 전파망원경</span></div>
+    <h2 class="sec">서대문구에는 우리나라 전파망원경이 있습니다</h2>
+    <p class="intro">연세대학교 신촌캠퍼스에는 한국천문연구원이 운영하는 한국우주전파관측망(KVN, Korean VLBI Network)의 서울 관측소가 있습니다. 동네에서 걸어갈 수 있는 거리에서, 우리나라 전파천문학의 현장을 만납니다.</p>
+    <div class="kvn">
+      <figure>
+        <svg viewBox="0 0 400 440" role="img" aria-label="KVN 관측소 네 곳과 대전 상관센터의 위치">
+          <g font-family="Pretendard Variable, Pretendard, sans-serif" font-size="13" fill="#B6BBD2">
+            <line x1="195" y1="96" x2="283" y2="98" stroke="#3A4266" stroke-width="1.5" stroke-dasharray="4 5"/>
+            <line x1="195" y1="96" x2="330" y2="241" stroke="#3A4266" stroke-width="1.5" stroke-dasharray="4 5"/>
+            <line x1="283" y1="98" x2="330" y2="241" stroke="#3A4266" stroke-width="1.5" stroke-dasharray="4 5"/>
+            <line x1="330" y1="241" x2="167" y2="404" stroke="#3A4266" stroke-width="1.5" stroke-dasharray="4 5"/>
+            <line x1="283" y1="98" x2="167" y2="404" stroke="#3A4266" stroke-width="1.5" stroke-dasharray="4 5"/>
+            <line x1="195" y1="96" x2="167" y2="404" stroke="#4C8DF6" stroke-width="2.5"/>
+            <text x="167" y="280" fill="#9FC2FF" font-family="IBM Plex Mono, monospace" font-size="13" text-anchor="middle" transform="rotate(-84 167 280)">약 478 km</text>
+            <rect x="215" y="177" width="10" height="10" fill="none" stroke="#8D93B3"/><text x="232" y="187">대전 상관센터</text>
+            <circle cx="195" cy="96" r="9" fill="#4C8DF6"/><text x="181" y="66" fill="#fff" font-weight="700" text-anchor="end">서울 연세</text><text x="181" y="82" fill="#8D93B3" font-size="11.5" text-anchor="end">서대문구 신촌</text>
+            <circle cx="283" cy="98" r="7" fill="#E9ECF6"/><text x="295" y="88">평창</text>
+            <circle cx="330" cy="241" r="7" fill="#E9ECF6"/><text x="342" y="246">울산</text>
+            <circle cx="167" cy="404" r="7" fill="#E9ECF6"/><text x="181" y="409">제주 탐라</text>
+          </g>
+        </svg>
+        <figcaption class="mono">관측소 위치는 위도·경도에 맞춰 그렸습니다</figcaption>
+      </figure>
+      <div>
+        <div class="nums3">
+          <div><div class="n">21 m</div><p>관측소마다 하나씩, 전파망원경 네 대</p></div>
+          <div><div class="n">478 km</div><p>연세와 탐라를 잇는 가장 긴 기선</p></div>
+          <div><div class="n">4개</div><p>22·43·86·129 GHz를 한꺼번에 관측</p></div>
+        </div>
+        <dl class="facts">
+          <div><dt>VLBI</dt><dd>멀리 떨어진 망원경 네 대가 같은 천체를 함께 보고, 대전 상관센터에서 자료를 합쳐 지름 약 478 km짜리 망원경 하나처럼 씁니다</dd></div>
+          <div><dt>무엇을 보나</dt><dd>별이 태어나는 곳의 물·메탄올 메이저, 블랙홀에서 뿜어 나오는 제트</dd></div>
+          <div><dt>학생 위성</dt><dd>같은 신촌캠퍼스의 지상국은 연세대 학생들이 만든 큐브샛과 교신합니다. 누리호 2차(2022)의 미세먼지 관측 위성 MIMAN은 약 2년 동안 운영했고, 2026년 10월 7일 누리호 5차로 UEL-Y-Sys(6U), BEE-1012(12U), SD-1 SAT(3U)가 올랐습니다</dd></div>
+          <div><dt>앱에서</dt><dd>관측지 '연세대 KVN 전파망원경 (서대문구)'을 고르면 이 설명과 함께 그 자리의 하늘이 열리고, 연세대 위성의 궤도는 파란색으로 그려집니다</dd></div>
+        </dl>
+        <p class="src">출처: 한국천문연구원 KVN 안내, 연세대학교 발표 자료</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="s" id="program">
+  <div class="wrap">
+    <div class="kicker"><span class="mono">03</span><span>90분 프로그램</span></div>
+    <h2 class="sec">해설, 관찰, 기록이 한 흐름으로 이어집니다</h2>
+    <div class="town">
+      <div class="town-pic">
+        <div class="town-img" role="img" aria-label="서울 남산 지평선 위의 밤하늘"></div>
+        <span class="mono">남산에서 본 서울의 지평선</span>
+      </div>
+      <div>
+        <p class="town-lead">약 90분, 보호자와 함께하는 소규모 체험. 과학 해설, 관찰 또는 자료 탐구, 직접 기록하고 질문 나누기로 이어집니다.</p>
+        <ol class="evening">
+          <li><span class="mono">모이기 전</span><p><b>앱으로 그날 하늘을 미리 봅니다.</b> 모일 장소와 시각을 넣으면 달의 모양과 행성이 어디쯤 뜨는지, 산 능선 위로 얼마나 올라오는지 압니다.</p></li>
+          <li><span class="mono">현장에서</span><p><b>하늘과 화면을 번갈아 봅니다.</b> 눈으로 본 것을 화면에서 확인하고, 그 별로 날아가 보며 설명을 듣습니다. 날씨가 나쁘면 같은 하늘을 화면에 펼쳐 실내 프로그램으로 바꿉니다.</p></li>
+          <li><span class="mono">돌아가서</span><p><b>링크 하나로 그날의 하늘을 다시 엽니다.</b> 개념 카드와 퀴즈로 이어 가고, 그날 담은 장면은 투어로 만들어 다시 재생합니다. 다음 계절에는 다른 하늘을 주제로 다시 만납니다.</p></li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="s paper" id="month">
+  <div class="wrap">
+    <div class="kicker"><span class="mono">04</span><span>이번 달 서울 하늘</span></div>
+    <h2 class="sec">언제 모이면 좋을지, 하늘이 알려 줍니다</h2>
+    <p class="intro">오늘부터 30일 동안 서울에서 저녁(19시~22시)에 달이 얼마나 밝은지 계산했습니다. 달빛이 약한 저녁은 별과 행성을 보기에 좋습니다. 날짜를 누르면 그날 밤 하늘이 앱에서 열립니다.</p>
+    <div class="month" id="monthGrid" aria-label="앞으로 30일의 저녁 달빛"></div>
+    <div class="legend"><span>막대 높이: 저녁 하늘의 달빛</span><span class="g">관측하기 좋은 저녁</span></div>
+    <div class="sky-cols">
+      <div>
+        <h3>저녁에 보이는 행성</h3>
+        <dl class="facts" id="planetList"></dl>
+      </div>
+      <div>
+        <h3>다가오는 유성우</h3>
+        <dl class="facts" id="showerList"></dl>
+      </div>
+    </div>
+    <p class="note">근삿값으로 계산했습니다. 정확한 시각과 위치는 앱에서 확인합니다.</p>
+  </div>
+</section>
+
+<section class="s" id="with">
+  <div class="wrap">
+    <div class="kicker"><span class="mono">05</span><span>지역기관과 함께</span></div>
+    <h2 class="sec">장소와 모집을 맡아 주시면, 나머지를 준비합니다</h2>
+    <div class="offer">
+      <div><div class="n">90분</div><p>한 회차. 해설, 관찰 또는 자료 탐구, 기록과 질문 나누기</p></div>
+      <div><div class="n">5~6</div><p>가족, 10~15명 내외. 보호자 동반, 장소 수용 범위에 맞춰 정합니다</p></div>
+      <div><div class="n">1장</div><p>결과보고. 참여자의 질문과 기록, 운영 시간과 비용을 함께 정리합니다</p></div>
+    </div>
+    <dl class="facts">
+      <div><dt>준비하는 것</dt><dd>주제 기획, 과학 해설, 활동자료, 장비 준비 또는 임차, 현장 진행, 결과보고</dd></div>
+      <div><dt>날씨가 나쁠 때</dt><dd>미리 안내한 실내 프로그램으로 바꾸거나, 정해 둔 기준에 따라 일정을 옮깁니다</dd></div>
+      <div><dt>대학</dt><dd>천문우주 전공의 관점에서 해설과 활동자료를 만들고, 참가자가 관찰할 수 있는 현상에서 설명을 시작합니다</dd></div>
+      <div><dt>과학문화 자원</dt><dd>서대문자연사박물관 등 지역 자원과의 연계 가능성을 살피고 있습니다</dd></div>
+      <div><dt>생활권 공간</dt><dd>도서관과 주민공간의 접근성, 운영 시간, 주변 조명과 시야를 확인해 첫 거점을 정합니다</dd></div>
+      <div><dt>안전</dt><dd>야외·야간 활동과 미성년자 참여에는 보조 진행자를 둡니다</dd></div>
+    </dl>
+    <div class="selected" id="selected"><img src="modoo-logo-light.png" alt="모두의 창업"><span>모두의 창업 2기 선정사업<small>로컬 · 생활 분야</small></span></div>
+    <div class="next"><a href="learn.html">수업에서 쓰는 도구 보기</a><span>수업 링크, QR 코드, 개념 카드, 발표 자료</span></div>
+  </div>
+  <footer>
+    <div class="wrap">
+      <a class="logo" href="../"><img src="../assets/sc-mark.svg?v=3" width="22" height="22" alt=""><span>Space <b>Commons</b></span></a>
+      <span>모두의 창업 2기 선정사업</span>
+      <nav><a href="features.html">기능</a><a href="learn.html">수업·활용</a><a href="../app.html">앱 열기</a><a href="https://github.com/radix24/space-commons">GitHub</a></nav>
+    </div>
+    <p class="credit">이미지: 은하수 파노라마 ESO/S. Brunier (CC BY 4.0) · 남산 능선은 앱의 지형 자료에서 그렸습니다. 출처는 <a href="https://github.com/radix24/space-commons#readme">README</a>에 있습니다.</p>
+  </footer>
+</section>
+
+<script type="module">
+import { SEOUL, PLANETS, altAz, moonPhase, night, visible, kstDayStart, hm, md, dirName, appLink } from './sky.js';
+const APP = '../app.html', day0 = kstDayStart(), DAY = 86400000;
+// evening moonlight: the Moon's lit fraction while it is above the horizon between 19:00 and 22:00
+const evenings = [];
+for (let k = 0; k < 30; k++) {
+  const d = day0 + k * DAY, ts = [19, 20, 21, 22].map((h) => d + h * 3600000);
+  const up = ts.filter((t) => altAz('Moon', t, SEOUL).alt > 0).length / ts.length;
+  const lit = moonPhase(d + 20 * 3600000).lit, glow = lit * up;
+  evenings.push({ d, glow, good: glow < 0.25 });
+}
+const grid = document.getElementById('monthGrid');
+grid.innerHTML = evenings.map(({ d, glow, good }) => {
+  const x = new Date(d + 9 * 3600000), wd = x.getUTCDay();
+  return `<a href="${appLink(APP, SEOUL, d + 20 * 3600000, { az: 180, alt: 35 })}" class="${good ? 'good' : ''}${wd === 5 || wd === 6 ? ' wk' : ''}" title="${md(d)} 저녁 달빛 ${Math.round(glow * 100)}%"><i><b style="height:${Math.max(3, glow * 100)}%"></b></i>${x.getUTCDate()}</a>`;
+}).join('');
+// planets in the evening (19:00-23:00) around the middle of the month
+const mid = day0 + 14 * DAY, eve = Array.from({ length: 25 }, (_, k) => mid + (19 * 60 + k * 10) * 60000);
+const rows = PLANETS.map((p) => ({ p, w: visible(p.id, eve, SEOUL) })).filter((r) => r.w);
+document.getElementById('planetList').innerHTML = rows.length ? rows.map(({ p, w }) =>
+  `<div><dt>${p.ko}</dt><dd><a href="${appLink(APP, SEOUL, w.best.t, { ...w.best, o: p.id })}">${dirName(w.best.az)}쪽 하늘, ${hm(w.best.t)} 무렵 고도 ${Math.round(w.best.alt)}°</a></dd></div>`).join('')
+  : '<div><dt>없음</dt><dd>이번 달 저녁에는 높이 뜨는 밝은 행성이 없습니다</dd></div>';
+// meteor showers whose peak falls in the next 60 days (peak dates are approximate, they shift by a day year to year)
+const SHOWERS = [['사분의자리', 1, 3], ['거문고자리', 4, 22], ['물병자리 에타', 5, 6], ['남쪽 델타 물병자리', 7, 30], ['페르세우스자리', 8, 12], ['용자리', 10, 8], ['오리온자리', 10, 21], ['남쪽 황소자리', 11, 5], ['북쪽 황소자리', 11, 12], ['사자자리', 11, 17], ['쌍둥이자리', 12, 14], ['작은곰자리', 12, 22]];
+const y = new Date(day0 + 9 * 3600000).getUTCFullYear(), soon = [];
+for (const yy of [y, y + 1]) for (const [n, m, dd] of SHOWERS) { const t = Date.UTC(yy, m - 1, dd) - 9 * 3600000; if (t >= day0 && t < day0 + 60 * DAY) soon.push({ n, t }); }
+soon.sort((a, b) => a.t - b.t);
+document.getElementById('showerList').innerHTML = soon.length ? soon.map(({ n, t }) => {
+  const lit = moonPhase(t + 26 * 3600000).lit; // the peak night runs into the small hours of the next day
+  return `<div><dt>${md(t)}</dt><dd><a href="${appLink(APP, SEOUL, t + 26 * 3600000, { az: 90, alt: 45 })}">${n} 유성우 극대 무렵</a> · 달 ${lit < 0.3 ? '어두움' : lit < 0.7 ? '반쯤 밝음' : '밝음'}</dd></div>`;
+}).join('') : '<div><dt>없음</dt><dd>앞으로 60일 안에 큰 유성우가 없습니다</dd></div>';
+</script>
+</body>
+</html>

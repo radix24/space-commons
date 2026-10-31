@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <script>
-// 예전에 나눠 준 링크(화면 상태 #…, ?lang=, ?embed=1)는 앱으로 바로 보냅니다. 이 페이지의 절 표시(#flow 등)는 예외입니다.
-(function () { var h = location.hash.slice(1); if (location.search || (h && !/^(flow|korea|local|try)$/.test(h))) location.replace('app.html' + location.search + location.hash); })();
+// 예전에 나눠 준 링크(화면 상태 #…, ?lang=, ?embed=1)는 앱으로, #local은 서대문 페이지로 보냅니다. 이 페이지의 절 표시(#flow 등)는 예외입니다.
+(function () { var h = location.hash.slice(1); if (h === 'local') location.replace('about/local.html'); else if (location.search || (h && !/^(tonight|flow|korea|more|try)$/.test(h))) location.replace('app.html' + location.search + location.hash); })();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="vendor/pretendard/pretendardvariable.min.css">
-<link rel="stylesheet" href="about/about.css?v=2">
+<link rel="stylesheet" href="about/about.css?v=4">
 <style>
 /* hero: a real sky over a real ridge */
 .hero { position: relative; min-height: min(100vh, 1040px); display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; background: #05070f url(textures/eso_milkyway_2k.jpg) center 30% / cover; }
@@ -52,29 +52,30 @@
 .plate h3 { font-size: 24px; }
 .plate p { margin-top: 12px; color: var(--soft); }
 
-/* 03 local */
-.local { padding: 120px 0 110px; }
-.two { margin-top: 56px; display: grid; grid-template-columns: 1fr 1fr; gap: 0 56px; }
-.two > div { padding: 26px 0; border-top: 1px solid var(--line2); }
-.two h3 { font-size: 20px; }
-.two p { margin-top: 10px; color: var(--soft); font-size: 16px; }
-.two .who { color: var(--accent); }
-/* same two columns as .two above, so the left and right edges line up */
-.town { margin-top: 80px; display: grid; grid-template-columns: 1fr 1fr; gap: 0 56px; align-items: start; }
-.town-img { position: relative; overflow: hidden; aspect-ratio: 4 / 3; border-radius: 0; background: #05070f url(textures/eso_milkyway_2k.jpg) 55% 40% / 300%; }
-/* Namsan ridge traced from the app's terrain horizon (about/img/ridge-namsan.svg) */
-.town-img::after { content: ''; position: absolute; bottom: -1px; left: -135%; width: 400%; height: 26%; background: url(about/img/ridge-namsan.svg) 0 0 / 100% 100%; }
-.town-pic .mono { display: block; margin-top: 10px; color: var(--mute); }
-.town-lead { font-size: 21px; line-height: 1.6; font-weight: 600; letter-spacing: -.02em; }
-.evening { list-style: none; margin: 30px 0 0; padding: 0; }
-.evening li { display: grid; grid-template-columns: 6.5em 1fr; gap: 16px; padding: 16px 0; border-top: 1px solid var(--rule); }
-.evening .mono { color: var(--accent); padding-top: 3px; }
-.evening p { color: var(--soft); font-size: 16px; }
-.evening p b { color: var(--text); font-weight: 600; }
-.ties { margin-top: 56px; }
-.ties h3 { font-size: 22px; }
-.ties .facts { margin-top: 20px; }
-.selected { margin-top: 40px; display: flex; align-items: center; gap: 16px; padding: 22px 0; border-top: 1px solid var(--line2); border-bottom: 1px solid var(--line2); font-size: 15px; font-weight: 600; line-height: 1.45; }
+/* tonight over Seoul */
+.tonight { padding: 56px 0 64px; border-bottom: 1px solid var(--rule); }
+.tonight .head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+.tonight h2 { font-size: 22px; }
+.tonight .head .mono { color: var(--mute); }
+.sky-row { margin-top: 26px; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); border-top: 1px solid var(--line2); }
+.sky-row a { display: block; padding: 20px 20px 18px 0; text-decoration: none; border-bottom: 1px solid var(--rule); }
+.sky-row a + a { padding-left: 20px; border-left: 1px solid var(--rule); }
+.sky-row .k { font: 500 13px 'IBM Plex Mono', 'Pretendard Variable', monospace; color: var(--accent); }
+.sky-row .v { display: block; margin-top: 8px; font-family: Manrope, 'Pretendard Variable', sans-serif; font-weight: 800; font-size: 26px; letter-spacing: -.03em; color: #fff; }
+.sky-row .d { display: block; margin-top: 4px; color: var(--soft); font-size: 14.5px; }
+.sky-row a:hover .v { color: #9FC2FF; }
+.tonight .note { margin-top: 14px; color: var(--mute); font-size: 14px; }
+
+/* doors to the other pages */
+.more { padding: 110px 0; }
+.doors { margin-top: 48px; border-top: 1px solid var(--line2); }
+.doors a { display: grid; grid-template-columns: 7em 1fr 1.2fr; gap: 24px; align-items: baseline; padding: 30px 0; border-bottom: 1px solid var(--rule); text-decoration: none; }
+.doors .mono { color: var(--accent); }
+.doors b { font-family: Manrope, 'Pretendard Variable', sans-serif; font-weight: 800; font-size: clamp(24px, 3vw, 34px); letter-spacing: -.03em; }
+.doors b::after { content: ' →'; color: var(--accent); }
+.doors span:last-child { color: var(--soft); font-size: 16px; }
+.doors a:hover b { color: #9FC2FF; }
+.selected { margin-top: 40px; display: flex; align-items: center; gap: 16px; font-size: 15px; font-weight: 600; line-height: 1.45; }
 .selected img { height: 40px; width: auto; }
 .selected small { display: block; font-weight: 400; color: var(--mute); font-size: 13px; }
 
@@ -89,16 +90,16 @@
   .hero .ridge { height: 16vw; background-size: 420vw 100%; background-position: -230vw 100%; }
   .hero .txt { padding-bottom: calc(16vw + 56px); padding-top: 110px; }
   .hero .lead { font-size: 16px; }
-  .track, .korea, .local { padding: 80px 0; }
+  .track, .korea, .more { padding: 80px 0; }
+  .sky-row { grid-template-columns: 1fr 1fr; }
+  .sky-row a, .sky-row a + a { padding: 16px 12px 14px 0; border-left: 0; }
+  .sky-row a:nth-child(even) { padding-left: 14px; border-left: 1px solid var(--rule); }
+  .doors a { grid-template-columns: 1fr; gap: 6px; padding: 24px 0; }
   .stops { grid-template-columns: 1fr; gap: 44px; }
   .stops::before { top: 0; bottom: 0; left: 7px; right: auto; border-top: 0; border-left: 1px dashed var(--line2); }
   .stop { padding: 0 0 0 36px; } .stop .dot { position: absolute; left: 0; top: 4px; }
   .stop .mono { margin-top: 0; }
   .plate { grid-template-columns: 1fr; gap: 32px; }
-  .two { grid-template-columns: 1fr; }
-  .town { grid-template-columns: 1fr; gap: 28px 0; margin-top: 56px; }
-  .town-lead { font-size: 18px; }
-  .evening li { grid-template-columns: 1fr; gap: 4px; }
   .commons { padding-top: 80px; }
   .commons .line { font-size: 16px; }
 }
@@ -108,11 +109,12 @@
 
 <header>
   <div class="wrap">
-    <a class="logo" href="./"><img src="assets/sc-mark.svg?v=3" width="32" height="32" alt=""><span>Space <b>Commons</b></span></a>
+    <a class="logo" href="./"><img src="assets/sc-mark.svg?v=3" width="26" height="26" alt=""><span>Space <b>Commons</b></span></a>
     <nav>
       <a href="./" aria-current="page">소개</a>
-      <a href="about/features.html" class="keep">기능</a>
-      <a href="#local">지역 연계</a>
+      <a href="about/features.html">기능</a>
+      <a href="about/learn.html">수업·활용</a>
+      <a href="about/local.html">서대문</a>
       <a class="btn" href="app.html">하늘 열기</a>
     </nav>
   </div>
@@ -121,12 +123,20 @@
 <section class="hero">
   <div class="ridge" aria-hidden="true"></div>
   <div class="wrap txt">
-    <a class="badge" href="#local"><img src="about/modoo-logo-light.png" alt="모두의 창업" onerror="this.remove()"><span>모두의 창업 2기 선정사업</span></a>
+    <a class="badge" href="about/local.html"><img src="about/modoo-logo-light.png" alt="모두의 창업" onerror="this.remove()"><span>모두의 창업 2기 선정사업</span></a>
     <h1>땅에서 올려다보고,<br><span>우주로 나아가는</span><br>모두의 하늘</h1>
     <p class="lead">설치도 가입도 없이 브라우저에서 엽니다. 오늘 밤 내가 선 자리의 하늘에서 시작해, 그 하늘 속 천체까지 날아가고, 마지막엔 중력을 직접 다뤄 봅니다. 그리고 화면 밖에서는, 가까운 동네에서 함께 올려다봅니다.</p>
     <div class="cta"><a class="btn" href="app.html">지금 하늘 열기</a><a class="btn ghost" href="about/features.html">기능 둘러보기</a></div>
   </div>
   <div class="read mono">소백산 지평선 · 36.96°N 128.48°E<br>배경: 실제 은하수 사진</div>
+</section>
+
+<section class="tonight" id="tonight">
+  <div class="wrap">
+    <div class="head"><h2>오늘 밤 서울 하늘</h2><span class="mono" id="tn-date"></span></div>
+    <div class="sky-row" id="tn-row"></div>
+    <p class="note">근삿값입니다. 항목을 누르면 앱에서 그 시각, 그 방향의 하늘이 열립니다.</p>
+  </div>
 </section>
 
 <section class="track" id="flow">
@@ -181,49 +191,15 @@
   </div>
 </section>
 
-<section class="local" id="local">
+<section class="more" id="more">
   <div class="wrap">
-    <div class="kicker"><span class="mono">03</span><span>지역 연계 · 서대문에서 시작합니다</span></div>
-    <h2 class="sec">대학에서 배우는 우주과학을, 주민이 일상에서 만나는 경험으로</h2>
-    <p class="intro">Space Commons는 화면 속 도구에서 그치지 않습니다. 서대문 생활권의 주민과 가족이 가까운 곳에서 천문·우주과학을 경험하는 지역 과학문화 프로그램으로 이어지며, 이 웹 앱은 그 현장에서 쓰는 도구입니다.</p>
-
-    <div class="two">
-      <div>
-        <span class="mono who">주민과 가족에게</span>
-        <h3>관심은 있는데, 갈 곳과 시간이 없습니다</h3>
-        <p>어디서 어떤 활동에 참여할 수 있는지 알기 어렵고, 멀리 이동해 일정을 맞추는 일이 부담입니다. 그래서 생활 반경 안의 공간에서, 그 자리에서 실제로 보이는 하늘로 프로그램을 만듭니다.</p>
-      </div>
-      <div>
-        <span class="mono who">지역기관에게</span>
-        <h3>행사를 열고 싶어도 준비가 여럿입니다</h3>
-        <p>주제 선정, 전문 해설, 장비, 현장 운영을 따로 준비해야 합니다. 그래서 기획부터 해설, 활동자료, 장비, 진행, 결과보고까지 묶은 회차 단위 프로그램으로 제안합니다.</p>
-      </div>
-    </div>
-
-    <div class="town">
-      <div class="town-pic">
-        <div class="town-img" role="img" aria-label="서울 남산 지평선 위의 밤하늘"></div>
-        <span class="mono">남산에서 본 서울의 지평선</span>
-      </div>
-      <div class="town-txt">
-        <p class="town-lead">약 90분, 보호자와 함께하는 소규모 체험. 과학 해설, 관찰 또는 자료 탐구, 직접 기록하고 질문 나누기로 이어집니다.</p>
-        <ol class="evening">
-          <li><span class="mono">모이기 전</span><p><b>앱으로 그날 하늘을 미리 봅니다.</b> 모일 장소와 시각을 넣으면 달의 모양과 행성이 어디쯤 뜨는지, 산 능선 위로 얼마나 올라오는지 압니다.</p></li>
-          <li><span class="mono">현장에서</span><p><b>하늘과 화면을 번갈아 봅니다.</b> 눈으로 본 것을 화면에서 확인하고, 그 별로 날아가 보며 설명을 듣습니다. 날씨가 나쁘면 같은 하늘을 화면에 펼쳐 실내 프로그램으로 바꿉니다.</p></li>
-          <li><span class="mono">돌아가서</span><p><b>링크 하나로 그날의 하늘을 다시 엽니다.</b> 개념 카드와 퀴즈로 이어 가고, 그날 담은 장면은 투어로 만들어 다시 재생합니다. 다음 계절에는 다른 하늘을 주제로 다시 만납니다.</p></li>
-        </ol>
-      </div>
-    </div>
-
-    <div class="ties">
-      <h3>지역의 자원과 함께</h3>
-      <dl class="facts">
-        <div><dt>대학</dt><dd>천문우주 전공의 관점에서 해설과 활동자료를 만들고, 전문용어보다 참가자가 관찰할 수 있는 현상에서 설명을 시작합니다</dd></div>
-        <div><dt>과학문화 자원</dt><dd>서대문자연사박물관 등 지역 자원과의 연계 가능성을 살피고 있습니다</dd></div>
-        <div><dt>생활권 공간</dt><dd>도서관과 주민공간의 접근성, 운영 시간, 주변 조명과 시야를 확인해 첫 거점을 정합니다</dd></div>
-        <div><dt>운영 방식</dt><dd>기관이 장소와 모집을 맡는 회차 계약을 먼저 검증하고, 가족 참가권 판매를 병행합니다. 야외·야간 활동에는 보조 진행자를 둡니다</dd></div>
-      </dl>    </div>
-
+    <div class="kicker"><span class="mono">03</span><span>더 둘러보기</span></div>
+    <h2 class="sec">화면 안에서, 교실에서, 동네에서</h2>
+    <nav class="doors">
+      <a href="about/features.html"><span class="mono">기능</span><b>세 모드에서 할 수 있는 것</b><span>지평선과 위성, 전천 사진, 탐사선, 테라포밍까지. 항목마다 앱의 그 장면으로 바로 갑니다</span></a>
+      <a href="about/learn.html"><span class="mono">수업·활용</span><b>링크 하나로 나누는 하늘</b><span>수업 링크와 QR 코드 만들기, 수업 페이지에 넣는 코드, 개념 카드 68장, 발표 자료</span></a>
+      <a href="about/local.html"><span class="mono">서대문</span><b>동네에서 함께 올려다보기</b><span>연세대 신촌캠퍼스의 KVN 전파망원경, 약 90분 가족 체험 프로그램, 이번 달 서울에서 보이는 하늘</span></a>
+    </nav>
     <div class="selected"><img src="about/modoo-logo-light.png" alt="모두의 창업"><span>모두의 창업 2기 선정사업<small>로컬 · 생활 분야</small></span></div>
   </div>
 </section>
@@ -239,18 +215,33 @@
         <p>누르면 앱을 이 페이지 안에 불러옵니다</p>
       </div>
     </div>
-    <div class="next"><a href="about/features.html">기능 소개 페이지로</a><span>지상 · 우주 · 샌드박스 · 배움 · 데이터 · 접근성</span></div>
+    <div class="next"><a href="about/learn.html">수업에서 써 보기</a><span>수업 링크와 QR 코드, 개념 카드, 발표 자료</span></div>
   </div>
   <footer>
     <div class="wrap">
-      <a class="logo" href="./"><img src="assets/sc-mark.svg?v=3" width="28" height="28" alt=""><span>Space <b>Commons</b></span></a>
+      <a class="logo" href="./"><img src="assets/sc-mark.svg?v=3" width="22" height="22" alt=""><span>Space <b>Commons</b></span></a>
       <span>모두의 창업 2기 선정사업</span>
-      <nav><a href="about/features.html">기능</a><a href="app.html">앱 열기</a><a href="https://github.com/radix24/space-commons">GitHub</a></nav>
+      <nav><a href="about/features.html">기능</a><a href="about/learn.html">수업·활용</a><a href="about/local.html">서대문</a><a href="app.html">앱 열기</a><a href="https://github.com/radix24/space-commons">GitHub</a></nav>
     </div>
     <p class="credit">이미지: 은하수 파노라마 ESO/S. Brunier (CC BY 4.0) · 행성 텍스처 Solar System Scope (CC BY 4.0) · 다파장 전천 지도와 지형 자료의 출처는 <a href="https://github.com/radix24/space-commons#readme">README</a>에 있습니다.</p>
   </footer>
 </section>
 
+<script type="module">
+import { SEOUL, PLANETS, altAz, moonPhase, phaseName, night, visible, kstDayStart, hm, md, dirName, appLink } from './about/sky.js';
+const day0 = kstDayStart(), n = night(day0, SEOUL), row = document.getElementById('tn-row'), items = [];
+document.getElementById('tn-date').textContent = `${md(day0)} · 37.57°N 126.98°E`;
+const item = (k, v, d, href) => items.push(`<a href="${href}"><span class="k">${k}</span><span class="v">${v}</span><span class="d">${d}</span></a>`);
+item('해 지는 시각', hm(n.sunset), `${hm(n.dark[0])}부터 하늘이 충분히 어두워집니다`, appLink('app.html', SEOUL, n.sunset, { az: 250, alt: 15 }));
+const ph = moonPhase(day0 + 21 * 3600000), mw = visible('Moon', n.dark, SEOUL);
+item('달', `${phaseName(ph)} ${Math.round(ph.lit * 100)}%`, mw ? `${hm(mw.first)}~${hm(mw.last)}, ${dirName(mw.best.az)}쪽` : '오늘 밤에는 높이 뜨지 않습니다',
+  appLink('app.html', SEOUL, mw ? mw.best.t : day0 + 21 * 3600000, mw ? { ...mw.best, o: 'Moon' } : { az: 180, alt: 35 }));
+for (const p of PLANETS) {
+  const w = visible(p.id, n.dark, SEOUL); if (!w) continue;
+  item(p.ko, `${hm(w.first)}~${hm(w.last)}`, `${hm(w.best.t)} 무렵 ${dirName(w.best.az)}쪽, 고도 ${Math.round(w.best.alt)}°`, appLink('app.html', SEOUL, w.best.t, { ...w.best, o: p.id }));
+}
+row.innerHTML = items.join('');
+</script>
 <script>
 document.getElementById('tryBtn').addEventListener('click', () => {
   const f = document.createElement('iframe');

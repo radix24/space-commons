@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../vendor/pretendard/pretendardvariable.min.css">
-<link rel="stylesheet" href="about.css?v=2">
+<link rel="stylesheet" href="about.css?v=4">
 <style>
 /* hero with the Moon */
 .hero { position: relative; min-height: min(78vh, 760px); display: flex; align-items: center; overflow: hidden; padding: 140px 0 80px; }
@@ -57,6 +57,14 @@ section.f + section.f { border-top: 1px solid var(--rule); }
 .planets .ring i.back { clip-path: polygon(0 0, 100% 0, 100% 50%, 0 50%); }
 .planets .ring i.front { clip-path: polygon(0 50%, 100% 50%, 100% 100%, 0 100%); }
 .planets { padding-bottom: 36px; }
+
+/* open-in-app scene links */
+.scenes { margin-top: 36px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 0; padding: 18px 0; border-top: 1px solid var(--line2); border-bottom: 1px solid var(--line2); }
+.scenes .mono { color: var(--accent); margin-right: 22px; }
+.scenes a { text-decoration: none; font-weight: 600; font-size: 16px; }
+.scenes a::after { content: ' →'; color: var(--accent); }
+.scenes a + a { margin-left: 26px; }
+.scenes a:hover { color: #9FC2FF; }
 
 /* sandbox: orbit sketch */
 .orbits { margin-top: 56px; aspect-ratio: 16 / 7; border-radius: 0; background: radial-gradient(circle at 50% 50%, #151A38 0%, var(--paper) 60%); position: relative; overflow: hidden; }
@@ -110,9 +118,10 @@ section.f + section.f { border-top: 1px solid var(--rule); }
   <div class="wrap">
     <a class="logo" href="../"><img src="../assets/sc-mark.svg?v=3" width="32" height="32" alt=""><span>Space <b>Commons</b></span></a>
     <nav>
-      <a href="../" class="keep">소개</a>
+      <a href="../">소개</a>
       <a href="features.html" aria-current="page">기능</a>
-      <a href="../#local">지역 연계</a>
+      <a href="learn.html">수업·활용</a>
+      <a href="local.html">서대문</a>
       <a class="btn" href="../app.html">하늘 열기</a>
     </nav>
   </div>
@@ -149,6 +158,7 @@ section.f + section.f { border-top: 1px solid var(--rule); }
         <div><dt>검색</dt><dd>별, 별자리, 행성, 성운·성단·은하, 위성을 이름으로 찾아 하늘에서 바로 가리킵니다</dd></div>
       </dl>
     </div>
+    <div class="scenes" id="sc-ground"><span class="mono">앱에서 열기</span><a href="../app.html#m=g&amp;lat=37.57&amp;lon=126.98&amp;az=180.0&amp;alt=35.0&amp;fov=90">지금 서울 하늘</a></div>
 
     <div class="horizon">
       <div class="head">
@@ -211,6 +221,7 @@ section.f + section.f { border-top: 1px solid var(--rule); }
         <div><dt>궤도 계산</dt><dd>행성과 탐사선의 위치는 JPL Horizons의 궤도 자료를 씁니다. 세차·장동·ΔT를 지상 모드와 같은 방식으로 반영합니다</dd></div>
       </dl>
     </div>
+    <div class="scenes"><span class="mono">앱에서 열기</span><a href="../app.html#m=s&amp;at=Saturn">토성 곁으로</a><a href="../app.html#m=s&amp;at=Jupiter">목성 곁으로</a><a href="../app.html#m=s&amp;at=Mars">화성 곁으로</a><a href="../app.html#m=s&amp;at=Moon">달 곁으로</a></div>
   </div>
 </section>
 
@@ -281,6 +292,7 @@ section.f + section.f { border-top: 1px solid var(--rule); }
       </dl>
       <dl class="facts big">
         <div><dt>옛 기록</dt><dd>역사 속 천문 기록을 율리우스력 날짜로 그 밤의 하늘에 맞춰 봅니다</dd></div>
+        <div><dt>더 보기</dt><dd><a href="learn.html">수업·활용 페이지</a>에서 수업 링크와 QR 코드를 만들고, 개념 카드 68장을 찾아보고, 발표 자료를 내려받습니다</dd></div>
         <div><dt>글쓰기 원칙</dt><dd>용어는 처음 나올 때 한글(영문)으로 적고, 근사값은 근사값이라고 밝힙니다</dd></div>
       </dl>
     </div>
@@ -329,18 +341,29 @@ section.f + section.f { border-top: 1px solid var(--rule); }
         <div><dt>비용</dt><dd>무료입니다. 광고도 없습니다</dd></div>
       </dl>
     </div>
-    <div class="next"><a href="../#local">서대문에서는 이렇게 씁니다</a><span>지역 연계와 프로그램 소개로</span></div>
+    <div class="next"><a href="learn.html">수업에서 쓰는 도구 보기</a><span>수업 링크, QR 코드, 개념 카드, 발표 자료</span></div>
   </div>
   <footer>
     <div class="wrap">
       <a class="logo" href="../"><img src="../assets/sc-mark.svg?v=3" width="28" height="28" alt=""><span>Space <b>Commons</b></span></a>
       <span>모두의 창업 2기 선정사업</span>
-      <nav><a href="../">소개</a><a href="../app.html">앱 열기</a><a href="https://github.com/radix24/space-commons">GitHub</a></nav>
+      <nav><a href="learn.html">수업·활용</a><a href="local.html">서대문</a><a href="../app.html">앱 열기</a><a href="https://github.com/radix24/space-commons">GitHub</a></nav>
     </div>
     <p class="credit">이미지: 은하수 파노라마 ESO/S. Brunier (CC BY 4.0) · 행성 텍스처 Solar System Scope (CC BY 4.0) · 다파장 전천 지도와 지형 자료의 출처는 <a href="https://github.com/radix24/space-commons#readme">README</a>에 있습니다.</p>
   </footer>
 </section>
 
+<script type="module">
+// ground scene links: the next evening (21:00 Korean time) when each object stands at least 25 degrees up over Seoul
+import { SEOUL, altAzRaDec, kstDayStart, appLink } from './sky.js';
+const day0 = kstDayStart(), box = document.getElementById('sc-ground');
+for (const [o, ko, ra, dec] of [['M42', '오리온 대성운', 83.82, -5.39], ['M45', '플레이아데스', 56.75, 24.12], ['M31', '안드로메다 은하', 10.68, 41.27]]) {
+  for (let k = 0; k < 366; k++) {
+    const t = day0 + k * 86400000 + 21 * 3600000, p = altAzRaDec(ra, dec, t, SEOUL);
+    if (p.alt > 25) { const a = document.createElement('a'); a.href = appLink('../app.html', SEOUL, t, { ...p, o }); a.textContent = ko; box.append(a); break; }
+  }
+}
+</script>
 <script>
 document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => {
   document.querySelectorAll('.tabs button').forEach(x => x.setAttribute('aria-selected', x === b));
