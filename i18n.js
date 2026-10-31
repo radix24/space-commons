@@ -122,6 +122,24 @@ export function englishBodies(PLANETS) { // planets, moons, probes: English name
 
 // ---------- UI phrases (longest first) ----------
 const PH = [
+  // 0.0.12l-r: Korean satellite cards, tour maker, learning links, performance meter
+  ['한국 우주개발 연표', 'Korean spaceflight timeline'], ['이 위성의 눈으로 지구 보기', "See Earth from this satellite"], ['누리호 3차 발사 다시 보기', 'Replay Nuri flight 3'],
+  ['맨눈으로 볼 수 있는 한국 위성 (24시간 안)', 'Korean satellites visible to the eye (next 24 h)'], ['최고 ', 'max '], ['탑재체', 'Payload'], ['운영', 'Operator'], ['발사', 'Launch'],
+  ['의 자리에서 본 지구 · 정지궤도 ', ': Earth from its place · geostationary '], ['시간을 흘리면 낮과 밤의 경계가 지나갑니다', 'run time to watch the day-night line pass'],
+  ['누리호 3차 발사 재생이 끝났습니다 (궤적은 공개된 비행 순서를 바탕으로 한 근사입니다)', 'Nuri flight 3 replay finished (the path approximates the published flight sequence)'],
+  ['누리호 3차 발사 · 2023년 5월 25일 18시 24분', 'Nuri flight 3 · 25 May 2023, 18:24 KST'],
+  ['이륙: 나로우주센터, 1단 75톤 엔진 4기 점화', 'Liftoff from Naro Space Center, four 75-tonne first-stage engines'], ['1단 분리 · 고도 약 59 km', 'First-stage separation · about 59 km up'],
+  ['페어링 분리 · 고도 약 191 km', 'Fairing separation · about 191 km up'], ['2단 분리 · 고도 약 258 km, 3단 7톤 엔진 점화', 'Second-stage separation · about 258 km up, 7-tonne third stage ignites'],
+  ['3단 엔진 정지 · 고도 약 550 km, 궤도 진입', 'Third-stage cutoff · about 550 km, in orbit'], ['차세대소형위성 2호 분리, 이어서 큐브샛 7기 분리', 'NEXTSat-2 deploys, then seven cubesats'],
+  ['투어 만들기', 'Tour maker'], ['지금 보이는 화면을 차례로 담아 발표를 만듭니다', 'Capture views one by one to build a presentation'],
+  ['하늘을 원하는 대로 맞춘 뒤 "지금 화면 담기"를 누르세요. 장면마다 설명을 적고 머무를 시간을 정하면, 장면 사이를 천천히 옮겨 가며 자막과 함께 보여 줍니다.', 'Set up the sky, then press "Capture this view". Write a caption and a pause for each scene; playback glides between scenes with captions.'],
+  ['지금 화면 담기', 'Capture this view'], ['파일로 저장', 'Save as file'], ['모두 지우기', 'Clear all'], ['재생', 'Play'], ['아직 담은 장면이 없습니다.', 'No scenes yet.'],
+  ['이 장면에서 할 말', 'What to say in this scene'], ['머무름', 'Stay'], ['투어 이름', 'Tour name'], ['나의 하늘 투어', 'My sky tour'],
+  ['저장한 파일은 "저장·공유 → 애드온·발표 불러오기"로 다시 열 수 있습니다. 투어는 지상 모드의 시점을 담습니다.', 'Open a saved file again with "Save & share → Load add-on or presentation". Tours record ground-mode views.'],
+  ['개념 카드', 'Concept cards'], ['확인 문제', 'Check questions'], ['다음 문제', 'Next question'], ['결과 보기', 'See result'], ['다시 풀기', 'Try again'],
+  ['맞았습니다. ', 'Correct. '], ['아쉽습니다. ', 'Not quite. '], ['활력 방정식', 'Vis-viva equation'], ['호만 전이', 'Hohmann transfer'], ['오베르트 효과', 'Oberth effect'],
+  ['항성 진화', 'Stellar evolution'], ['별의 최후', 'Fates of stars'], ['평형 온도와 온실 효과', 'Equilibrium temperature and greenhouse'], ['생명 가능 지대', 'Habitable zone'], ['대기를 붙잡는 힘', 'Holding on to air'],
+  ['해수면 (해발)', 'Sea level (elevation)'], ['측정 중…', 'measuring…'], ['해상도 ×', 'resolution ×'], ['저사양 기기', 'low-end device'],
   // landscapes, surveys, menus and tooltips added in 0.0.9
   ['일본 별자리', 'Japanese sky culture'], ['인도 별자리 (나크샤트라)', 'Indian sky culture'], ['하와이 항해 별길', 'Hawaiian starlines sky culture'], ['마오리 별자리', 'Māori sky culture'], ['북유럽 별자리', 'Norse sky culture'], ['몽골 별자리', 'Mongolian sky culture'], ['티베트 별자리', 'Tibetan sky culture'], ['이누이트 별자리', 'Inuit sky culture'], ['나바호 별자리', 'Navajo sky culture'], ['아즈텍 별자리', 'Aztec sky culture'],
   ['처음으로', 'Reset'], ['역재생', 'Reverse'], ['보기', 'View'], ['고르기', 'Choose'], ['에리스', 'Eris'], ['하우메아', 'Haumea'], ['마케마케', 'Makemake'], ['모두', 'All'],
