@@ -194,8 +194,8 @@ body { position: fixed; inset: 0; } /* never let focus/scrollIntoView shift the 
 .lbl.sat.iss { color: #4C8DF6; font-weight: 700; font-size: 11px; }
 .lbl.sat.iss::before { width: 6px; height: 6px; margin-top: -3px; background: #4C8DF6; }
 /* Korean satellites, landing sites */
-.lbl.sat.kr { color: #ffb3c8; font-weight: 600; }
-.lbl.sat.kr::before { background: #ff7aa2; box-shadow: 0 0 4px #ff7aa2; }
+.lbl.sat.kr { color: #b4ece0; font-weight: 600; } /* calm teal: pink read as alarming to testers */
+.lbl.sat.kr::before { background: #4fd1b5; box-shadow: 0 0 4px #4fd1b5; }
 .lbl.site { color: #ffe0a3; font-size: 11px; }
 .lbl.site::before { content: ''; position: absolute; left: -9px; top: 50%; width: 6px; height: 6px; margin-top: -3px; transform: rotate(45deg); border: 1.5px solid #ffe0a3; }
 

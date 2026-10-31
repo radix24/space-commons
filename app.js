@@ -2416,7 +2416,7 @@ function updateStations() { // space mode near Earth: station models at their re
     krOrbitsAt = state.time; krOrbits.clear();
     for (const s of sats) { if (!s.korea) continue; const P = 2 * Math.PI / s.rec.no * 60e3, pts = [];
       for (let i = 0; i <= 96; i++) { const pv = satellite.propagate(s.rec, new Date(state.time + P * i / 96)); if (pv?.position) pts.push(new THREE.Vector3(pv.position.x, pv.position.y, pv.position.z).divideScalar(1e6)); }
-      const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial(YONSEI(s) ? { color: 0x3d8bff, transparent: true, opacity: 0.85 } : { color: 0xff7aa2, transparent: true, opacity: 0.28 })); l.frustumCulled = false; krOrbits.add(l); }
+      const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial(YONSEI(s) ? { color: 0x3d8bff, transparent: true, opacity: 0.85 } : { color: 0x4fd1b5, transparent: true, opacity: 0.3 })); l.frustumCulled = false; krOrbits.add(l); }
   }
   krOrbits.position.copy(E).sub(sp.pos);
 }
@@ -4221,6 +4221,7 @@ updateSkyMatrix(); requestAnimationFrame(frame);
   document.body.classList.add('ready');
   buildSearch();
   readHash();
+  if (!/[#&]m=/.test(location.hash) && !/[?&](embed|join|sync)=/.test(location.search)) setMode(true); // first impression: open in space (the ground sky is one tab away)
   classSync.joinFromLink(); // ?join=CODE from the classroom QR
   if (/[#&]sb=/.test(location.hash)) setSandbox(true).then(() => sandboxMod.sceneFromHash()); // a shared sandbox scene
   loadKorean().then(applySkyCulture).catch(() => {});
