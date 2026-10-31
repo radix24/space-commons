@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="vendor/pretendard/pretendardvariable.min.css">
-<link rel="stylesheet" href="about/about.css?v=5">
+<link rel="stylesheet" href="about/about.css?v=6">
 <style>
 /* hero: a real sky over a real ridge */
 .hero { position: relative; min-height: min(100vh, 1040px); display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; background: #05070f url(textures/eso_milkyway_2k.jpg) center 30% / cover; }
@@ -23,7 +23,7 @@
 /* the app's 360° horizon silhouette, stretched 4x so the low relief reads; the band under it stays short */
 /* Sobaeksan ridge traced from the app's terrain horizon (about/img/ridge-sobaeksan.svg), heights doubled */
 .hero .ridge { position: absolute; left: 0; right: 0; bottom: -1px; height: 10vw; background: url(about/img/ridge-sobaeksan.svg) -117vw 100% / 260vw 100% repeat-x; }
-.hero .txt { position: relative; padding-top: 140px; padding-bottom: calc(9vw + 56px); }
+.hero .txt { position: relative; width: 100%; padding-top: 140px; padding-bottom: calc(9vw + 56px); } /* full width so the text starts on the logo's edge, not centred by the flex column */
 .hero h1 { font-size: clamp(40px, 6.6vw, 88px); line-height: 1.1; max-width: 13em; }
 .hero h1 span { color: #9FC2FF; }
 .hero .lead { margin-top: 22px; max-width: 34em; font-size: 18px; color: #D3D8EA; }

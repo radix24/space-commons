@@ -11,12 +11,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../vendor/pretendard/pretendardvariable.min.css">
-<link rel="stylesheet" href="about.css?v=5">
+<link rel="stylesheet" href="about.css?v=6">
 <style>
 /* hero with the Moon */
 .hero { position: relative; min-height: min(78vh, 760px); display: flex; align-items: center; overflow: hidden; padding: 140px 0 80px; }
 .hero .moon { position: absolute; right: -9vw; top: 50%; width: min(62vh, 42vw, 600px); height: min(62vh, 42vw, 600px); max-width: 640px; max-height: 640px; transform: translateY(-50%); border-radius: 50%; background: url(img/moon.webp) 38% 50% / 230% auto; box-shadow: inset -70px -40px 120px rgba(0,0,0,.92), inset 10px 10px 40px rgba(255,255,255,.08); opacity: .8; }
-.hero .txt { position: relative; max-width: 620px; }
+.hero .txt { position: relative; width: 100%; } /* starts on the logo's edge; the lines themselves stay narrow */
+.hero .txt > * { max-width: 620px; }
 .hero h1 { font-size: clamp(38px, 5.6vw, 72px); line-height: 1.1; }
 .hero h1 span { color: #9FC2FF; }
 .hero .lead { margin-top: 22px; font-size: 18px; color: #D3D8EA; }
