@@ -21,8 +21,9 @@
 .hero { position: relative; min-height: min(100vh, 1040px); display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; background: #05070f url(textures/eso_milkyway_2k.jpg) center 30% / cover; }
 .hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5,7,15,.55) 0%, rgba(5,7,15,.15) 40%, rgba(5,7,15,0) 60%); }
 /* the app's 360° horizon silhouette, stretched 4x so the low relief reads; the band under it stays short */
-.hero .ridge { position: absolute; left: 0; right: 0; bottom: 0; height: 17vw; background: url(textures/land_bohyunsan.webp) 0 -254vw / 260vw 520vw repeat-x; filter: brightness(.5) saturate(.7); }
-.hero .txt { position: relative; padding-bottom: min(38vh, 400px, 30vw); }
+.hero .ridge { position: absolute; left: 0; right: 0; bottom: 0; height: 9vw; background: url(textures/land_sobaeksan.webp) -112vw -63.4vw / 260vw auto repeat-x; filter: brightness(.45) saturate(.6); }
+.hero .ridge::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(7,10,22,0) 40%, var(--night) 100%); }
+.hero .txt { position: relative; padding-top: 140px; padding-bottom: calc(9vw + 56px); }
 .hero h1 { font-size: clamp(40px, 6.6vw, 88px); line-height: 1.1; max-width: 13em; }
 .hero h1 span { color: #9FC2FF; }
 .hero .lead { margin-top: 22px; max-width: 34em; font-size: 18px; color: #D3D8EA; }
@@ -83,7 +84,8 @@
 
 @media (max-width: 860px) {
   .hero .read { right: 16px; font-size: 11px; }
-  .hero .txt { padding-bottom: 28vw; padding-top: 110px; }
+  .hero .ridge { height: 16vw; background-size: 420vw auto; background-position: -180vw -103.5vw; }
+  .hero .txt { padding-bottom: calc(16vw + 56px); padding-top: 110px; }
   .hero .lead { font-size: 16px; }
   .track, .korea, .local { padding: 80px 0; }
   .stops { grid-template-columns: 1fr; gap: 44px; }
@@ -123,7 +125,7 @@
     <p class="lead">설치도 가입도 없이 브라우저에서 엽니다. 오늘 밤 내가 선 자리의 하늘에서 시작해, 그 하늘 속 천체까지 날아가고, 마지막엔 중력을 직접 다뤄 봅니다. 그리고 화면 밖에서는, 가까운 동네에서 함께 올려다봅니다.</p>
     <div class="cta"><a class="btn" href="app.html">지금 하늘 열기</a><a class="btn ghost" href="about/features.html">기능 둘러보기</a></div>
   </div>
-  <div class="read mono">보현산 지평선 · 36.16°N 128.98°E<br>배경: 실제 은하수 사진</div>
+  <div class="read mono">소백산 지평선 · 36.96°N 128.48°E<br>배경: 실제 은하수 사진</div>
 </section>
 
 <section class="track" id="flow">
