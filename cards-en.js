@@ -781,3 +781,25 @@ export const INTROS_EN = [
   'Measuring stars with light, from their birth to their end',
   'Climbing the distance ladder to the history of the universe',
 ];
+// Formulas whose Korean source has words inside \text{}: the same formula with English words (same ids as cards.js)
+export const EQ_EN = {
+  declination: String.raw`\text{true bearing} = \text{magnetic bearing} + D\quad(D\text{: east +, west −})`,
+  precession: String.raw`\dot\psi \approx 50.29''/\text{yr} \;\Rightarrow\; T \approx 25{,}772\text{ yr}`,
+  paleomag: String.raw`\text{stripe width} = v_\text{spread} \times \Delta t`,
+  roche: String.raw`d_\text{rigid} = 1.26\,R_M\left(\frac{\rho_M}{\rho_m}\right)^{1/3},\qquad d_\text{fluid} = 2.44\,R_M\left(\frac{\rho_M}{\rho_m}\right)^{1/3}`,
+  stellar: String.raw`t_\text{MS} \approx 10^{10}\,\text{yr}\left(\frac{M}{M_\odot}\right)^{-2.5},\quad L \propto M^{3.5}`,
+  moon: String.raw`\frac{da}{dt} \propto a^{-11/2}\quad(\text{tidal friction})`,
+  eot: String.raw`E \approx 9.87\sin 2B - 7.53\cos B - 1.5\sin B\ (\text{min}),\ B = \tfrac{2\pi}{365}(n-81)`,
+  moonphase: String.raw`k = \frac{1-\cos\psi}{2}\quad(\psi:\ \text{elongation seen from the Sun})`,
+  tides: String.raw`a_\text{tide} \approx \frac{2GMR}{d^3}`,
+  hz: String.raw`d_\text{in} \approx 0.95\sqrt{L/L_\odot}\ \text{AU},\quad d_\text{out} \approx 1.37\sqrt{L/L_\odot}\ \text{AU}`,
+  atmos: String.raw`v_\text{rms} = \sqrt{\frac{3kT}{m}},\qquad \text{retained if } v_\text{esc} \gtrsim 6\,v_\text{rms}`,
+  nucleo: String.raw`\frac{B}{A}\ \text{peak: } {}^{56}\text{Fe},\ {}^{62}\text{Ni}\ (\approx 8.8\,\text{MeV/nucleon})`,
+  distladder: String.raw`\text{radar} \to \text{parallax} \to \text{Cepheids} \to \text{type Ia supernovae} \to \text{Hubble's law}`,
+  vanallen: String.raw`\text{inner belt } 1.2\text{–}3\,R_\oplus\ (\text{protons}),\quad \text{outer belt } 4\text{–}7\,R_\oplus\ (\text{electrons})`,
+  debris: String.raw`\text{collision rate} \approx n\,\sigma\,v_\text{rel}\,N`,
+  meteor: String.raw`v_\text{meteor} = \sqrt{v_\infty^2 + v_\text{esc}^2}`,
+  calendar: String.raw`t_\text{calendar} = \frac{t}{13.8\text{ billion yr}} \times 365\text{ days}`,
+  bigbang: String.raw`\frac{\text{He}}{\text{H}+\text{He}} \approx 0.25 \ (\text{mass fraction})`,
+  darkenergy: String.raw`\Omega_\Lambda \approx 0.69,\quad \Omega_\text{DM} \approx 0.26,\quad \Omega_\text{ordinary} \approx 0.05`,
+};
