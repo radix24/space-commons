@@ -98,12 +98,12 @@ function addProbe(r, v, opts = {}) { const b = makeBody(opts.name || 'probe' + D
 // the surface follows the climate: ice spreads from the poles below freezing, oceans boil away, rock darkens and glows when scorching,
 // and a thick atmosphere wraps the planet in cloud tinted by its main gas. Driven every frame from the climate model (updateTempMap).
 function climateMat(m) {
-  const u = { uTeq: { value: 288 }, uTpole: { value: 250 }, uBoil: { value: 373 }, uCloud: { value: 0 }, uCloudCol: { value: new THREE.Color(1, 1, 1) }, uOn: { value: 0 }, uSea: { value: -1 }, uLife: { value: 0 }, uH: { value: null }, uHasH: { value: 0 }, uWater: { value: 1 }, uTime: { value: 0 } };
+  const u = { uTeq: { value: 288 }, uTpole: { value: 250 }, uBoil: { value: 373 }, uCloud: { value: 0 }, uCloudCol: { value: new THREE.Color(1, 1, 1) }, uOn: { value: 0 }, uSea: { value: -1 }, uLife: { value: 0 }, uH: { value: null }, uHasH: { value: 0 }, uWater: { value: 1 }, uTime: { value: 0 }, uAtmCol: { value: new THREE.Color(0.4, 0.6, 1) }, uAtmK: { value: 0 } };
   m.userData.climate = u;
   m.onBeforeCompile = (sh) => { Object.assign(sh.uniforms, u);
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vSurf;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvSurf = normalize(position);');
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
-      varying vec3 vSurf; uniform float uTeq, uTpole, uBoil, uCloud, uOn, uSea, uLife, uHasH, uWater, uTime; uniform vec3 uCloudCol; uniform sampler2D uH;
+      varying vec3 vSurf; uniform float uTeq, uTpole, uBoil, uCloud, uOn, uSea, uLife, uHasH, uWater, uTime; uniform vec3 uCloudCol, uAtmCol; uniform float uAtmK; uniform sampler2D uH;
       float ch(vec3 p){ p = fract(p * 0.1031); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); }
       float cn(vec3 p){ vec3 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
         return mix(mix(mix(ch(i), ch(i + vec3(1,0,0)), f.x), mix(ch(i + vec3(0,1,0)), ch(i + vec3(1,1,0)), f.x), f.y), mix(mix(ch(i + vec3(0,0,1)), ch(i + vec3(1,0,1)), f.x), mix(ch(i + vec3(0,1,1)), ch(i + vec3(1,1,1)), f.x), f.y), f.z); }
@@ -134,6 +134,12 @@ function climateMat(m) {
         c = mix(c, uCloudCol, cl * clamp(uCloud * 1.5, 0.0, 1.0));
         diffuseColor.rgb = c; }`)
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+      #if NUM_POINT_LIGHTS > 0
+      if (uAtmK > 0.0) { // sky scattering: a glow toward the edge of the disc on the day side, reddened along the terminator
+        vec3 vd = normalize(vViewPosition), ld = normalize(pointLights[0].position - (-vViewPosition)); float mu = dot(normal, ld), rim = pow(1.0 - max(dot(normal, vd), 0.0), 2.5);
+        float day = smoothstep(-0.15, 0.25, mu), dusk = smoothstep(-0.2, 0.05, mu) * (1.0 - smoothstep(0.05, 0.35, mu));
+        totalEmissiveRadiance += (uAtmCol * day + vec3(1.0, 0.45, 0.2) * dusk * 0.8) * rim * uAtmK; }
+      #endif
       if (uOn > 0.5) { float T = mix(uTeq, uTpole, pow(abs(vSurf.y), 1.6)); float crack = smoothstep(0.58, 0.66, cf(vSurf * 14.0));
         totalEmissiveRadiance += vec3(1.0, 0.32, 0.06) * smoothstep(800.0, 1500.0, T) * crack * (1.0 - clamp(uCloud * 1.5, 0.0, 0.8)) * 1.6; }`); };
   return m;
@@ -266,9 +272,9 @@ function updateTempMap() {
         vertexShader: 'varying vec3 vN, vV; void main(){ vec4 w = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-w.xyz); gl_Position = projectionMatrix * w; }',
         fragmentShader: 'uniform vec3 col; uniform float k; varying vec3 vN, vV; void main(){ float f = pow(1.0 - abs(dot(vN, vV)), 2.5); gl_FragColor = vec4(col * f * k, f); }' }));
         b.mesh.add(limb); b.mesh.userData.limb = limb; }
-      const top = Object.entries(a.mix).sort((x, y) => y[1] - x[1])[0]?.[0]; limb.material.uniforms.col.value.set(GAS_COL[top] || '#9aa0ae'); limb.material.uniforms.k.value = Math.min(2, 0.5 + 0.4 * (Math.log10(P) + 3));
+      const top = Object.entries(a.mix).sort((x, y) => y[1] - x[1])[0]?.[0]; limb.material.uniforms.col.value.set(GAS_COL[top] || '#9aa0ae'); { const cu0 = b.mesh?.children[1]?.material?.userData?.climate; if (cu0) { cu0.uAtmCol.value.set(GAS_COL[top] || '#9aa0ae'); cu0.uAtmK.value = Math.min(0.9, 0.25 * (Math.log10(P) + 2.5)); } } limb.material.uniforms.k.value = Math.min(2, 0.5 + 0.4 * (Math.log10(P) + 3));
       limb.scale.setScalar(b.Rkm / O.AU_KM * (1.03 + 0.01 * Math.max(0, Math.log10(P) + 1))); limb.visible = true; }
-    else if (limb) limb.visible = false;
+    else if (limb) { limb.visible = false; const cu0 = b.mesh?.children[1]?.material?.userData?.climate; if (cu0) cu0.uAtmK.value = 0; }
     const cu = b.mesh?.children[1]?.material?.userData?.climate;
     if (b.surfTex && cu) { const m = b.mesh.children[1].material, t = texOf(b.surfTex); if (m.map !== t) { m.map = t; m.needsUpdate = true; } } // the ground once the clouds are gone
     if (cu && k) { const x = ATM.extremes(k.Ts + impactHeat(b), k.a.P + ((b.sea ?? -1) > -0.5 ? 2 : 0)), top = Object.entries(k.a.mix).sort((p1, p2) => p2[1] - p1[1])[0]?.[0];
