@@ -1954,7 +1954,7 @@ $('lang').textContent = EN ? '한국어' : 'EN'; $('lang').onclick = () => setLa
 // third mode: the gravity sandbox and orbital-mechanics labs (sandbox.js, loaded on first use)
 let sandboxOn = false, sandboxMod = null;
 async function setSandbox(on) {
-  sandboxOn = on; document.body.classList.toggle('sandbox', on);
+  sandboxOn = on; document.body.classList.toggle('sandbox', on); if (on) document.querySelector('.guide')?.remove(); // the sky guide does not belong over the sandbox
   document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('on', on ? b.dataset.mode === 'sandbox' : (b.dataset.mode === 'space') === mode.space));
   if (on) { sandboxMod ||= await import('./sandbox.js'); sandboxMod.openSandbox({ helio, jdNow: () => jd(state.time), small: (n, j) => { const s = PLANETS.find(x => x.name === n)?.sb; if (!s) return null; const v = smallHelio({ el: [s.a, s.e, s.i, s.om, s.w, s.ma, s.epoch] }, j); return [v.x, v.y, v.z]; } }); }
   else sandboxMod?.closeSandbox();
@@ -3405,7 +3405,7 @@ function showGuide(k = 0) {
   if (r && sel !== '#c') { box.style.left = Math.max(8, Math.min(innerWidth - 300, r.left)) + 'px'; box.style.top = Math.min(innerHeight - 160, r.bottom + 10) + 'px'; tgt.classList.add('guide-hl'); setTimeout(() => tgt.classList.remove('guide-hl'), 4000); }
   g.querySelector('.g-next').onclick = () => showGuide(k + 1); g.querySelector('.g-skip').onclick = () => showGuide(GUIDE.length);
 }
-{ let seen = false; try { seen = !!localStorage.getItem('space-commons-guided'); } catch {} if (!seen && !location.hash.includes('lesson=')) setTimeout(() => showGuide(0), 2500); }
+{ let seen = false; try { seen = !!localStorage.getItem('space-commons-guided'); } catch {} if (!seen && !location.hash.includes('lesson=')) setTimeout(() => { if (!sandboxOn && !document.body.classList.contains('embed')) showGuide(0); }, 2500); }
 $('help')?.addEventListener('dblclick', () => showGuide(0));
 // ---------- photo horizons: real 360-degree panoramas (ESO, CC BY 4.0) with the sky removed; choosing one also moves you there ----------
 let LANDS = {}; fetch('data/landscapes.json').then(r => r.json()).then(j => { LANDS = j; const s = $('landsel'); for (const [k, v] of Object.entries(j)) s.append(new Option(v.ko, k)); }).catch(() => {});
