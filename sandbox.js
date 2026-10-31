@@ -8,6 +8,7 @@ import * as L2 from './labs2.js';
 import * as ATM from './atmos.js';
 import { tr } from './i18n.js';
 import { watchRenderer, frameTick } from './perf.js';
+import * as PLUS from './sandbox-plus.js';
 
 const { dot, cross, norm, add, scale } = O.vec;
 const PL = ['Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'];
@@ -43,7 +44,7 @@ class FreeControls {
   update() {
     const c = this.object, off = c.position.clone().sub(this.target), fwd = off.clone().negate().normalize(), right = new THREE.Vector3().crossVectors(fwd, c.up).normalize();
     if (right.lengthSq() < 1e-12) right.set(1, 0, 0);
-    const upv = new THREE.Vector3().crossVectors(right, fwd).normalize(), k = this.enableDamping ? 0.25 : 1;
+    const upv = new THREE.Vector3().crossVectors(right, fwd).normalize(), k = this.enableDamping ? 0.6 : 1; // short damping: the view stops soon after you let go
     const yaw = this.vr[0] * k, pitch = this.vr[1] * k; this.vr[0] -= yaw; this.vr[1] -= pitch;
     if (yaw || pitch) { const q = new THREE.Quaternion().setFromAxisAngle(upv, yaw).multiply(new THREE.Quaternion().setFromAxisAngle(right, pitch)); off.applyQuaternion(q); c.up.copy(upv).applyQuaternion(q).normalize(); }
     const z = Math.pow(this.zoom, k); this.zoom /= z; const d = Math.min(this.maxDistance, Math.max(this.minDistance, off.length() * z)); off.setLength(d);
@@ -122,8 +123,12 @@ function energy() {
     for (let j = i + 1; j < ms.length; j++) { const b = ms[j]; E -= O.MU_SUN * sim.G * a.m * b.m / Math.hypot(a.r[0] - b.r[0], a.r[1] - b.r[1], a.r[2] - b.r[2]); } }
   return E;
 }
-function snapshot() { sim.snapshot = { t: sim.t, bodies: sim.bodies.map(b => ({ ...b, r: [...b.r], v: [...b.v], minD: {}, trail: new Float32Array(b.trail.length), tn: 0 })) }; }
-function restore() { if (!sim.snapshot) return; clearScene(); sim.t = sim.snapshot.t; sim.bodies = sim.snapshot.bodies.map(b => ({ ...b, r: [...b.r], v: [...b.v], minD: {}, trail: new Float32Array(b.trail.length), tn: 0, lastRec: -1e9 })); sim.E0 = energy(); buildMeshes(); }
+// the physical state of a body, copied so later edits cannot reach the copy (atmosphere and its mix included); drawing objects are rebuilt, never copied
+const PHYS_DROP = ['mesh', 'line', 'season', 'seasonNow', 'tide', 'glowK'];
+function physCopy(b) { const c = { ...b, r: [...b.r], v: [...b.v], minD: {}, trail: new Float32Array(b.trail.length), tn: 0, lastRec: -1e9 }; for (const k of PHYS_DROP) delete c[k];
+  for (const k of ['atm', 'base0', 'cmp0']) if (b[k]) c[k] = JSON.parse(JSON.stringify(b[k])); return c; }
+function snapshot() { sim.snapshot = { t: sim.t, G: sim.G, bodies: sim.bodies.map(physCopy) }; }
+function restore() { if (!sim.snapshot) return; clearScene(); sim.t = sim.snapshot.t; sim.bodies = sim.snapshot.bodies.map(physCopy); sim.E0 = energy(); buildMeshes(); }
 const byName = (n) => sim.bodies.find(b => b.name === n);
 function addProbe(r, v, opts = {}) { const b = makeBody(opts.name || 'probe' + Date.now(), r, v, { m: 0, ko: opts.ko || '탐사선', color: opts.color ?? 0x4fe3c1, ...opts }); sim.bodies.push(b); buildMesh(b); return b; }
 
@@ -246,6 +251,7 @@ function shatter(a, b, k) { // catastrophic collision: both bodies become a clou
   flash(cm, 0.2, 0xffd0a0); toast(`${a.ko}와 ${b.ko}이(가) 산산이 부서졌습니다: 충돌 에너지가 중력 결합 에너지의 ${fmt(k, 1)}배라 다시 뭉치지 못합니다`);
 }
 function disrupt(small, big) {
+  if (PLUS.onDisrupt(small, big)) return; // sandbox-plus: Roche breakup into a spreading ring
   const N = 90, u = scale(add(small.r, big.r, -1), 1 / norm(add(small.r, big.r, -1))), spread = small.Rkm * 4 / O.AU_KM, vesc = Math.sqrt(2 * O.MU_SUN * small.m / (small.Rkm / O.AU_KM));
   for (let i = 0; i < N; i++) { const t = (i / (N - 1) - 0.5) * 2, j = () => (Math.random() - 0.5);
     const b = makeBody(`${small.name}-f${i}`, add(small.r, add(scale(u, t * spread), [j() * spread * 0.3, j() * spread * 0.3, j() * spread * 0.1])), add(small.v, add(scale(u, t * vesc * 0.5), [j() * vesc * 0.2, j() * vesc * 0.2, 0])), { m: 0, ko: '', color: small.color });
@@ -342,7 +348,7 @@ function climateLine(T, b) { // T: equilibrium temperature for albedo 0.3
   const k = ATM.climate(b, T); if (!k) return '';
   const hot = impactHeat(b);
   const vesc = Math.sqrt(2 * 6.674e-11 * b.m * 1.989e30 / (b.Rkm * 1e3)) / 1000, kept = ATM.retention(vesc, k.Ts).filter(x => x[2]).map(x => x[1]);
-  return (hot > 1 ? `<br>충돌 열: 표면이 +${fmt(hot, 0)} K 더 뜨거움 (천 년 남짓에 걸쳐 식음)` : '') + `<br>대기 ${k.a.P ? fmt(k.a.P, k.a.P < 0.1 ? 3 : 1) + '기압' : '없음'} · 온실 효과 +${fmt(k.Ts - k.Teq, 0)} K → 표면 약 ${fmt(k.Ts - 273.15, 0)} °C · 물: ${ATM.waterState(k.Ts, k.a.P)}`
+  return (hot > 1 ? `<br>충돌 열: 표면이 +${fmt(hot, 0)} K 더 뜨거움 (천 년 남짓에 걸쳐 식음)` : '') + `<br>대기 ${k.a.P ? fmt(k.a.P, k.a.P < 0.1 ? 3 : 1) + ' bar' : '없음'} · 온실 효과 +${fmt(k.Ts - k.Teq, 0)} K → 표면 약 ${fmt(k.Ts - 273.15, 0)} °C · 물: ${ATM.waterState(k.Ts, k.a.P)}`
     + (() => { const x = ATM.extremes(k.Ts + hot, k.a.P); return `<br>열 고르게 퍼뜨림 ${fmt(x.eta * 100, 0)}% → 적도 약 ${fmt(x.eq - 273.15, 0)} °C · 극 약 ${fmt(x.pole - 273.15, 0)} °C · 밤 약 ${fmt(x.night - 273.15, 0)} °C`; })()
     + `<br>수십억 년 붙잡아 둘 수 있는 기체: ${kept.length ? kept.join(', ') : '거의 없음 (중력이 약하거나 너무 뜨거움)'} (탈출 속도 ${fmt(vesc, 1)} km/s)`; }
 
@@ -486,6 +492,7 @@ async function shareScene() {
   try { await navigator.clipboard.writeText(url); toast('장면 링크를 복사했습니다. 링크를 연 사람은 같은 장면에서 시작합니다'); } catch { prompt('이 링크를 복사하세요', url); }
 }
 export async function sceneFromHash() {
+  if (await PLUS.fromHash()) return true; // a mission link (sandbox-missions.js)
   const m = location.hash.match(/sb=([A-Za-z0-9_-]+)/); if (!m) return false;
   try { const bin = atob(m[1].replace(/-/g, '+').replace(/_/g, '/')), u8 = Uint8Array.from(bin, c => c.charCodeAt(0));
     const txt = await new Response(new Blob([u8]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text(); loadScene(JSON.parse(txt)); return true; } catch { toast('장면 링크를 읽지 못했습니다'); return false; }
@@ -536,7 +543,7 @@ function scenario(key) {
   focus('Sun', key === 'jupx10' ? 25 : 8); snapshot();
 }
 function clearScene() {
-  clearSwarm();
+  clearSwarm(); PLUS.onClear();
   for (const b of sim.bodies) { if (b.mesh) scene.remove(b.mesh, b.line); b.line?.geometry.dispose(); }
   root?.querySelectorAll('.sb-label').forEach(e => e.remove()); view.labels.clear();
 }
@@ -570,7 +577,7 @@ function draw() {
   const E = energy(), dE = sim.E0 ? Math.abs((E - sim.E0) / sim.E0) : 0;
   root.querySelector('.sb-date').textContent = `${fmtDate(sim.t)} · ${sim.playing ? (sim.speed < 0 ? '역재생 ' : '') + speedLabel(Math.abs(sim.speed)) : '정지'}${sim.slow ? ' · 근접 통과 계산 중 (느려짐)' : ''}`;
   root.querySelector('.sb-energy').textContent = `에너지 보존 오차 ${dE < 1e-12 ? '0' : dE.toExponential(1)}`;
-  updateSelected(); labTick(); updateHZ(); updateTempMap(); updateRoche(); updatePredictions(performance.now()); updateVelocities(); updateWell(); updateGraph();
+  updateSelected(); labTick(); updateHZ(); updateTempMap(); updateRoche(); updatePredictions(performance.now()); updateVelocities(); updateWell(); updateGraph(); PLUS.tick(view.dt || 0, view.dDays || 0);
 }
 // instrument overlay: brackets around the selected body with a leader to a readout tag, a live scale bar, AU marks on the grid rings
 function updateOverlay() {
@@ -597,7 +604,7 @@ function updateOverlay() {
 const speedLabel = (s) => s >= 1 ? `1초에 ${s}일` : s * 24 >= 1 ? `1초에 ${Math.round(s * 24)}시간` : `1초에 ${Math.round(s * 1440)}분`;
 function loop(now) {
   const dt = Math.min(0.1, (now - lastNow) / 1000); lastNow = now;
-  if (sim.playing) { advance(sim.speed * dt); recordTrails(); } updateFlashes(dt);
+  if (sim.playing) { advance(sim.speed * dt); recordTrails(); } updateFlashes(dt); view.dt = dt; view.dDays = sim.playing ? sim.speed * dt : 0;
   draw(); frameTick(now); raf = requestAnimationFrame(loop);
 }
 
@@ -621,21 +628,40 @@ function showNums() { const b = selected; if (!b) return; const q = (s) => root.
   const hs = hostStar(b); q('.sb-vnum').value = +(norm(add(b.v, hs && hs !== b ? hs.v : [0, 0, 0], -1)) * O.KMS).toPrecision(4);
   q('.sb-mnum').value = b.test ? 0 : +(b.m / u).toPrecision(4); q('.sb-mnum').disabled = !!b.test;
   const st = hostStar(b); q('.sb-dnum').value = st && st !== b ? +Math.hypot(...add(b.r, st.r, -1)).toPrecision(3) : ''; }
-// stellar evolution, kept simple: main sequence brightening by ~40% over its life, then red giant (x1000 light, x100 size), then a white dwarf
-function starStage(s) { const life = 100 * Math.pow(s.base0?.m ?? s.m, -2.5), f = (s.age ?? 46) / life; // lifetime from the mass it was born with // life in 1e8 years
+// stellar evolution, kept simple and split by the mass the star was born with (lifetime about 10 Gyr x m^-2.5).
+// Below ~0.5 M_sun the star outlives the universe and the later stages are outside this model. From ~0.5 to ~8 M_sun: red giant, planetary nebula,
+// white dwarf (final mass from the Kalirai et al. 2008 initial-final relation, about 0.109 m + 0.394). Above ~8 M_sun: red supergiant, then core
+// collapse (sandbox-plus.js leaves a neutron star or a black hole). The ~8 M_sun line and the neutron star / black hole split depend on metallicity,
+// mass loss, rotation and binary companions, so the UI calls them approximate. Luminosity and radius are illustrative, not an evolutionary track.
+export const STAR_LIMITS = { low: 0.5, massive: 8 };
+export function starStage(s) { const m0 = s.base0?.m ?? s.m, life = 100 * Math.pow(m0, -2.5), f = (s.age ?? 46) / life; // life in 1e8 years
+  if (s.remnant) return { name: s.kind === 'bh' ? '블랙홀 (초신성 잔해)' : '중성자별 (초신성 잔해)', L: s.lumK ?? 0, R: 1, m: 1, col: null, fixed: true };
   if (f < 1) return { name: '주계열성', L: 0.7 + 0.4 * f / 0.46 * 0.46 + 0.3 * f, R: 1 + 0.4 * f, m: 1, col: null };
-  if (f < 1.1) { const g = (f - 1) / 0.1; return { name: '적색거성', L: 1 + Math.pow(10, 3 * g), R: 1 + 200 * g, m: 1 - 0.3 * g, col: 0xff8a5a }; }
-  if (f < 1.12) return { name: '행성상 성운', L: 3000, R: 0.5, m: 0.55, col: 0x9fd8ff };
-  return { name: '백색왜성', L: 0.003, R: 0.0105, m: 0.55, col: 0xe8eeff }; }
-function setAge(s, age) { const st0 = starStage(s); s.age = Math.max(0, age); const st = starStage(s); s.base0 ??= { m: s.m, R: s.Rkm };
+  if (m0 < STAR_LIMITS.low) return { name: '주계열성 (그 뒤 단계는 이 모형 밖: 이 질량의 별은 우주 나이보다 오래 삶)', L: 1, R: 1, m: 1, col: null, limit: true };
+  if (m0 >= STAR_LIMITS.massive) { if (f < 1.1) { const g = (f - 1) / 0.1; return { name: '적색 초거성', L: 1 + 2 * g, R: 1 + 600 * g, m: 1 - 0.1 * g, col: 0xff7a4a }; }
+    return { name: '초신성 (중심핵 붕괴)', L: 1, R: 1, m: 0.9, col: null, sn: true }; }
+  const wd = Math.min(1.35, 0.109 * m0 + 0.394) / m0;
+  if (f < 1.1) { const g = (f - 1) / 0.1; return { name: '적색거성', L: 1 + Math.pow(10, 3 * g), R: 1 + 200 * g, m: 1 - (1 - wd) * 0.5 * g, col: 0xff8a5a }; }
+  if (f < 1.12) return { name: '행성상 성운', L: 3000, R: 0.5, m: wd, col: 0x9fd8ff };
+  return { name: '백색왜성', L: 0.003, R: 0.0105, m: wd, col: 0xe8eeff }; }
+function setAge(s, age) { const st0 = starStage(s); if (st0.fixed) return; s.age = Math.max(0, age); const st = starStage(s); s.base0 ??= { m: s.m, R: s.Rkm };
+  if (st.sn) { PLUS.explode(s); return; }
   const Lms = (m) => m < 0.43 ? 0.23 * Math.pow(m, 2.3) : m < 2 ? Math.pow(m, 4) : 1.4 * Math.pow(m, 3.5);
   s.lumK = st.L * Lms(s.base0.m) / Lms(s.base0.m * st.m); // light of this stage, relative to a main-sequence star of the mass it now has
   s.m = s.base0.m * st.m; s.Rkm = s.base0.R * st.R; if (st.col) s.color = st.col; rebuild(s); sim.E0 = energy();
-  if (st.name !== st0.name) toast(st.name === '적색거성' ? `${s.ko}이(가) 적색거성이 되었습니다: 수백 배로 부풀고 천 배 밝아져 가까운 행성들이 녹거나 삼켜집니다` : st.name === '백색왜성' ? `${s.ko}이(가) 바깥층을 날려 보내고 지구만 한 백색왜성이 되었습니다. 질량이 줄어 행성 궤도가 넓어집니다` : `${s.ko}: ${st.name}`); }
+  if (st.name !== st0.name) toast(st.name === '적색거성' ? `${s.ko}이(가) 적색거성이 되었습니다: 수백 배로 부풀고 천 배 밝아져 가까운 행성들이 녹거나 삼켜집니다` : st.name === '적색 초거성' ? `${s.ko}이(가) 적색 초거성이 되었습니다. 대략 8 태양질량이 넘는 별은 백색왜성이 되지 않고 중심핵이 무너져 초신성으로 끝납니다` : st.name === '백색왜성' ? `${s.ko}이(가) 바깥층을 날려 보내고 지구만 한 백색왜성이 되었습니다. 질량이 줄어 행성 궤도가 넓어집니다` : st.limit ? `${s.ko}: 가벼운 별의 먼 미래는 이 모형으로 계산하지 않습니다` : `${s.ko}: ${st.name}`); }
 const burnPrev = new THREE.Group();
+// RTN basis about what the body orbits: R radial (outward), N along the orbital angular momentum, T = N x R (transverse, on the prograde side).
+// On a circular orbit T is the direction of motion; on an eccentric one it differs from the velocity by the flight-path angle.
+// Degenerate cases: no relative position -> null; no angular momentum (zero or purely radial velocity) -> N is taken from the ecliptic pole.
+export function rtnBasis(rv, vv) {
+  const rn = norm(rv); if (!(rn > 0)) return null; const R = scale(rv, 1 / rn); let h = cross(rv, vv), hn = norm(h);
+  if (!(hn > 1e-12 * rn * Math.max(norm(vv), 1e-30))) { const z = Math.abs(R[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0]; h = add(z, R, -dot(z, R)); hn = norm(h); }
+  const N = scale(h, 1 / hn); return { R, N, T: cross(N, R) };
+}
 function burnVec(b) { const q = (s) => +root.querySelector(s).value / 1000 / O.KMS, o = dominantOther(b); if (!o) return null; // m/s -> AU/day
-  const rv = add(b.r, o.r, -1), vv = add(b.v, o.v, -1), t = scale(vv, 1 / norm(vv)), rr = scale(rv, 1 / norm(rv)), h = cross(rv, vv), n = scale(h, 1 / norm(h)), rad = cross(n, t);
-  return { o, dv: add(add(scale(t, q('.sb-dvp')), scale(rad, -q('.sb-dvr'))), scale(n, q('.sb-dvn'))) }; }
+  const B = rtnBasis(add(b.r, o.r, -1), add(b.v, o.v, -1)); if (!B) return null;
+  return { o, dv: add(add(scale(B.T, q('.sb-dvp')), scale(B.R, q('.sb-dvr'))), scale(B.N, q('.sb-dvn'))) }; }
 function previewBurn() { const b = selected; burnPrev.clear(); if (!b) return; const x = burnVec(b); if (!x) return;
   const r0 = add(b.r, x.o.r, -1), v0 = add(add(b.v, x.o.v, -1), x.dv), mu = O.MU_SUN * sim.G * (x.o.m + b.m), e = O.elements(r0, v0, mu), T = e.e < 1 ? e.period : 3 * norm(r0) / norm(v0), pts = [];
   for (let k = 0; k <= 200; k++) { const st = O.propagate(r0, v0, T * k / 200, mu); pts.push(new THREE.Vector3(...add(st.r, x.o.r))); }
@@ -667,13 +693,13 @@ const TERRA = {
     ['온실 기체 공장', '불소 화합물 같은 강력한 온실 기체를 공장에서 만들어 뿜으면 적은 양으로도 기온이 크게 오릅니다. 여기서는 이산화탄소를 0.3기압까지 늘린 것으로 대신 계산합니다.', (b) => { b.atm.P = 0.3; b.atm.mix = { CO2: 0.9, N2: 0.06, Ar: 0.02, CH4: 0.02 }; }],
     ['얼음 혜성으로 물과 질소 가져오기', '카이퍼대의 얼음 천체를 화성에 떨어뜨려 물과 질소를 보탭니다. 기압이 1기압 가까이 되고 물이 액체로 머물 수 있게 됩니다. 물은 실제 해발고도(MOLA)를 따라 낮은 곳부터 차서, 해수면 −3,300 m에서 헬라스 분지와 북쪽 저지대 가장 깊은 곳이 먼저 잠깁니다.', (b) => { b.atm.P = 0.9; b.atm.mix = { N2: 0.6, CO2: 0.3, H2O: 0.03, Ar: 0.02, CH4: 0.01 }; b.sea = marsSea(-3300); }],
     ['바다와 이끼, 숲', '해수면을 −2,400 m(과학자들이 옛 바다의 해안선으로 보는 아라비아 해안선 높이)까지 올리면 북쪽 저지대(보레알리스 분지) 전체가 바다가 되고, 남쪽 고지대와 타르시스 화산들이 대륙과 섬으로 남습니다. 이끼와 남세균부터 풀어 놓으면 땅이 초록으로 바뀌기 시작합니다.', (b) => { b.sea = marsSea(-2400); b.life = 0.6; }],
-    ['산소 대기', '식물이 수천 년 동안 광합성으로 산소를 만들어 사람이 숨 쉴 수 있는 대기가 됩니다. 화성은 자기장이 약해서 이 대기도 태양풍에 조금씩 깎여 나간다는 점이 남는 숙제입니다.', (b) => { b.atm.P = 1.0; b.atm.mix = { N2: 0.62, O2: 0.2, CO2: 0.13, H2O: 0.04, Ar: 0.01 }; b.life = 1; }], // CO2 kept high enough to stay warm this far from the Sun
+    ['산소 늘리기', '식물과 남세균이 광합성으로 산소를 늘려 산소 분압이 0.2 bar가 됩니다. 걸리는 시간은 아주 불확실합니다. 하지만 이 거리에서 행성을 따뜻하게 지키는 이산화탄소 0.13 bar는 사람에게 독성이 있어(지구 공기는 0.0004 bar, 오래 마셔도 되는 한계는 약 0.005 bar) 사람은 여전히 호흡 장비가 필요합니다. 기후가 따뜻한 것, 물이 액체로 있는 것, 사람이 숨 쉴 수 있는 것은 서로 다른 조건입니다. 화성은 자기장이 약해서 이 대기도 태양풍에 조금씩 깎여 나갑니다.', (b) => { b.atm.P = 1.0; b.atm.mix = { N2: 0.62, O2: 0.2, CO2: 0.13, H2O: 0.04, Ar: 0.01 }; b.life = 1; }], // CO2 kept high enough to stay warm this far from the Sun
   ] },
   Venus: { ko: '금성', steps: [
     ['L1 지점에 햇빛 가리개', '태양과 금성 사이의 라그랑주 L1 지점에 거대한 가리개를 띄워 햇빛을 90% 막습니다. 표면이 수백 년에 걸쳐 식기 시작합니다.', (b) => { b.shade = 0.9; }],
     ['이산화탄소를 돌로 굳히기', '식은 대기의 이산화탄소를 칼슘·마그네슘과 반응시켜 탄산염 암석으로 묶어 둡니다. 92기압이던 대기가 3기압 정도로 줄어듭니다.', (b) => { b.atm.P = 3; b.atm.mix = { CO2: 0.6, N2: 0.4 }; b.atm.albedo = 0.4; b.surfTex = 'venus_surface'; }],
     ['수소로 물 만들기, 비', '가져온 수소를 남은 이산화탄소와 반응시켜 물을 만들면 수백 년 동안 비가 내려 저지대에 바다가 생깁니다.', (b) => { b.atm.P = 1.5; b.atm.mix = { N2: 0.8, CO2: 0.15, H2O: 0.03, Ar: 0.02 }; b.atm.albedo = 0.32; b.sea = seaH('Venus', 400); }], // +400 m floods the lowland plains, about 37% of the surface
-    ['자전 빠르게, 가리개 조절', '금성의 하루는 243일이라 한쪽이 너무 오래 낮입니다. 가리개로 24시간 주기의 낮과 밤을 흉내 내고, 햇빛을 지구 수준으로 맞춥니다.', (b) => { b.shade = 0.75; b.spinH = 24; } /* still a quarter of the light: Venus gets 1.9 times Earth's sunlight */],
+    ['가리개로 낮과 밤 만들기', '금성은 243일에 한 번 거꾸로 자전하고, 해가 다시 뜰 때까지(태양일)는 약 117일이 걸려 낮과 밤이 각각 두 달 가까이 이어집니다. 행성의 자전은 그대로 두고, 가리개를 24시간 주기로 여닫아 낮과 밤을 흉내 냅니다. 가리개가 햇빛의 47.7%를 막으면 금성(0.723 AU)에 들어오는 햇빛이 지구와 같아집니다(1 − 0.723² ≈ 0.477). 같은 햇빛을 받아도 표면 온도는 대기와 반사율에 따라 지구와 다를 수 있습니다.', (b) => { b.shade = 0.477; } /* Venus gets 1/0.723^2 = 1.91 times Earth's sunlight; blocking 1 - 0.723^2 leaves Earth's. The rotation is not changed. */],
     ['초록 행성', '바다 주변에서 식물이 자라 산소를 만듭니다. 이론으로는 가능하지만 수천 년과 엄청난 에너지가 드는, 가장 어려운 테라포밍입니다.', (b) => { b.atm.mix = { N2: 0.75, O2: 0.2, CO2: 0.02, H2O: 0.02, Ar: 0.01 }; b.life = 1; }],
   ] },
 };
@@ -685,7 +711,7 @@ const CHECK = {
     ['온실 기체를 늘리면 표면이 따뜻해지는 까닭은?', ['땅이 내보내는 적외선을 대기가 흡수했다가 다시 땅 쪽으로 내보내서', '햇빛을 더 많이 반사해서', '기체가 타면서 열을 내서'], 0, '햇빛은 대부분 대기를 통과해 땅을 데우고, 데워진 땅이 내는 적외선은 이산화탄소와 수증기가 붙잡습니다.']],
   Venus: [['태양에서 더 먼 금성이 수성보다 뜨거운 까닭은?', ['두꺼운 이산화탄소 대기의 온실 효과', '내부가 더 뜨거워서', '자전이 빨라서'], 0, '금성의 대기압은 지구의 약 92배이고 대부분 이산화탄소입니다. 표면은 밤낮없이 약 465 °C입니다.'],
     ['금성 테라포밍의 첫 단계로 거론되는 태양 가리개가 하는 일은?', ['들어오는 햇빛을 줄여 대기가 식게 한다', '대기를 우주로 날려 보낸다', '자전을 빠르게 만든다'], 0, '햇빛을 줄이면 평형 온도가 내려가고, 충분히 식으면 이산화탄소가 얼거나 바위에 묶이게 할 수 있습니다.'],
-    ['금성의 자전이 테라포밍을 어렵게 만드는 까닭은?', ['243일에 한 번 거꾸로 돌아 낮과 밤이 각각 두 달 가까이 이어져서', '자전이 너무 빨라 바람이 세서', '자전축이 옆으로 누워 있어서'], 0, '금성의 하루(해가 다시 뜰 때까지)는 지구 날로 약 117일입니다. 식물이 자라기에는 낮과 밤이 너무 깁니다.']],
+    ['금성의 자전이 테라포밍을 어렵게 만드는 까닭은?', ['태양일이 약 117일이라 낮과 밤이 각각 두 달 가까이 이어져서', '자전이 너무 빨라 바람이 세서', '자전축이 옆으로 누워 있어서'], 0, '금성은 243일에 한 번 거꾸로 자전(항성일)하는데, 공전과 반대 방향이라 해가 다시 뜰 때까지(태양일)는 약 117일입니다. 식물이 자라기에는 낮과 밤이 너무 깁니다.']],
   star: [['무거운 별일수록 수명이 어떻게 될까요?', ['훨씬 짧아진다', '훨씬 길어진다', '질량과 상관없다'], 0, '연료는 질량에 비례하지만 밝기는 대략 질량의 3~4제곱으로 커져서, 무거운 별은 연료를 훨씬 빨리 씁니다.'],
     ['태양이 주계열을 떠난 뒤 겪는 순서로 맞는 것은?', ['적색거성 → 행성상 성운 → 백색왜성', '초신성 → 중성자별', '블랙홀 → 백색왜성'], 0, '태양 정도의 별은 초신성이 되지 않고, 바깥층을 부드럽게 내보낸 뒤 지구만 한 백색왜성으로 남습니다.'],
     ['적색거성이 된 별의 색이 붉은 까닭은?', ['부풀어 오른 표면의 온도가 낮아져서', '별이 멀어져서', '먼지에 가려서'], 0, '표면 온도가 낮을수록 빛의 정점이 긴 파장(붉은색) 쪽으로 옮겨 갑니다. 흑체 복사 카드에서 직접 바꿔 볼 수 있습니다.']],
@@ -760,7 +786,7 @@ function atmEditor(b) { // Universe-Sandbox-style property rows: every value is 
     show(val); num.onchange = () => { const v = Math.min(max, Math.max(log ? 0 : min, +num.value || 0)); set(v); show(v); drawBar(); };
     sl.oninput = () => { let v = fromS(+sl.value); if (log && +sl.value < 4) v = 0; set(v); num.value = +v.toPrecision(3); drawBar(); };
     row.append(el('label', '', label), num, el('span', 'u', unit), sl); box.append(row); };
-  prop('지표 기압', '기압', a.P, { min: 0.001, max: 160, log: true, set: (v) => { a.P = v; } });
+  prop('지표 기압', 'bar', a.P, { min: 0.001, max: 160, log: true, set: (v) => { a.P = v; } });
   prop('반사율', '', a.albedo, { min: 0, max: 0.9, set: (v) => { a.albedo = v; } });
   box.append(el('div', 'sb-sec', '<span>성분</span>'));
   const tot0 = Object.values(a.mix).reduce((s, v) => s + v, 0) || 1;
@@ -1397,7 +1423,7 @@ function buildUI() {
         <tr><th>속력</th><td><input class="sb-vnum" type="number" min="0" step="any"><span class="u">km/s</span><button class="sb-vcirc" title="지금 거리에서 원 궤도가 되는 속력으로">원 궤도 속력</button></td></tr>
         <tr><th>자전 주기</th><td><input class="sb-spin" type="number" step="any"><span class="u">시간</span></td></tr>
         <tr><th>자전축 기울기</th><td><input class="sb-tilt" type="number" min="0" max="180" step="any"><span class="u">°</span></td></tr>
-        <tr class="sb-burnrow"><th>분사 Δv</th><td><input class="sb-dvp" type="number" step="10" value="0" title="진행 방향 (+ 빨라짐)"><input class="sb-dvr" type="number" step="10" value="0" title="바깥쪽"><input class="sb-dvn" type="number" step="10" value="0" title="궤도면 위쪽"><span class="u">m/s</span></td></tr>
+        <tr class="sb-burnrow"><th>분사 Δv</th><td><input class="sb-dvp" type="number" step="10" value="0" title="T: 반지름에 수직인 궤도 진행 쪽 (+ 빨라짐)"><input class="sb-dvr" type="number" step="10" value="0" title="R: 반지름 방향 (+ 바깥쪽)"><input class="sb-dvn" type="number" step="10" value="0" title="N: 궤도면에 수직 (+ 각운동량 방향)"><span class="u">T · R · N, m/s</span></td></tr>
         <tr class="sb-burnrow"><th></th><td class="small">진행 · 바깥 · 위쪽 방향. 미리 보기는 초록 점선</td></tr>
         <tr class="sb-burnrow"><th></th><td><button class="sb-burnprev">미리 보기</button><button class="sb-burngo">분사</button></td></tr>
         <tr class="sb-burnrow"><th></th><td class="sb-learn" data-cards="visviva hohmann oberth"></td></tr>
@@ -1490,7 +1516,7 @@ function buildUI() {
     root.querySelectorAll('.sb-quick li, .sb-drawer .sb-line, .sb-drawer .sb-tab > label, .sb-drawer .sb-prop, .sb-scenbtn, .sb-labrow, .sb-level').forEach(x => x.classList.toggle('sb-miss', !!s && !x.textContent.toLowerCase().includes(s))); };
   ruler.lb = q('.sb-rulerlb');
   q('.sb-burnprev').onclick = previewBurn;
-  q('.sb-burngo').onclick = () => { const b = selected; if (!b) return; const x = burnVec(b); if (!x) return; b.v = add(b.v, x.dv); burnPrev.clear(); sim.E0 = energy(); showNums(); toast('분사했습니다. 새 궤도를 따라갑니다'); };
+  q('.sb-burngo').onclick = () => { const b = selected; if (!b) return; const x = burnVec(b); if (!x) return; PLUS.onBurn(b, x.dv); b.v = add(b.v, x.dv); burnPrev.clear(); sim.E0 = energy(); showNums(); toast('분사했습니다. 새 궤도를 따라갑니다'); };
   root.querySelectorAll('td.sb-learn').forEach(td => learnLinks(td, td.dataset.cards.split(' '), td.dataset.quiz));
   q('.sb-age').onchange = () => { if (selected?.kind === 'star') { setAge(selected, +q('.sb-age').value); showNums(); } };
   q('.sb-ager').oninput = () => { if (selected?.kind === 'star') { setAge(selected, +q('.sb-ager').value / 10); q('.sb-age').value = +(selected.age).toFixed(1); q('.sb-stage').textContent = ' ' + starStage(selected).name; } };
@@ -1513,12 +1539,19 @@ function buildUI() {
   const rs = () => { const w = root.clientWidth, h = root.clientHeight; renderer.setSize(w, h, false); renderer.domElement.style.width = w + 'px'; renderer.domElement.style.height = h + 'px'; camera.aspect = w / h; camera.updateProjectionMatrix(); };
   addEventListener('resize', () => root && !root.hidden && rs()); root.rs = rs;
   bindEditing();
+  PLUS.init(plusApi());
 }
+// what sandbox-plus.js (and the modules it loads) may use from here
+const plusApi = () => ({ THREE, O, sim, view, scene, camera, controls, renderer, root, el, fmt, fmtDate, btn, field, num, steps, results, deeper, labBox, toast, byName, makeBody, buildMesh, buildMeshes, rebuild,
+  clearScene, energy, snapshot, restore, select, focus, flash, sceneData, loadScene, resetSolarSystem, addSolarBody, dominantOther, hostStar, rocheKm, density, teq, MASS, starRadiusKm, starColor, RS_KM, gauge, massive,
+  ctx: () => ctx, selected: () => selected, setLab: (o) => { lab = o; }, setSpeed: (v) => { sim.speed = v; }, kill: (b) => { b.dead = true; scene.remove(b.mesh, b.line); view.labels.get(b)?.remove(); view.labels.delete(b); if (selected === b) select(null); } });
 
 export function openSandbox(context) {
   ctx = context;
   if (!root) { buildUI(); resetSolarSystem(ctx.jdNow()); focus('Sun', 4); }
   root.hidden = false; root.rs(); lastNow = performance.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(loop);
 }
+// numeric checks in tools/qa.py read and drive the state through this (no UI involved)
+export const _test = { sim, byName: (n) => byName(n), snapshot: () => snapshot(), restore: () => restore(), TERRA: () => TERRA, starStage: (s) => starStage(s), rtnBasis: (r, v) => rtnBasis(r, v) };
 export function closeSandbox() { if (!root) return; root.hidden = true; cancelAnimationFrame(raf); }
 export function openLab(name) { labCard = { speeds: 'keplerlaws', sunmass: 'gravity', kepler2: 'keplerlaws', kepler3: 'keplerlaws', jupiter: 'gravity', circular: 'twobody', visviva: 'visviva', hohmann: 'hohmann', porkchop: 'lambert', flyby: 'flyby', mission: 'flyby', lagrange: 'cr3bp' }[name] || null; ({ speeds: labSpeeds, sunmass: labSunMass, kepler2: labKepler2, kepler3: labKepler3, jupiter: labJupiterMass, circular: labCircular, visviva: labVisViva, hohmann: labHohmann, porkchop: labPorkchop, flyby: labFlyby, mission: labMission, lagrange: labLagrange })[name]?.(); }
